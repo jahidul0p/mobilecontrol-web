@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <title>MobileControl Pro</title>
 
   <style>
@@ -15,10 +14,8 @@
 
     :root {
       --green: #53ff22;
-      --green2: #27d916;
       --bg: #020907;
       --panel: #0a1514;
-      --panel2: #0d1b19;
       --border: #1d4235;
       --text: #f4f8f6;
       --muted: #8b9d98;
@@ -38,6 +35,11 @@
       overflow-x: hidden;
     }
 
+    button {
+      font-family: inherit;
+      cursor: pointer;
+    }
+
     /* NAVBAR */
 
     nav {
@@ -50,7 +52,7 @@
       position: sticky;
       top: 0;
       z-index: 100;
-      background: rgba(2,9,7,.82);
+      background: rgba(2,9,7,.86);
       backdrop-filter: blur(15px);
     }
 
@@ -91,7 +93,6 @@
       color: #c6d1cd;
       text-decoration: none;
       font-size: 13px;
-      transition: .2s;
     }
 
     .nav-links a:hover {
@@ -185,7 +186,6 @@
       padding: 14px 24px;
       border-radius: 7px;
       font-weight: 800;
-      cursor: pointer;
       box-shadow: 0 0 25px rgba(83,255,34,.15);
     }
 
@@ -196,7 +196,6 @@
       padding: 14px 24px;
       border-radius: 7px;
       font-weight: 700;
-      cursor: pointer;
     }
 
     .small-note {
@@ -321,7 +320,7 @@
       margin-top: 5px;
     }
 
-    /* SECTION */
+    /* SECTIONS */
 
     .section {
       max-width: 1150px;
@@ -371,7 +370,6 @@
     .feature:hover {
       transform: translateY(-4px);
       border-color: #3b804e;
-      box-shadow: 0 10px 30px rgba(40,255,80,.06);
     }
 
     .feature-icon {
@@ -391,7 +389,7 @@
       line-height: 1.55;
     }
 
-    /* HOW IT WORKS */
+    /* STEPS */
 
     .steps {
       display: grid;
@@ -400,7 +398,6 @@
     }
 
     .step {
-      position: relative;
       padding: 25px 20px;
       text-align: center;
       border: 1px solid #204532;
@@ -498,6 +495,137 @@
       font-size: 10px;
     }
 
+    /* AUTH MODAL */
+
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(0,0,0,.82);
+      backdrop-filter: blur(8px);
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .auth-box {
+      width: 100%;
+      max-width: 420px;
+      padding: 34px;
+      position: relative;
+      background: #081310;
+      border: 1px solid #2b6547;
+      border-radius: 18px;
+      box-shadow: 0 0 60px rgba(83,255,34,.12);
+    }
+
+    .close {
+      position: absolute;
+      top: 12px;
+      right: 15px;
+      background: transparent;
+      border: 0;
+      color: #82958e;
+      font-size: 28px;
+      padding: 5px;
+    }
+
+    .close:hover {
+      color: white;
+    }
+
+    .auth-box h2 {
+      color: var(--green);
+      font-size: 25px;
+      margin-bottom: 7px;
+    }
+
+    .auth-subtitle {
+      color: #81928c;
+      font-size: 13px;
+      margin-bottom: 25px;
+    }
+
+    .auth-box label {
+      display: block;
+      color: #c5d0cc;
+      font-size: 12px;
+      margin: 15px 0 7px;
+    }
+
+    .auth-box input {
+      width: 100%;
+      padding: 13px 14px;
+      border-radius: 8px;
+      border: 1px solid #244738;
+      background: #030a08;
+      color: white;
+      outline: none;
+      font-size: 14px;
+    }
+
+    .auth-box input:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 12px rgba(83,255,34,.08);
+    }
+
+    .submit-btn {
+      width: 100%;
+      margin-top: 22px;
+      padding: 14px;
+      background: var(--green);
+      color: #041006;
+      border: 0;
+      border-radius: 8px;
+      font-weight: 800;
+    }
+
+    .submit-btn:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+    }
+
+    .switch {
+      text-align: center;
+      margin-top: 18px;
+      color: #71837d;
+      font-size: 12px;
+    }
+
+    .switch span {
+      color: var(--green);
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .message {
+      display: none;
+      margin-top: 14px;
+      padding: 11px;
+      border-radius: 7px;
+      font-size: 12px;
+      text-align: center;
+    }
+
+    .message.error {
+      display: block;
+      background: rgba(255,50,50,.08);
+      border: 1px solid rgba(255,80,80,.25);
+      color: #ff9b9b;
+    }
+
+    .message.success {
+      display: block;
+      background: rgba(83,255,34,.08);
+      border: 1px solid rgba(83,255,34,.25);
+      color: var(--green);
+    }
+
     /* RESPONSIVE */
 
     @media (max-width: 900px) {
@@ -521,14 +649,6 @@
         justify-content: center;
       }
 
-      .phone-area {
-        margin-top: 20px;
-      }
-
-      .side-features {
-        right: -10px;
-      }
-
       .features,
       .steps {
         grid-template-columns: repeat(2,1fr);
@@ -546,7 +666,7 @@
       }
 
       .brand {
-        font-size: 14px;
+        font-size: 13px;
       }
 
       .login-btn {
@@ -607,6 +727,10 @@
 
       .footer-grid {
         grid-template-columns: 1fr 1fr;
+      }
+
+      .auth-box {
+        padding: 28px 22px;
       }
     }
   </style>
@@ -683,7 +807,8 @@
           ⇩ &nbsp; BUILD & DOWNLOAD APK
         </button>
 
-        <button class="secondary" onclick="document.getElementById('features').scrollIntoView()">
+        <button class="secondary"
+          onclick="document.getElementById('features').scrollIntoView()">
           EXPLORE FEATURES &nbsp; →
         </button>
 
@@ -742,7 +867,6 @@
 
       </div>
 
-
       <div class="side-features">
 
         <div class="side-item">
@@ -789,7 +913,6 @@
       </p>
 
     </div>
-
 
     <div class="features">
 
@@ -884,7 +1007,6 @@
 
     </div>
 
-
     <div class="steps">
 
       <div class="step">
@@ -929,13 +1051,11 @@
   <section class="cta" id="pricing">
 
     <div>
-
       <h2>Ready to Manage Your Family Devices?</h2>
 
       <p>
         Create your account and get started today.
       </p>
-
     </div>
 
     <button class="primary" onclick="openSignup()">
@@ -976,9 +1096,9 @@
 
       <div>
         <h3>SUPPORT</h3>
-        <a href="#">FAQ</a>
+        <a href="#faq">FAQ</a>
         <a href="#">Help Center</a>
-        <a href="#">Contact</a>
+        <a href="#contact">Contact</a>
       </div>
 
       <div id="faq">
@@ -997,15 +1117,390 @@
   </footer>
 
 
+  <!-- LOGIN / SIGNUP MODAL -->
+
+  <div class="modal" id="authModal">
+
+    <div class="auth-box">
+
+      <button class="close" type="button" onclick="closeAuth()">
+        ×
+      </button>
+
+      <h2 id="authTitle">
+        Welcome Back
+      </h2>
+
+      <p class="auth-subtitle" id="authSubtitle">
+        Login to your MobileControl account.
+      </p>
+
+      <form id="authForm">
+
+        <label for="email">
+          Email
+        </label>
+
+        <input
+          id="email"
+          type="email"
+          placeholder="you@example.com"
+          autocomplete="email"
+          required
+        >
+
+        <label for="password">
+          Password
+        </label>
+
+        <input
+          id="password"
+          type="password"
+          placeholder="Minimum 8 characters"
+          minlength="8"
+          autocomplete="current-password"
+          required
+        >
+
+        <button
+          class="submit-btn"
+          id="submitButton"
+          type="submit"
+        >
+          Login
+        </button>
+
+      </form>
+
+      <div
+        class="message"
+        id="message"
+      ></div>
+
+      <div
+        class="switch"
+        id="switchText"
+      >
+        Don't have an account?
+        <span onclick="openSignup()">
+          Sign Up
+        </span>
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- JAVASCRIPT -->
+
   <script>
 
+    let authMode = "login";
+
+    const modal =
+      document.getElementById("authModal");
+
+    const form =
+      document.getElementById("authForm");
+
+    const title =
+      document.getElementById("authTitle");
+
+    const subtitle =
+      document.getElementById("authSubtitle");
+
+    const submitButton =
+      document.getElementById("submitButton");
+
+    const switchText =
+      document.getElementById("switchText");
+
+    const message =
+      document.getElementById("message");
+
+
     function openLogin() {
-      window.location.href = "/login.html";
+
+      authMode = "login";
+
+      title.textContent =
+        "Welcome Back";
+
+      subtitle.textContent =
+        "Login to your MobileControl account.";
+
+      submitButton.textContent =
+        "Login";
+
+      document.getElementById("password")
+        .setAttribute(
+          "autocomplete",
+          "current-password"
+        );
+
+      switchText.innerHTML =
+        `Don't have an account?
+         <span onclick="openSignup()">Sign Up</span>`;
+
+      clearMessage();
+
+      modal.classList.add("active");
+
     }
 
+
     function openSignup() {
-      window.location.href = "/signup.html";
+
+      authMode = "signup";
+
+      title.textContent =
+        "Create Account";
+
+      subtitle.textContent =
+        "Create your MobileControl account.";
+
+      submitButton.textContent =
+        "Create Account";
+
+      document.getElementById("password")
+        .setAttribute(
+          "autocomplete",
+          "new-password"
+        );
+
+      switchText.innerHTML =
+        `Already have an account?
+         <span onclick="openLogin()">Login</span>`;
+
+      clearMessage();
+
+      modal.classList.add("active");
+
     }
+
+
+    function closeAuth() {
+
+      modal.classList.remove("active");
+
+      form.reset();
+
+      clearMessage();
+
+    }
+
+
+    function clearMessage() {
+
+      message.className =
+        "message";
+
+      message.textContent =
+        "";
+
+    }
+
+
+    function showMessage(text, type) {
+
+      message.textContent =
+        text;
+
+      message.className =
+        "message " + type;
+
+    }
+
+
+    form.addEventListener(
+      "submit",
+      async function(event) {
+
+        event.preventDefault();
+
+        clearMessage();
+
+        const email =
+          document.getElementById("email")
+            .value
+            .trim();
+
+        const password =
+          document.getElementById("password")
+            .value;
+
+
+        if (password.length < 8) {
+
+          showMessage(
+            "Password must be at least 8 characters.",
+            "error"
+          );
+
+          return;
+
+        }
+
+
+        submitButton.disabled =
+          true;
+
+        submitButton.textContent =
+          authMode === "signup"
+            ? "Creating account..."
+            : "Logging in...";
+
+
+        try {
+
+          const endpoint =
+            authMode === "signup"
+              ? "/api/signup"
+              : "/api/login";
+
+
+          const response =
+            await fetch(
+              endpoint,
+              {
+                method: "POST",
+
+                headers: {
+                  "Content-Type":
+                    "application/json"
+                },
+
+                credentials: "same-origin",
+
+                body: JSON.stringify({
+                  email: email,
+                  password: password
+                })
+              }
+            );
+
+
+          let data;
+
+          try {
+
+            data =
+              await response.json();
+
+          } catch {
+
+            data = {};
+
+          }
+
+
+          if (!response.ok) {
+
+            showMessage(
+              data.error ||
+              "Something went wrong.",
+              "error"
+            );
+
+            return;
+
+          }
+
+
+          if (authMode === "signup") {
+
+            showMessage(
+              "Account created successfully!",
+              "success"
+            );
+
+            setTimeout(
+              function() {
+                closeAuth();
+              },
+              900
+            );
+
+          } else {
+
+            showMessage(
+              "Login successful! Opening dashboard...",
+              "success"
+            );
+
+            setTimeout(
+              function() {
+
+                /*
+                  Dashboard page আমরা পরের ধাপে বানাব।
+                  এখন dashboard.html থাকলে সেখানে যাবে।
+                */
+
+                window.location.href =
+                  "/dashboard.html";
+
+              },
+              700
+            );
+
+          }
+
+
+        } catch (error) {
+
+          console.error(error);
+
+          showMessage(
+            "Could not connect to the server.",
+            "error"
+          );
+
+        } finally {
+
+          submitButton.disabled =
+            false;
+
+          submitButton.textContent =
+            authMode === "signup"
+              ? "Create Account"
+              : "Login";
+
+        }
+
+      }
+    );
+
+
+    /* Click outside modal */
+
+    modal.addEventListener(
+      "click",
+      function(event) {
+
+        if (event.target === modal) {
+          closeAuth();
+        }
+
+      }
+    );
+
+
+    /* ESC key */
+
+    document.addEventListener(
+      "keydown",
+      function(event) {
+
+        if (
+          event.key === "Escape" &&
+          modal.classList.contains("active")
+        ) {
+          closeAuth();
+        }
+
+      }
+    );
 
   </script>
 
