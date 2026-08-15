@@ -13,296 +13,600 @@
       box-sizing: border-box;
     }
 
-    body {
-      font-family: Arial, sans-serif;
-      background: #07100d;
-      color: white;
+    :root {
+      --green: #53ff22;
+      --green2: #27d916;
+      --bg: #020907;
+      --panel: #0a1514;
+      --panel2: #0d1b19;
+      --border: #1d4235;
+      --text: #f4f8f6;
+      --muted: #8b9d98;
     }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background:
+        radial-gradient(circle at 75% 15%, rgba(32,255,110,.08), transparent 28%),
+        radial-gradient(circle at 15% 50%, rgba(32,255,110,.035), transparent 30%),
+        var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    /* NAVBAR */
 
     nav {
-      height: 75px;
+      height: 72px;
+      padding: 0 4%;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 7%;
-      border-bottom: 1px solid #18352b;
+      border-bottom: 1px solid rgba(70,255,140,.15);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(2,9,7,.82);
+      backdrop-filter: blur(15px);
     }
 
-    .logo {
-      font-size: 22px;
-      font-weight: bold;
-      color: #48ff9b;
-    }
-
-    .nav-buttons {
+    .brand {
       display: flex;
-      gap: 12px;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      font-size: 18px;
     }
 
-    button {
-      border: none;
-      padding: 12px 22px;
+    .brand-icon {
+      width: 34px;
+      height: 34px;
+      border: 2px solid var(--green);
+      border-radius: 9px;
+      display: grid;
+      place-items: center;
+      color: var(--green);
+      box-shadow: 0 0 18px rgba(83,255,34,.2);
+    }
+
+    .pro {
+      color: var(--green);
+      border: 1px solid var(--green);
+      font-size: 9px;
+      padding: 3px 5px;
+      border-radius: 5px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 30px;
+      align-items: center;
+    }
+
+    .nav-links a {
+      color: #c6d1cd;
+      text-decoration: none;
+      font-size: 13px;
+      transition: .2s;
+    }
+
+    .nav-links a:hover {
+      color: var(--green);
+    }
+
+    .login-btn {
+      padding: 11px 20px;
+      background: rgba(50,255,100,.04);
+      color: var(--green);
+      border: 1px solid #275f45;
       border-radius: 8px;
-      cursor: pointer;
       font-weight: bold;
+      cursor: pointer;
     }
 
-    .login {
-      background: transparent;
-      color: white;
-      border: 1px solid #315447;
-    }
-
-    .signup {
-      background: #48ff9b;
-      color: #06100c;
-    }
+    /* HERO */
 
     .hero {
-      min-height: 600px;
-      display: flex;
+      max-width: 1250px;
+      margin: auto;
+      min-height: 560px;
+      padding: 75px 35px 55px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
       align-items: center;
-      justify-content: space-between;
       gap: 50px;
-      padding: 80px 7%;
-    }
-
-    .hero-text {
-      max-width: 650px;
     }
 
     .badge {
       display: inline-block;
       padding: 8px 14px;
-      border-radius: 30px;
-      background: #10291f;
-      color: #48ff9b;
-      margin-bottom: 25px;
-      font-size: 14px;
+      border: 1px solid #285c42;
+      border-radius: 6px;
+      color: var(--green);
+      font-size: 10px;
+      font-weight: bold;
+      margin-bottom: 22px;
+      background: rgba(50,255,100,.04);
     }
 
-    h1 {
-      font-size: clamp(45px, 6vw, 78px);
-      line-height: 1;
+    .hero h1 {
+      font-size: clamp(42px, 5vw, 68px);
+      line-height: .98;
+      letter-spacing: -2px;
       margin-bottom: 25px;
     }
 
-    h1 span {
-      color: #48ff9b;
+    .hero h1 span {
+      color: var(--green);
+      text-shadow: 0 0 25px rgba(83,255,34,.2);
     }
 
     .hero p {
-      color: #9db2a8;
-      font-size: 18px;
+      max-width: 560px;
+      color: var(--muted);
+      font-size: 15px;
       line-height: 1.7;
-      margin-bottom: 30px;
+      margin-bottom: 25px;
     }
 
-    .hero-button {
-      background: #48ff9b;
-      color: #06100c;
-      font-size: 16px;
-      padding: 15px 28px;
-    }
-
-    .mockup {
-      width: 300px;
-      height: 520px;
-      border: 8px solid #19362b;
-      border-radius: 35px;
-      background: linear-gradient(145deg, #10241c, #07100d);
-      box-shadow: 0 0 60px rgba(72,255,155,0.12);
+    .trust-row {
       display: flex;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
+      gap: 12px;
+      margin-bottom: 27px;
+      flex-wrap: wrap;
     }
 
-    .mockup-content {
-      padding: 25px;
+    .trust {
+      padding: 9px 13px;
+      border: 1px solid #18382d;
+      background: #081311;
+      border-radius: 7px;
+      color: #d0d9d5;
+      font-size: 11px;
     }
 
-    .mockup-content h2 {
-      color: #48ff9b;
-      margin-bottom: 15px;
+    .trust span {
+      color: var(--green);
     }
 
-    .features {
-      padding: 80px 7%;
-      background: #091510;
-    }
-
-    .section-title {
-      text-align: center;
-      margin-bottom: 45px;
-    }
-
-    .section-title h2 {
-      font-size: 42px;
-      margin-bottom: 12px;
-    }
-
-    .section-title p {
-      color: #8fa59b;
-    }
-
-    .feature-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 20px;
-    }
-
-    .card {
-      padding: 30px;
-      background: #0d1d16;
-      border: 1px solid #18382c;
-      border-radius: 15px;
-    }
-
-    .card h3 {
-      color: #48ff9b;
-      margin-bottom: 12px;
-    }
-
-    .card p {
-      color: #91a69d;
-      line-height: 1.6;
-    }
-
-    footer {
-      text-align: center;
-      padding: 30px;
-      color: #70857c;
-      border-top: 1px solid #18352b;
-    }
-
-    /* Modal */
-
-    .modal {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.78);
-      backdrop-filter: blur(6px);
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-      padding: 20px;
-    }
-
-    .modal.active {
+    .hero-buttons {
       display: flex;
+      gap: 13px;
     }
 
-    .auth-box {
-      width: 100%;
-      max-width: 420px;
-      background: #0c1913;
-      border: 1px solid #24543f;
-      border-radius: 18px;
-      padding: 35px;
-      box-shadow: 0 0 50px rgba(72,255,155,0.12);
-      position: relative;
+    .primary {
+      background: var(--green);
+      color: #041006;
+      border: 0;
+      padding: 14px 24px;
+      border-radius: 7px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 0 25px rgba(83,255,34,.15);
     }
 
-    .close {
-      position: absolute;
-      right: 18px;
-      top: 15px;
+    .secondary {
       background: transparent;
-      color: #9db2a8;
-      font-size: 24px;
-      padding: 5px 10px;
+      color: var(--green);
+      border: 1px solid #326d4d;
+      padding: 14px 24px;
+      border-radius: 7px;
+      font-weight: 700;
+      cursor: pointer;
     }
 
-    .auth-box h2 {
-      color: #48ff9b;
+    .small-note {
+      margin-top: 14px;
+      color: #687a75;
+      font-size: 11px;
+    }
+
+    /* PHONE */
+
+    .phone-area {
+      min-height: 470px;
+      position: relative;
+      display: grid;
+      place-items: center;
+    }
+
+    .glow {
+      position: absolute;
+      width: 390px;
+      height: 390px;
+      background: radial-gradient(circle, rgba(65,255,80,.13), transparent 68%);
+    }
+
+    .phone {
+      width: 250px;
+      height: 470px;
+      border: 6px solid #19382e;
+      border-radius: 35px;
+      background: #050c0c;
+      transform: rotate(6deg);
+      box-shadow:
+        0 0 35px rgba(70,255,100,.14),
+        0 35px 80px rgba(0,0,0,.5);
+      padding: 12px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .notch {
+      width: 90px;
+      height: 17px;
+      background: #020606;
+      border-radius: 20px;
+      margin: -5px auto 15px;
+    }
+
+    .phone-title {
+      font-size: 11px;
+      margin-bottom: 12px;
+    }
+
+    .phone-card {
+      border: 1px solid #17382c;
+      background: #0a1715;
+      border-radius: 10px;
+      padding: 13px;
+      margin-bottom: 10px;
+    }
+
+    .phone-card small {
+      color: #71837d;
+      font-size: 8px;
+    }
+
+    .phone-card strong {
+      display: block;
+      font-size: 24px;
+      margin-top: 4px;
+    }
+
+    .phone-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+    }
+
+    .phone-mini {
+      border: 1px solid #17382c;
+      background: #0a1715;
+      border-radius: 10px;
+      padding: 12px;
+      min-height: 75px;
+    }
+
+    .phone-mini span {
+      color: var(--green);
+      font-size: 16px;
+    }
+
+    .phone-mini small {
+      display: block;
+      color: #71837d;
+      font-size: 8px;
+      margin-top: 8px;
+    }
+
+    .side-features {
+      position: absolute;
+      right: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .side-item {
+      width: 165px;
+      padding: 13px;
+      border: 1px solid #1e543b;
+      background: rgba(7,19,15,.85);
+      border-radius: 9px;
+    }
+
+    .side-item b {
+      color: var(--green);
+      font-size: 12px;
+    }
+
+    .side-item p {
+      color: #778a83;
+      font-size: 9px;
+      margin-top: 5px;
+    }
+
+    /* SECTION */
+
+    .section {
+      max-width: 1150px;
+      margin: auto;
+      padding: 70px 30px;
+    }
+
+    .section-heading {
+      text-align: center;
+      margin-bottom: 42px;
+    }
+
+    .section-heading .label {
+      color: var(--green);
+      font-size: 10px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .section-heading h2 {
+      font-size: 32px;
       margin-bottom: 8px;
     }
 
-    .auth-box .subtitle {
-      color: #8fa59b;
-      margin-bottom: 25px;
+    .section-heading p {
+      color: #71827d;
+      font-size: 13px;
+    }
+
+    /* FEATURES */
+
+    .features {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+
+    .feature {
+      min-height: 170px;
+      padding: 22px;
+      border: 1px solid #1c382f;
+      border-radius: 13px;
+      background: linear-gradient(145deg,#0b1816,#07110f);
+      transition: .25s;
+    }
+
+    .feature:hover {
+      transform: translateY(-4px);
+      border-color: #3b804e;
+      box-shadow: 0 10px 30px rgba(40,255,80,.06);
+    }
+
+    .feature-icon {
+      font-size: 28px;
+      margin-bottom: 20px;
+      color: var(--green);
+    }
+
+    .feature h3 {
       font-size: 14px;
+      margin-bottom: 10px;
     }
 
-    .auth-box label {
-      display: block;
-      margin: 15px 0 7px;
-      color: #c8d7d0;
-      font-size: 14px;
+    .feature p {
+      color: #7c8e88;
+      font-size: 11px;
+      line-height: 1.55;
     }
 
-    .auth-box input {
-      width: 100%;
-      padding: 13px;
-      border-radius: 8px;
-      border: 1px solid #284b3c;
-      background: #07100d;
-      color: white;
-      outline: none;
+    /* HOW IT WORKS */
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 15px;
     }
 
-    .auth-box input:focus {
-      border-color: #48ff9b;
-    }
-
-    .submit-btn {
-      width: 100%;
-      margin-top: 22px;
-      background: #48ff9b;
-      color: #06100c;
-      font-size: 15px;
-    }
-
-    .switch {
+    .step {
+      position: relative;
+      padding: 25px 20px;
       text-align: center;
-      margin-top: 18px;
-      color: #82978e;
+      border: 1px solid #204532;
+      background: #091512;
+      border-radius: 13px;
+    }
+
+    .step-number {
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      margin: 0 auto 18px;
+      background: var(--green);
+      color: #031006;
+      border-radius: 50%;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .step h3 {
       font-size: 14px;
+      margin-bottom: 8px;
     }
 
-    .switch span {
-      color: #48ff9b;
-      cursor: pointer;
-      font-weight: bold;
+    .step p {
+      color: #778983;
+      font-size: 10px;
+      line-height: 1.5;
     }
 
-    .message {
-      display: none;
-      margin-top: 15px;
-      padding: 10px;
-      border-radius: 7px;
-      font-size: 14px;
-      background: #261414;
-      color: #ff9b9b;
+    /* CTA */
+
+    .cta {
+      max-width: 1150px;
+      margin: 30px auto 80px;
+      padding: 35px 45px;
+      border: 1px solid #24613c;
+      border-radius: 17px;
+      background:
+        radial-gradient(circle at 80% 50%, rgba(60,255,70,.13), transparent 40%),
+        #091711;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 25px;
     }
 
-    @media (max-width: 800px) {
+    .cta h2 {
+      font-size: 26px;
+      margin-bottom: 8px;
+    }
+
+    .cta p {
+      color: #81928c;
+      font-size: 12px;
+    }
+
+    /* FOOTER */
+
+    footer {
+      border-top: 1px solid #152a23;
+      padding: 45px 6%;
+      color: #73827e;
+    }
+
+    .footer-grid {
+      max-width: 1150px;
+      margin: auto;
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 35px;
+    }
+
+    footer h3 {
+      color: white;
+      font-size: 13px;
+      margin-bottom: 15px;
+    }
+
+    footer a {
+      display: block;
+      color: #71817c;
+      text-decoration: none;
+      font-size: 11px;
+      margin: 10px 0;
+    }
+
+    .copyright {
+      max-width: 1150px;
+      margin: 35px auto 0;
+      padding-top: 20px;
+      border-top: 1px solid #13251f;
+      text-align: center;
+      font-size: 10px;
+    }
+
+    /* RESPONSIVE */
+
+    @media (max-width: 900px) {
+
+      .nav-links {
+        display: none;
+      }
+
       .hero {
+        grid-template-columns: 1fr;
+        text-align: center;
+      }
+
+      .hero p {
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .trust-row,
+      .hero-buttons {
+        justify-content: center;
+      }
+
+      .phone-area {
+        margin-top: 20px;
+      }
+
+      .side-features {
+        right: -10px;
+      }
+
+      .features,
+      .steps {
+        grid-template-columns: repeat(2,1fr);
+      }
+
+      .footer-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 600px) {
+
+      nav {
+        padding: 0 18px;
+      }
+
+      .brand {
+        font-size: 14px;
+      }
+
+      .login-btn {
+        padding: 9px 12px;
+        font-size: 10px;
+      }
+
+      .hero {
+        padding: 55px 18px;
+      }
+
+      .hero h1 {
+        font-size: 43px;
+      }
+
+      .hero-buttons {
+        flex-direction: column;
+      }
+
+      .primary,
+      .secondary {
+        width: 100%;
+      }
+
+      .phone {
+        width: 220px;
+        height: 420px;
+      }
+
+      .side-features {
+        display: none;
+      }
+
+      .features,
+      .steps {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .feature {
+        min-height: 160px;
+        padding: 16px;
+      }
+
+      .section {
+        padding: 55px 15px;
+      }
+
+      .section-heading h2 {
+        font-size: 27px;
+      }
+
+      .cta {
+        margin: 20px 15px 55px;
+        padding: 28px 22px;
         flex-direction: column;
         text-align: center;
       }
 
-      .feature-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .mockup {
-        width: 250px;
-        height: 430px;
-      }
-
-      nav {
-        padding: 0 5%;
-      }
-
-      .logo {
-        font-size: 17px;
-      }
-
-      .nav-buttons button {
-        padding: 9px 12px;
+      .footer-grid {
+        grid-template-columns: 1fr 1fr;
       }
     }
   </style>
@@ -310,357 +614,400 @@
 
 <body>
 
-  <nav>
-    <div class="logo">MOBILECONTROL PRO</div>
+  <!-- NAVBAR -->
 
-    <div class="nav-buttons">
-      <button class="login" onclick="openLogin()">Login</button>
-      <button class="signup" onclick="openSignup()">Sign Up</button>
+  <nav>
+
+    <div class="brand">
+      <div class="brand-icon">◉</div>
+      MOBILECONTROL
+      <span class="pro">PRO</span>
     </div>
+
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#how">How It Works</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#faq">FAQ</a>
+      <a href="#contact">Contact</a>
+    </div>
+
+    <button class="login-btn" onclick="openLogin()">
+      LOGIN / DASHBOARD
+    </button>
+
   </nav>
+
+
+  <!-- HERO -->
 
   <section class="hero">
 
-    <div class="hero-text">
+    <div>
 
       <div class="badge">
-        🔒 Secure Family Management
+        ◉ ADVANCED FAMILY MANAGEMENT
       </div>
 
       <h1>
-        Complete Control.<br>
-        <span>Peace of Mind.</span>
+        COMPLETE CONTROL,<br>
+        <span>ABSOLUTE PEACE</span><br>
+        OF MIND
       </h1>
 
       <p>
-        A secure parental-control platform designed to help
-        parents manage authorized family devices with
-        transparency, consent and safety in mind.
+        Manage your authorized family devices with a secure,
+        professional and easy-to-use platform designed for
+        responsible parental control.
       </p>
 
-      <button class="hero-button" onclick="openSignup()">
-        Get Started
-      </button>
+      <div class="trust-row">
 
-    </div>
+        <div class="trust">
+          <span>♢</span> 100% Secure
+        </div>
 
-    <div class="mockup">
-      <div class="mockup-content">
-        <h2>Dashboard</h2>
+        <div class="trust">
+          <span>◉</span> Real-time Data
+        </div>
 
-        <p>
-          Connected Devices<br><br>
-          Device Status<br><br>
-          Family Management
-        </p>
-      </div>
-    </div>
+        <div class="trust">
+          <span>✣</span> Easy to Use
+        </div>
 
-  </section>
-
-  <section class="features">
-
-    <div class="section-title">
-      <h2>Powerful Features</h2>
-      <p>Everything organized in one secure dashboard.</p>
-    </div>
-
-    <div class="feature-grid">
-
-      <div class="card">
-        <h3>📱 Device Management</h3>
-        <p>
-          Manage authorized family devices from one place.
-        </p>
       </div>
 
-      <div class="card">
-        <h3>📍 Location Sharing</h3>
-        <p>
-          Location features require the device user's
-          permission.
-        </p>
-      </div>
+      <div class="hero-buttons">
 
-      <div class="card">
-        <h3>🔐 Secure Access</h3>
-        <p>
-          Protect accounts and connected devices with
-          secure authentication.
-        </p>
-      </div>
-
-      <div class="card">
-        <h3>⚡ APK Builder</h3>
-        <p>
-          Create your configured family-management app
-          through the platform.
-        </p>
-      </div>
-
-      <div class="card">
-        <h3>📊 Device Overview</h3>
-        <p>
-          View authorized device information and connection
-          status.
-        </p>
-      </div>
-
-      <div class="card">
-        <h3>🛡️ Privacy First</h3>
-        <p>
-          Sensitive features use explicit permissions and
-          consent.
-        </p>
-      </div>
-
-    </div>
-
-  </section>
-
-  <footer>
-    © 2026 MobileControl Pro — Built with security and privacy in mind.
-  </footer>
-
-
-  <!-- Authentication Modal -->
-
-  <div class="modal" id="authModal">
-
-    <div class="auth-box">
-
-      <button class="close" onclick="closeAuth()">×</button>
-
-      <h2 id="authTitle">Welcome Back</h2>
-
-      <p class="subtitle" id="authSubtitle">
-        Login to your MobileControl account.
-      </p>
-
-      <form id="authForm">
-
-        <label>Email</label>
-
-        <input
-          type="email"
-          id="email"
-          placeholder="you@example.com"
-          required
-        >
-
-        <label>Password</label>
-
-        <input
-          type="password"
-          id="password"
-          placeholder="Minimum 8 characters"
-          minlength="8"
-          required
-        >
-
-        <button class="submit-btn" type="submit" id="submitButton">
-          Login
+        <button class="primary" onclick="openSignup()">
+          ⇩ &nbsp; BUILD & DOWNLOAD APK
         </button>
 
-      </form>
+        <button class="secondary" onclick="document.getElementById('features').scrollIntoView()">
+          EXPLORE FEATURES &nbsp; →
+        </button>
 
-      <div class="message" id="message"></div>
+      </div>
 
-      <div class="switch" id="switchText">
-        Don't have an account?
-        <span onclick="openSignup()">Sign Up</span>
+      <div class="small-note">
+        No credit card required &nbsp; • &nbsp; Built for families
       </div>
 
     </div>
 
-  </div>
+
+    <!-- PHONE -->
+
+    <div class="phone-area">
+
+      <div class="glow"></div>
+
+      <div class="phone">
+
+        <div class="notch"></div>
+
+        <div class="phone-title">
+          Dashboard
+        </div>
+
+        <div class="phone-card">
+          <small>CONNECTED DEVICES</small>
+          <strong>3</strong>
+          <small>View authorized devices</small>
+        </div>
+
+        <div class="phone-grid">
+
+          <div class="phone-mini">
+            <span>⌖</span>
+            <small>Location</small>
+          </div>
+
+          <div class="phone-mini">
+            <span>▣</span>
+            <small>Battery 78%</small>
+          </div>
+
+          <div class="phone-mini">
+            <span>◫</span>
+            <small>Activity</small>
+          </div>
+
+          <div class="phone-mini">
+            <span>●</span>
+            <small>Online</small>
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div class="side-features">
+
+        <div class="side-item">
+          <b>⌖ &nbsp; Live Location</b>
+          <p>Permission-based location</p>
+        </div>
+
+        <div class="side-item">
+          <b>◴ &nbsp; App Activity</b>
+          <p>Authorized activity overview</p>
+        </div>
+
+        <div class="side-item">
+          <b>⌁ &nbsp; Device Status</b>
+          <p>View device connection status</p>
+        </div>
+
+        <div class="side-item">
+          <b>◷ &nbsp; Screen Time</b>
+          <p>Family usage overview</p>
+        </div>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- FEATURES -->
+
+  <section class="section" id="features">
+
+    <div class="section-heading">
+
+      <div class="label">
+        POWERFUL MANAGEMENT SUITE
+      </div>
+
+      <h2>Everything You Need, All in One Place</h2>
+
+      <p>
+        Simple tools for managing authorized family devices.
+      </p>
+
+    </div>
+
+
+    <div class="features">
+
+      <div class="feature">
+        <div class="feature-icon">▣</div>
+        <h3>DEVICE MANAGEMENT</h3>
+        <p>
+          Manage authorized devices and view their connection
+          status from one dashboard.
+        </p>
+      </div>
+
+      <div class="feature">
+        <div class="feature-icon">⌖</div>
+        <h3>GPS LOCATION</h3>
+        <p>
+          Permission-based location sharing for connected
+          family devices.
+        </p>
+      </div>
+
+      <div class="feature">
+        <div class="feature-icon">⌘</div>
+        <h3>APP ACTIVITY</h3>
+        <p>
+          View permitted application activity and usage
+          information.
+        </p>
+      </div>
+
+      <div class="feature">
+        <div class="feature-icon">☁</div>
+        <h3>REAL-TIME STATUS</h3>
+        <p>
+          See whether authorized devices are connected
+          and available.
+        </p>
+      </div>
+
+      <div class="feature">
+        <div class="feature-icon">☎</div>
+        <h3>CALL INFORMATION</h3>
+        <p>
+          Family safety tools can display information only
+          where appropriate permissions exist.
+        </p>
+      </div>
+
+      <div class="feature">
+        <div class="feature-icon">▦</div>
+        <h3>SCREEN TIME</h3>
+        <p>
+          Help families understand and manage device usage
+          responsibly.
+        </p>
+      </div>
+
+      <div class="feature">
+        <div class="feature-icon">◈</div>
+        <h3>SECURE ACCOUNT</h3>
+        <p>
+          Protected user accounts with secure authentication
+          and sessions.
+        </p>
+      </div>
+
+      <div class="feature">
+        <div class="feature-icon">●</div>
+        <h3>REAL-TIME ALERTS</h3>
+        <p>
+          Receive useful alerts from authorized devices
+          and family safety settings.
+        </p>
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- HOW IT WORKS -->
+
+  <section class="section" id="how">
+
+    <div class="section-heading">
+
+      <div class="label">
+        SIMPLE & FAST
+      </div>
+
+      <h2>How It Works</h2>
+
+    </div>
+
+
+    <div class="steps">
+
+      <div class="step">
+        <div class="step-number">1</div>
+        <h3>Build APK</h3>
+        <p>
+          Configure your family-management application.
+        </p>
+      </div>
+
+      <div class="step">
+        <div class="step-number">2</div>
+        <h3>Download APK</h3>
+        <p>
+          Download your generated application.
+        </p>
+      </div>
+
+      <div class="step">
+        <div class="step-number">3</div>
+        <h3>Install & Setup</h3>
+        <p>
+          Install and grant only the permissions you choose.
+        </p>
+      </div>
+
+      <div class="step">
+        <div class="step-number">4</div>
+        <h3>Manage Devices</h3>
+        <p>
+          View authorized family devices from your dashboard.
+        </p>
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- CTA -->
+
+  <section class="cta" id="pricing">
+
+    <div>
+
+      <h2>Ready to Manage Your Family Devices?</h2>
+
+      <p>
+        Create your account and get started today.
+      </p>
+
+    </div>
+
+    <button class="primary" onclick="openSignup()">
+      BUILD APK NOW &nbsp; ⇩
+    </button>
+
+  </section>
+
+
+  <!-- FOOTER -->
+
+  <footer id="contact">
+
+    <div class="footer-grid">
+
+      <div>
+
+        <div class="brand">
+          <div class="brand-icon">◉</div>
+          MOBILECONTROL
+          <span class="pro">PRO</span>
+        </div>
+
+        <p style="margin-top:15px;font-size:11px;line-height:1.6;">
+          A secure family device-management platform
+          designed with privacy and responsible permissions
+          in mind.
+        </p>
+
+      </div>
+
+      <div>
+        <h3>PRODUCT</h3>
+        <a href="#features">Features</a>
+        <a href="#how">How It Works</a>
+        <a href="#pricing">Pricing</a>
+      </div>
+
+      <div>
+        <h3>SUPPORT</h3>
+        <a href="#">FAQ</a>
+        <a href="#">Help Center</a>
+        <a href="#">Contact</a>
+      </div>
+
+      <div id="faq">
+        <h3>LEGAL</h3>
+        <a href="#">Terms of Service</a>
+        <a href="#">Privacy Policy</a>
+        <a href="#">Permissions</a>
+      </div>
+
+    </div>
+
+    <div class="copyright">
+      © 2026 MobileControl Pro. All rights reserved.
+    </div>
+
+  </footer>
 
 
   <script>
 
-    let authMode = "login";
-
-    const modal = document.getElementById("authModal");
-    const title = document.getElementById("authTitle");
-    const subtitle = document.getElementById("authSubtitle");
-    const submitButton = document.getElementById("submitButton");
-    const switchText = document.getElementById("switchText");
-    const message = document.getElementById("message");
-    const form = document.getElementById("authForm");
-
-
     function openLogin() {
-
-      authMode = "login";
-
-      title.textContent = "Welcome Back";
-
-      subtitle.textContent =
-        "Login to your MobileControl account.";
-
-      submitButton.textContent = "Login";
-
-      switchText.innerHTML =
-        `Don't have an account?
-        <span onclick="openSignup()">Sign Up</span>`;
-
-      clearMessage();
-
-      modal.classList.add("active");
+      window.location.href = "/login.html";
     }
-
 
     function openSignup() {
-
-      authMode = "signup";
-
-      title.textContent = "Create Account";
-
-      subtitle.textContent =
-        "Create your MobileControl account.";
-
-      submitButton.textContent = "Create Account";
-
-      switchText.innerHTML =
-        `Already have an account?
-        <span onclick="openLogin()">Login</span>`;
-
-      clearMessage();
-
-      modal.classList.add("active");
+      window.location.href = "/signup.html";
     }
-
-
-    function closeAuth() {
-
-      modal.classList.remove("active");
-
-      form.reset();
-
-      clearMessage();
-    }
-
-
-    function clearMessage() {
-
-      message.style.display = "none";
-
-      message.textContent = "";
-    }
-
-
-    function showMessage(text) {
-
-      message.textContent = text;
-
-      message.style.display = "block";
-    }
-
-
-    form.addEventListener("submit", async function(event) {
-
-      event.preventDefault();
-
-      clearMessage();
-
-      const email =
-        document.getElementById("email").value.trim();
-
-      const password =
-        document.getElementById("password").value;
-
-
-      submitButton.disabled = true;
-
-      submitButton.textContent =
-        authMode === "signup"
-          ? "Creating..."
-          : "Logging in...";
-
-
-      try {
-
-        const endpoint =
-          authMode === "signup"
-            ? "/api/signup"
-            : "/api/login";
-
-
-        const response = await fetch(endpoint, {
-
-          method: "POST",
-
-          headers: {
-            "Content-Type": "application/json"
-          },
-
-          body: JSON.stringify({
-            email,
-            password
-          })
-
-        });
-
-
-        const data = await response.json();
-
-
-        if (!response.ok) {
-
-          showMessage(
-            data.error || "Something went wrong."
-          );
-
-          return;
-        }
-
-
-        if (authMode === "signup") {
-
-          alert(
-            "Account created successfully!"
-          );
-
-        } else {
-
-          alert(
-            "Login successful!"
-          );
-
-        }
-
-        closeAuth();
-
-      } catch (error) {
-
-        console.error(error);
-
-        showMessage(
-          "Could not connect to the server."
-        );
-
-      } finally {
-
-        submitButton.disabled = false;
-
-        submitButton.textContent =
-          authMode === "signup"
-            ? "Create Account"
-            : "Login";
-      }
-
-    });
-
-
-    modal.addEventListener("click", function(event) {
-
-      if (event.target === modal) {
-        closeAuth();
-      }
-
-    });
 
   </script>
 
 </body>
-</html>
+  </html>
