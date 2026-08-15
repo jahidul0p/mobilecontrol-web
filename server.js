@@ -18,7 +18,8 @@ const pool = new Pool({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Login session
+// ================= SESSION =================
+
 app.use(
   session({
     store: new pgSession({
@@ -26,36 +27,45 @@ app.use(
       tableName: "user_sessions",
       createTableIfMissing: true
     }),
-    secret: process.env.SESSION_SECRET || "change-this-secret-in-render",
+    secret:
+      process.env.SESSION_SECRET ||
+      "change-this-secret-in-render",
+
     resave: false,
     saveUninitialized: false,
+
     cookie: {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
       maxAge: 1000 * 60 * 60 * 24 * 7
     }
   })
 );
 
-// Create users table
-async function setupDatabase() {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS users (
-      id SERIAL PRIMARY KEY,
-      email VARCHAR(255) UNIQUE NOT NULL,
-      password_hash TEXT NOT NULL,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-  `);
+// ================= DATABASE =================
 
-  console.log("Database is ready.");
+async function setupDatabase() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    console.log("Database is ready.");
+  } catch (error) {
+    console.error("Database setup failed:", error);
+  }
 }
 
-setupDatabase().catch((error) => {
-  console.error("Database setup failed:", error);
-});
+setupDatabase();
 
-// Health check
+// ================= HEALTH =================
+
 app.get("/api/health", async (req, res) => {
   try {
     await pool.query("SELECT 1");
@@ -74,7 +84,8 @@ app.get("/api/health", async (req, res) => {
   }
 });
 
-// Sign Up
+// ================= SIGNUP =================
+
 app.post("/api/signup", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -131,7 +142,8 @@ app.post("/api/signup", async (req, res) => {
   }
 });
 
-// Login
+// ================= LOGIN =================
+
 app.post("/api/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -145,7 +157,11 @@ app.post("/api/login", async (req, res) => {
     const normalizedEmail = email.trim().toLowerCase();
 
     const result = await pool.query(
-      "SELECT id, email, password_hash FROM users WHERE email = $1",
+      `
+      SELECT id, email, password_hash
+      FROM users
+      WHERE email = $1
+      `,
       [normalizedEmail]
     );
 
@@ -187,7 +203,8 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
-// Current user
+// ================= CURRENT USER =================
+
 app.get("/api/me", async (req, res) => {
   try {
     if (!req.session.userId) {
@@ -197,7 +214,11 @@ app.get("/api/me", async (req, res) => {
     }
 
     const result = await pool.query(
-      "SELECT id, email, created_at FROM users WHERE id = $1",
+      `
+      SELECT id, email, created_at
+      FROM users
+      WHERE id = $1
+      `,
       [req.session.userId]
     );
 
@@ -213,7 +234,7 @@ app.get("/api/me", async (req, res) => {
     });
 
   } catch (error) {
-    console.error(error);
+    console.error("Session error:", error);
 
     res.status(500).json({
       error: "Unable to check session."
@@ -221,7 +242,8 @@ app.get("/api/me", async (req, res) => {
   }
 });
 
-// Logout
+// ================= LOGOUT =================
+
 app.post("/api/logout", (req, res) => {
   req.session.destroy((error) => {
     if (error) {
@@ -240,22 +262,35 @@ app.post("/api/logout", (req, res) => {
   });
 });
 
-// Home page
+// ================= WEBSITE =================
+
+// Home
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
 
-// Dashboard page
+// Login
+app.get("/login.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "login.html"));
+});
+
+// Login without .html
+app.get("/login", (req, res) => {
+  res.sendFile(path.join(__dirname, "login.html"));
+});
+
+// Dashboard
 app.get("/dashboard.html", (req, res) => {
   res.sendFile(path.join(__dirname, "dashboard.html"));
 });
 
-// Also allow /dashboard
+// Dashboard without .html
 app.get("/dashboard", (req, res) => {
   res.sendFile(path.join(__dirname, "dashboard.html"));
 });
 
-// Start server
+// ================= SERVER =================
+
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on port ${PORT}`);
 });
