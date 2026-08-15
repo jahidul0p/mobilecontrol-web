@@ -1,0 +1,12 @@
+{
+  "name": "mobilecontrol-web",
+  "version": "1.0.0",
+  "description": "MobileControl Pro web application",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}
