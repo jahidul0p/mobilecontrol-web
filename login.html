@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>MobileControl - Login</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      background: #050807;
+      color: #ffffff;
+      font-family: Arial, sans-serif;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      padding: 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 420px;
+    }
+
+    .logo {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .logo-icon {
+      width: 65px;
+      height: 65px;
+
+      margin: 0 auto 15px;
+
+      border-radius: 18px;
+
+      background: #0b2117;
+      border: 1px solid #19d47b;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      font-size: 30px;
+
+      box-shadow:
+        0 0 30px rgba(25, 212, 123, 0.15);
+    }
+
+    .logo h1 {
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+
+    .logo p {
+      color: #7f8c87;
+      font-size: 14px;
+    }
+
+    .card {
+      background: #0a0f0d;
+
+      border: 1px solid #17241e;
+
+      border-radius: 20px;
+
+      padding: 30px;
+
+      box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    .card h2 {
+      font-size: 23px;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: #7f8c87;
+      font-size: 14px;
+      margin-bottom: 25px;
+    }
+
+    .field {
+      margin-bottom: 18px;
+    }
+
+    label {
+      display: block;
+      color: #b8c3be;
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+
+    input {
+      width: 100%;
+
+      padding: 14px 15px;
+
+      border-radius: 11px;
+
+      border: 1px solid #1c2c24;
+
+      background: #060a08;
+
+      color: white;
+
+      outline: none;
+
+      font-size: 15px;
+    }
+
+    input:focus {
+      border-color: #19d47b;
+
+      box-shadow:
+        0 0 0 3px rgba(25, 212, 123, 0.08);
+    }
+
+    button {
+      width: 100%;
+
+      padding: 14px;
+
+      border: none;
+
+      border-radius: 11px;
+
+      background: #19d47b;
+
+      color: #031009;
+
+      font-size: 15px;
+
+      font-weight: bold;
+
+      cursor: pointer;
+
+      margin-top: 5px;
+    }
+
+    button:hover {
+      background: #24e889;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .message {
+      display: none;
+
+      padding: 12px;
+
+      border-radius: 10px;
+
+      margin-bottom: 18px;
+
+      font-size: 13px;
+    }
+
+    .error {
+      display: block;
+
+      background: #2a0d0d;
+
+      border: 1px solid #6d2929;
+
+      color: #ff8f8f;
+    }
+
+    .success {
+      display: block;
+
+      background: #092317;
+
+      border: 1px solid #145f3b;
+
+      color: #6ff0ad;
+    }
+
+    .signup {
+      text-align: center;
+
+      margin-top: 20px;
+
+      color: #78857f;
+
+      font-size: 14px;
+    }
+
+    .signup a {
+      color: #19d47b;
+
+      text-decoration: none;
+
+      font-weight: bold;
+    }
+
+    .signup a:hover {
+      text-decoration: underline;
+    }
+
+    .footer {
+      text-align: center;
+
+      margin-top: 22px;
+
+      color: #4f5b55;
+
+      font-size: 12px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+
+    <div class="logo">
+
+      <div class="logo-icon">
+        🛡️
+      </div>
+
+      <h1>MobileControl</h1>
+
+      <p>Parental Control Dashboard</p>
+
+    </div>
+
+    <div class="card">
+
+      <h2>Welcome back</h2>
+
+      <p class="subtitle">
+        Sign in to continue to your dashboard.
+      </p>
+
+      <div id="message" class="message"></div>
+
+      <form id="loginForm">
+
+        <div class="field">
+
+          <label for="email">
+            Email
+          </label>
+
+          <input
+            id="email"
+            type="email"
+            placeholder="you@example.com"
+            autocomplete="email"
+            required
+          >
+
+        </div>
+
+        <div class="field">
+
+          <label for="password">
+            Password
+          </label>
+
+          <input
+            id="password"
+            type="password"
+            placeholder="Enter your password"
+            autocomplete="current-password"
+            required
+          >
+
+        </div>
+
+        <button
+          id="loginButton"
+          type="submit"
+        >
+          Sign In
+        </button>
+
+      </form>
+
+      <div class="signup">
+        Don't have an account?
+        <a href="/">Create one</a>
+      </div>
+
+    </div>
+
+    <div class="footer">
+      MobileControl • Secure parental control
+    </div>
+
+  </div>
+
+  <script>
+
+    const form =
+      document.getElementById("loginForm");
+
+    const message =
+      document.getElementById("message");
+
+    const button =
+      document.getElementById("loginButton");
+
+
+    function showMessage(text, type) {
+
+      message.textContent = text;
+
+      message.className =
+        "message " + type;
+    }
+
+
+    form.addEventListener("submit", async function(event) {
+
+      event.preventDefault();
+
+      const email =
+        document.getElementById("email").value.trim();
+
+      const password =
+        document.getElementById("password").value;
+
+
+      button.disabled = true;
+
+      button.textContent = "Signing in...";
+
+      message.className = "message";
+
+
+      try {
+
+        const response = await fetch(
+          "/api/login",
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type": "application/json"
+            },
+
+            credentials: "same-origin",
+
+            body: JSON.stringify({
+              email: email,
+              password: password
+            })
+          }
+        );
+
+
+        const data =
+          await response.json();
+
+
+        if (!response.ok) {
+
+          showMessage(
+            data.error || "Login failed.",
+            "error"
+          );
+
+          button.disabled = false;
+
+          button.textContent = "Sign In";
+
+          return;
+        }
+
+
+        showMessage(
+          "Login successful. Opening dashboard...",
+          "success"
+        );
+
+
+        setTimeout(function() {
+
+          window.location.href =
+            "/dashboard.html";
+
+        }, 700);
+
+
+      } catch (error) {
+
+        console.error(error);
+
+        showMessage(
+          "Unable to connect to server.",
+          "error"
+        );
+
+        button.disabled = false;
+
+        button.textContent = "Sign In";
+      }
+
+    });
+
+  </script>
+
+</body>
+</html>
