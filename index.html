@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>MobileControl Pro</title>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: #07100d;
+      color: white;
+    }
+
+    nav {
+      height: 75px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 7%;
+      border-bottom: 1px solid #18352b;
+    }
+
+    .logo {
+      font-size: 22px;
+      font-weight: bold;
+      color: #48ff9b;
+    }
+
+    .nav-buttons {
+      display: flex;
+      gap: 12px;
+    }
+
+    button {
+      border: none;
+      padding: 12px 22px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .login {
+      background: transparent;
+      color: white;
+      border: 1px solid #315447;
+    }
+
+    .signup {
+      background: #48ff9b;
+      color: #06100c;
+    }
+
+    .hero {
+      min-height: 600px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 50px;
+      padding: 80px 7%;
+    }
+
+    .hero-text {
+      max-width: 650px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 8px 14px;
+      border-radius: 30px;
+      background: #10291f;
+      color: #48ff9b;
+      margin-bottom: 25px;
+      font-size: 14px;
+    }
+
+    h1 {
+      font-size: clamp(45px, 6vw, 78px);
+      line-height: 1;
+      margin-bottom: 25px;
+    }
+
+    h1 span {
+      color: #48ff9b;
+    }
+
+    .hero p {
+      color: #9db2a8;
+      font-size: 18px;
+      line-height: 1.7;
+      margin-bottom: 30px;
+    }
+
+    .hero-button {
+      background: #48ff9b;
+      color: #06100c;
+      font-size: 16px;
+      padding: 15px 28px;
+    }
+
+    .mockup {
+      width: 300px;
+      height: 520px;
+      border: 8px solid #19362b;
+      border-radius: 35px;
+      background: linear-gradient(145deg, #10241c, #07100d);
+      box-shadow: 0 0 60px rgba(72,255,155,0.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .mockup-content {
+      padding: 25px;
+    }
+
+    .mockup-content h2 {
+      color: #48ff9b;
+      margin-bottom: 15px;
+    }
+
+    .features {
+      padding: 80px 7%;
+      background: #091510;
+    }
+
+    .section-title {
+      text-align: center;
+      margin-bottom: 45px;
+    }
+
+    .section-title h2 {
+      font-size: 42px;
+      margin-bottom: 12px;
+    }
+
+    .section-title p {
+      color: #8fa59b;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .card {
+      padding: 30px;
+      background: #0d1d16;
+      border: 1px solid #18382c;
+      border-radius: 15px;
+    }
+
+    .card h3 {
+      color: #48ff9b;
+      margin-bottom: 12px;
+    }
+
+    .card p {
+      color: #91a69d;
+      line-height: 1.6;
+    }
+
+    footer {
+      text-align: center;
+      padding: 30px;
+      color: #70857c;
+      border-top: 1px solid #18352b;
+    }
+
+    @media (max-width: 800px) {
+      .hero {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .feature-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .mockup {
+        width: 250px;
+        height: 430px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <nav>
+    <div class="logo">MOBILECONTROL PRO</div>
+
+    <div class="nav-buttons">
+      <button class="login">Login</button>
+      <button class="signup">Sign Up</button>
+    </div>
+  </nav>
+
+  <section class="hero">
+
+    <div class="hero-text">
+
+      <div class="badge">
+        🔒 Secure Family Management
+      </div>
+
+      <h1>
+        Complete Control.<br>
+        <span>Peace of Mind.</span>
+      </h1>
+
+      <p>
+        A secure parental-control platform designed to help
+        parents manage connected devices with transparency,
+        consent and safety in mind.
+      </p>
+
+      <button class="hero-button">
+        Get Started
+      </button>
+
+    </div>
+
+    <div class="mockup">
+      <div class="mockup-content">
+        <h2>Dashboard</h2>
+        <p>
+          Connected Devices<br><br>
+          Device Status<br><br>
+          Family Management
+        </p>
+      </div>
+    </div>
+
+  </section>
+
+  <section class="features">
+
+    <div class="section-title">
+      <h2>Powerful Features</h2>
+      <p>Everything organized in one secure dashboard.</p>
+    </div>
+
+    <div class="feature-grid">
+
+      <div class="card">
+        <h3>📱 Device Management</h3>
+        <p>
+          Manage authorized family devices from one place.
+        </p>
+      </div>
+
+      <div class="card">
+        <h3>📍 Location Sharing</h3>
+        <p>
+          View location only when the device user has
+          explicitly granted the required permission.
+        </p>
+      </div>
+
+      <div class="card">
+        <h3>🔐 Secure Access</h3>
+        <p>
+          Keep accounts and connected devices protected
+          with secure authentication.
+        </p>
+      </div>
+
+      <div class="card">
+        <h3>⚡ APK Builder</h3>
+        <p>
+          Create your configured family-management app
+          through the platform.
+        </p>
+      </div>
+
+      <div class="card">
+        <h3>📊 Device Overview</h3>
+        <p>
+          See authorized device information and connection
+          status from your dashboard.
+        </p>
+      </div>
+
+      <div class="card">
+        <h3>🛡️ Privacy First</h3>
+        <p>
+          Permissions and user consent are required for
+          sensitive device features.
+        </p>
+      </div>
+
+    </div>
+
+  </section>
+
+  <footer>
+    © 2026 MobileControl Pro — Built with security and privacy in mind.
+  </footer>
+
+</body>
+</html>
