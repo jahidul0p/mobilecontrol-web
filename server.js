@@ -8,11 +8,15 @@ const pgSession = require("connect-pg-simple")(session);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// IMPORTANT FOR RENDER
+app.set("trust proxy", 1);
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === "production"
-    ? { rejectUnauthorized: false }
-    : false
+  ssl:
+    process.env.NODE_ENV === "production"
+      ? { rejectUnauthorized: false }
+      : false
 });
 
 app.use(express.json());
@@ -27,9 +31,10 @@ app.use(
       tableName: "user_sessions",
       createTableIfMissing: true
     }),
+
     secret:
       process.env.SESSION_SECRET ||
-      "change-this-secret-in-render",
+      "mobilecontrol-secret-change-this",
 
     resave: false,
     saveUninitialized: false,
@@ -128,9 +133,20 @@ app.post("/api/signup", async (req, res) => {
 
     req.session.userId = result.rows[0].id;
 
-    res.status(201).json({
-      message: "Account created successfully.",
-      user: result.rows[0]
+    // IMPORTANT: save session before responding
+    req.session.save((error) => {
+      if (error) {
+        console.error("Signup session save error:", error);
+
+        return res.status(500).json({
+          error: "Unable to save login session."
+        });
+      }
+
+      res.status(201).json({
+        message: "Account created successfully.",
+        user: result.rows[0]
+      });
     });
 
   } catch (error) {
@@ -184,14 +200,35 @@ app.post("/api/login", async (req, res) => {
       });
     }
 
+    // Set logged-in user
     req.session.userId = user.id;
 
-    res.json({
-      message: "Login successful.",
-      user: {
-        id: user.id,
-        email: user.email
+    // IMPORTANT:
+    // Wait until session is stored in PostgreSQL
+    // before sending login response.
+    req.session.save((error) => {
+      if (error) {
+        console.error("Login session save error:", error);
+
+        return res.status(500).json({
+          error: "Unable to save login session."
+        });
       }
+
+      console.log(
+        "LOGIN SUCCESS - Session ID:",
+        req.sessionID,
+        "User ID:",
+        req.session.userId
+      );
+
+      res.json({
+        message: "Login successful.",
+        user: {
+          id: user.id,
+          email: user.email
+        }
+      });
     });
 
   } catch (error) {
@@ -207,6 +244,13 @@ app.post("/api/login", async (req, res) => {
 
 app.get("/api/me", async (req, res) => {
   try {
+    console.log(
+      "SESSION CHECK:",
+      req.sessionID,
+      "USER:",
+      req.session.userId
+    );
+
     if (!req.session.userId) {
       return res.status(401).json({
         authenticated: false
@@ -228,9 +272,16 @@ app.get("/api/me", async (req, res) => {
       });
     }
 
+    const user = result.rows[0];
+
     res.json({
       authenticated: true,
-      user: result.rows[0]
+
+      user: user,
+
+      // Also provide these directly
+      id: user.id,
+      email: user.email
     });
 
   } catch (error) {
@@ -247,7 +298,7 @@ app.get("/api/me", async (req, res) => {
 app.post("/api/logout", (req, res) => {
   req.session.destroy((error) => {
     if (error) {
-      console.error(error);
+      console.error("Logout error:", error);
 
       return res.status(500).json({
         error: "Unable to logout."
@@ -264,19 +315,9 @@ app.post("/api/logout", (req, res) => {
 
 // ================= WEBSITE =================
 
-// Home
+// Home page
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
-});
-
-// Login
-app.get("/login.html", (req, res) => {
-  res.sendFile(path.join(__dirname, "login.html"));
-});
-
-// Login without .html
-app.get("/login", (req, res) => {
-  res.sendFile(path.join(__dirname, "login.html"));
 });
 
 // Dashboard
@@ -284,9 +325,17 @@ app.get("/dashboard.html", (req, res) => {
   res.sendFile(path.join(__dirname, "dashboard.html"));
 });
 
-// Dashboard without .html
 app.get("/dashboard", (req, res) => {
   res.sendFile(path.join(__dirname, "dashboard.html"));
+});
+
+// Keep these only if old links still use them
+app.get("/login.html", (req, res) => {
+  res.redirect("/");
+});
+
+app.get("/login", (req, res) => {
+  res.redirect("/");
 });
 
 // ================= SERVER =================
