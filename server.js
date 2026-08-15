@@ -1,11 +1,13 @@
 const express = require("express");
 const path = require("path");
 const { Pool } = require("pg");
+const bcrypt = require("bcrypt");
+const session = require("express-session");
+const pgSession = require("connect-pg-simple")(session);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// PostgreSQL connection
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.NODE_ENV === "production"
@@ -16,8 +18,42 @@ const pool = new Pool({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve website files
-app.use(express.static(__dirname));
+// Login session
+app.use(
+  session({
+    store: new pgSession({
+      pool: pool,
+      tableName: "user_sessions",
+      createTableIfMissing: true
+    }),
+    secret: process.env.SESSION_SECRET || "change-this-secret-in-render",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 1000 * 60 * 60 * 24 * 7
+    }
+  })
+);
+
+// Create users table
+async function setupDatabase() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      id SERIAL PRIMARY KEY,
+      email VARCHAR(255) UNIQUE NOT NULL,
+      password_hash TEXT NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  console.log("Database is ready.");
+}
+
+setupDatabase().catch((error) => {
+  console.error("Database setup failed:", error);
+});
 
 // Health check
 app.get("/api/health", async (req, res) => {
@@ -38,7 +74,173 @@ app.get("/api/health", async (req, res) => {
   }
 });
 
-// Home page
+// Sign Up
+app.post("/api/signup", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        error: "Email and password are required."
+      });
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({
+        error: "Password must be at least 8 characters."
+      });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    const existingUser = await pool.query(
+      "SELECT id FROM users WHERE email = $1",
+      [normalizedEmail]
+    );
+
+    if (existingUser.rows.length > 0) {
+      return res.status(409).json({
+        error: "An account with this email already exists."
+      });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+
+    const result = await pool.query(
+      `
+      INSERT INTO users (email, password_hash)
+      VALUES ($1, $2)
+      RETURNING id, email, created_at
+      `,
+      [normalizedEmail, passwordHash]
+    );
+
+    req.session.userId = result.rows[0].id;
+
+    res.status(201).json({
+      message: "Account created successfully.",
+      user: result.rows[0]
+    });
+
+  } catch (error) {
+    console.error("Signup error:", error);
+
+    res.status(500).json({
+      error: "Unable to create account."
+    });
+  }
+});
+
+// Login
+app.post("/api/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        error: "Email and password are required."
+      });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    const result = await pool.query(
+      "SELECT id, email, password_hash FROM users WHERE email = $1",
+      [normalizedEmail]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(401).json({
+        error: "Invalid email or password."
+      });
+    }
+
+    const user = result.rows[0];
+
+    const passwordCorrect = await bcrypt.compare(
+      password,
+      user.password_hash
+    );
+
+    if (!passwordCorrect) {
+      return res.status(401).json({
+        error: "Invalid email or password."
+      });
+    }
+
+    req.session.userId = user.id;
+
+    res.json({
+      message: "Login successful.",
+      user: {
+        id: user.id,
+        email: user.email
+      }
+    });
+
+  } catch (error) {
+    console.error("Login error:", error);
+
+    res.status(500).json({
+      error: "Unable to login."
+    });
+  }
+});
+
+// Current user
+app.get("/api/me", async (req, res) => {
+  try {
+    if (!req.session.userId) {
+      return res.status(401).json({
+        authenticated: false
+      });
+    }
+
+    const result = await pool.query(
+      "SELECT id, email, created_at FROM users WHERE id = $1",
+      [req.session.userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(401).json({
+        authenticated: false
+      });
+    }
+
+    res.json({
+      authenticated: true,
+      user: result.rows[0]
+    });
+
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      error: "Unable to check session."
+    });
+  }
+});
+
+// Logout
+app.post("/api/logout", (req, res) => {
+  req.session.destroy((error) => {
+    if (error) {
+      console.error(error);
+
+      return res.status(500).json({
+        error: "Unable to logout."
+      });
+    }
+
+    res.clearCookie("connect.sid");
+
+    res.json({
+      message: "Logged out successfully."
+    });
+  });
+});
+
+// Website
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
