@@ -240,9 +240,19 @@ app.post("/api/logout", (req, res) => {
   });
 });
 
-// Website
+// Home page
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
+});
+
+// Dashboard page
+app.get("/dashboard.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "dashboard.html"));
+});
+
+// Also allow /dashboard
+app.get("/dashboard", (req, res) => {
+  res.sendFile(path.join(__dirname, "dashboard.html"));
 });
 
 // Start server
