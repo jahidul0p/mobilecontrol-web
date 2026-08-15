@@ -1,844 +1,1008 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>MobileControl Pro — Dashboard</title>
+<title>MobileControl Pro — Dashboard</title>
 
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+<style>
+*{
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
+}
 
-    :root {
-      --bg: #070611;
-      --panel: #11101d;
-      --panel2: #151422;
-      --border: #29253b;
-      --purple: #913cff;
-      --cyan: #13c7e8;
-      --green: #45e85d;
-      --text: #f5f3ff;
-      --muted: #858197;
-    }
+:root{
+  --bg:#070611;
+  --panel:#11101d;
+  --border:#29253b;
+  --purple:#913cff;
+  --cyan:#13c7e8;
+  --green:#45e85d;
+  --text:#f5f3ff;
+  --muted:#858197;
+}
 
-    body {
-      font-family: Arial, sans-serif;
-      background:
-        radial-gradient(circle at 70% 10%, rgba(145,60,255,.12), transparent 30%),
-        radial-gradient(circle at 20% 80%, rgba(19,199,232,.07), transparent 30%),
-        var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-    }
+body{
+  font-family:Arial,sans-serif;
+  background:
+    radial-gradient(circle at 70% 10%,rgba(145,60,255,.12),transparent 30%),
+    radial-gradient(circle at 20% 80%,rgba(19,199,232,.07),transparent 30%),
+    var(--bg);
+  color:var(--text);
+  min-height:100vh;
+}
 
-    /* TOP BAR */
+.topbar{
+  height:64px;
+  border-bottom:1px solid var(--border);
+  background:rgba(8,7,15,.88);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 28px;
+  position:sticky;
+  top:0;
+  z-index:20;
+  backdrop-filter:blur(14px);
+}
 
-    .topbar {
-      height: 64px;
-      border-bottom: 1px solid var(--border);
-      background: rgba(8,7,15,.88);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 28px;
-      position: sticky;
-      top: 0;
-      z-index: 20;
-      backdrop-filter: blur(14px);
-    }
+.brand{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-weight:800;
+}
 
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-weight: 800;
-    }
+.brand-icon{
+  width:34px;
+  height:34px;
+  border-radius:9px;
+  background:linear-gradient(135deg,#28cfff,#7136ff);
+  display:grid;
+  place-items:center;
+}
 
-    .brand-icon {
-      width: 34px;
-      height: 34px;
-      border-radius: 9px;
-      background: linear-gradient(135deg, #28cfff, #7136ff);
-      display: grid;
-      place-items: center;
-    }
+.user-area{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
 
-    .user-area {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
+.avatar{
+  width:34px;
+  height:34px;
+  border-radius:50%;
+  border:1px solid #5d42a2;
+  display:grid;
+  place-items:center;
+  color:#bba8ff;
+}
 
-    .avatar {
-      width: 34px;
-      height: 34px;
-      border-radius: 50%;
-      border: 1px solid #5d42a2;
-      display: grid;
-      place-items: center;
-      color: #bba8ff;
-    }
+.user-name{
+  font-size:12px;
+}
 
-    .user-name {
-      font-size: 12px;
-    }
+.user-name small{
+  display:block;
+  color:var(--muted);
+  margin-top:3px;
+}
 
-    .user-name small {
-      display: block;
-      color: var(--muted);
-      margin-top: 3px;
-    }
+.logout{
+  border:1px solid #5b2938;
+  background:rgba(255,50,80,.06);
+  color:#ff7589;
+  padding:8px 13px;
+  border-radius:7px;
+  cursor:pointer;
+  font-size:11px;
+}
 
-    .logout {
-      border: 1px solid #5b2938;
-      background: rgba(255,50,80,.06);
-      color: #ff7589;
-      padding: 8px 13px;
-      border-radius: 7px;
-      cursor: pointer;
-      font-size: 11px;
-    }
+.container{
+  max-width:1200px;
+  margin:auto;
+  padding:35px 22px 80px;
+}
 
-    /* MAIN */
+.heading{
+  display:flex;
+  justify-content:space-between;
+  align-items:end;
+  margin-bottom:25px;
+}
 
-    .container {
-      max-width: 1200px;
-      margin: auto;
-      padding: 35px 22px 80px;
-    }
+.heading h1{
+  font-size:26px;
+  margin-bottom:7px;
+}
 
-    .heading {
-      display: flex;
-      justify-content: space-between;
-      align-items: end;
-      margin-bottom: 25px;
-    }
+.heading p{
+  color:var(--muted);
+  font-size:12px;
+}
 
-    .heading h1 {
-      font-size: 26px;
-      margin-bottom: 7px;
-    }
+.uid{
+  border:1px solid var(--border);
+  background:var(--panel);
+  padding:11px 15px;
+  border-radius:8px;
+  color:var(--muted);
+  font-size:10px;
+}
 
-    .heading p {
-      color: var(--muted);
-      font-size: 12px;
-    }
+.uid span{
+  color:#a979ff;
+}
 
-    .uid {
-      border: 1px solid var(--border);
-      background: var(--panel);
-      padding: 11px 15px;
-      border-radius: 8px;
-      color: var(--muted);
-      font-size: 10px;
-    }
+.panel{
+  background:linear-gradient(145deg,#151422,#0e0d18);
+  border:1px solid var(--border);
+  border-radius:14px;
+  overflow:hidden;
+  margin-bottom:20px;
+}
 
-    .uid span {
-      color: #a979ff;
-    }
+.panel-title{
+  padding:15px 18px;
+  border-bottom:1px solid var(--border);
+  font-size:13px;
+  font-weight:bold;
+}
 
-    /* BUILDER */
+.panel-title span{
+  color:var(--purple);
+}
 
-    .panel {
-      background: linear-gradient(145deg, #151422, #0e0d18);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      overflow: hidden;
-      margin-bottom: 20px;
-    }
+.builder{
+  padding:20px;
+}
 
-    .panel-title {
-      padding: 15px 18px;
-      border-bottom: 1px solid var(--border);
-      font-size: 13px;
-      font-weight: bold;
-    }
+.form-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+}
 
-    .panel-title span {
-      color: var(--purple);
-    }
+.field{
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+}
 
-    .builder {
-      padding: 20px;
-    }
+.field.full{
+  grid-column:1/-1;
+}
 
-    .form-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-    }
+label{
+  color:#777287;
+  font-size:9px;
+  text-transform:uppercase;
+}
 
-    .field {
-      display: flex;
-      flex-direction: column;
-      gap: 7px;
-    }
+input,
+select{
+  width:100%;
+  padding:12px;
+  border:1px solid #252237;
+  border-radius:8px;
+  background:#0b0a12;
+  color:white;
+  outline:none;
+}
 
-    .field.full {
-      grid-column: 1 / -1;
-    }
+input:focus,
+select:focus{
+  border-color:var(--purple);
+}
 
-    label {
-      color: #777287;
-      font-size: 9px;
-      text-transform: uppercase;
-    }
+.build-btn{
+  width:100%;
+  margin-top:18px;
+  padding:14px;
+  border:0;
+  border-radius:8px;
+  background:linear-gradient(90deg,#8333ef,#9c42ff);
+  color:white;
+  font-weight:bold;
+  cursor:pointer;
+}
 
-    input,
-    select {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid #252237;
-      border-radius: 8px;
-      background: #0b0a12;
-      color: white;
-      outline: none;
-    }
+.download-btn{
+  width:100%;
+  margin-top:10px;
+  padding:14px;
+  border:0;
+  border-radius:8px;
+  background:var(--cyan);
+  color:#031014;
+  font-weight:bold;
+  cursor:pointer;
+  display:none;
+}
 
-    input:focus,
-    select:focus {
-      border-color: var(--purple);
-    }
+.status{
+  margin-top:13px;
+  padding:11px;
+  border-radius:7px;
+  background:#0a0a12;
+  color:var(--muted);
+  font-size:11px;
+  display:none;
+}
 
-    .build-btn {
-      width: 100%;
-      margin-top: 18px;
-      padding: 14px;
-      border: 0;
-      border-radius: 8px;
-      background: linear-gradient(90deg, #8333ef, #9c42ff);
-      color: white;
-      font-weight: bold;
-      cursor: pointer;
-    }
+.device-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
 
-    .download-btn {
-      width: 100%;
-      margin-top: 10px;
-      padding: 14px;
-      border: 0;
-      border-radius: 8px;
-      background: var(--cyan);
-      color: #031014;
-      font-weight: bold;
-      cursor: pointer;
-      display: none;
-    }
+.refresh{
+  border:1px solid var(--border);
+  background:transparent;
+  color:#aaa2bd;
+  padding:7px 10px;
+  border-radius:7px;
+  cursor:pointer;
+}
 
-    .status {
-      margin-top: 13px;
-      padding: 11px;
-      border-radius: 7px;
-      background: #0a0a12;
-      color: var(--muted);
-      font-size: 11px;
-      display: none;
-    }
+.table{
+  overflow-x:auto;
+}
 
-    /* DEVICES */
+table{
+  width:100%;
+  border-collapse:collapse;
+  min-width:600px;
+}
 
-    .device-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+th,
+td{
+  padding:15px 18px;
+  border-top:1px solid var(--border);
+  text-align:left;
+  font-size:11px;
+}
 
-    .refresh {
-      border: 1px solid var(--border);
-      background: transparent;
-      color: #aaa2bd;
-      padding: 7px 10px;
-      border-radius: 7px;
-      cursor: pointer;
-    }
+th{
+  color:#716d80;
+  font-size:9px;
+  text-transform:uppercase;
+}
 
-    .table {
-      overflow-x: auto;
-    }
+td small{
+  display:block;
+  color:#615d70;
+  margin-top:4px;
+}
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      min-width: 600px;
-    }
+.online{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:6px 10px;
+  border-radius:20px;
+  background:rgba(69,232,93,.08);
+  color:var(--green);
+  font-size:9px;
+}
 
-    th,
-    td {
-      padding: 15px 18px;
-      border-top: 1px solid var(--border);
-      text-align: left;
-      font-size: 11px;
-    }
+.offline{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:6px 10px;
+  border-radius:20px;
+  background:rgba(255,70,90,.08);
+  color:#ff7180;
+  font-size:9px;
+}
 
-    th {
-      color: #716d80;
-      font-size: 9px;
-      text-transform: uppercase;
-    }
+.control{
+  border:1px solid #164b5b;
+  background:rgba(19,199,232,.08);
+  color:var(--cyan);
+  padding:7px 12px;
+  border-radius:7px;
+  cursor:pointer;
+}
 
-    td small {
-      display: block;
-      color: #615d70;
-      margin-top: 4px;
-    }
+@media(max-width:700px){
 
-    .online {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 10px;
-      border-radius: 20px;
-      background: rgba(69,232,93,.08);
-      color: var(--green);
-      font-size: 9px;
-    }
+  .topbar{
+    padding:0 15px;
+  }
 
-    .offline {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 10px;
-      border-radius: 20px;
-      background: rgba(255,70,90,.08);
-      color: #ff7180;
-      font-size: 9px;
-    }
+  .user-name{
+    display:none;
+  }
 
-    .control {
-      border: 1px solid #164b5b;
-      background: rgba(19,199,232,.08);
-      color: var(--cyan);
-      padding: 7px 12px;
-      border-radius: 7px;
-      cursor: pointer;
-    }
+  .container{
+    padding:25px 14px 60px;
+  }
 
-    /* RESPONSIVE */
+  .heading{
+    align-items:flex-start;
+    flex-direction:column;
+    gap:15px;
+  }
 
-    @media (max-width: 700px) {
+  .form-grid{
+    grid-template-columns:1fr;
+  }
 
-      .topbar {
-        padding: 0 15px;
-      }
-
-      .user-name {
-        display: none;
-      }
-
-      .container {
-        padding: 25px 14px 60px;
-      }
-
-      .heading {
-        align-items: flex-start;
-        flex-direction: column;
-        gap: 15px;
-      }
-
-      .form-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .field.full {
-        grid-column: auto;
-      }
-    }
-  </style>
+  .field.full{
+    grid-column:auto;
+  }
+}
+</style>
 </head>
 
 <body>
 
-  <!-- TOP BAR -->
+<header class="topbar">
 
-  <header class="topbar">
+  <div class="brand">
+    <div class="brand-icon">⌁</div>
+    MOBILECONTROL
+  </div>
 
-    <div class="brand">
-      <div class="brand-icon">⌁</div>
-      MOBILECONTROL
+  <div class="user-area">
+
+    <div class="avatar">J</div>
+
+    <div class="user-name">
+      Welcome
+      <small id="userEmail">Loading...</small>
     </div>
 
-    <div class="user-area">
+    <button class="logout" onclick="logout()">
+      Sign Out
+    </button>
 
-      <div class="avatar">J</div>
+  </div>
 
-      <div class="user-name">
-        Welcome
-        <small id="userEmail">Loading...</small>
+</header>
+
+
+<main class="container">
+
+  <div class="heading">
+
+    <div>
+      <h1>Command Center</h1>
+
+      <p>
+        Build applications and manage your authorized devices.
+      </p>
+    </div>
+
+    <div class="uid">
+      YOUR UID:
+      <span id="userId">loading...</span>
+    </div>
+
+  </div>
+
+
+  <!-- APK BUILDER -->
+
+  <section class="panel">
+
+    <div class="panel-title">
+      <span>⚒</span>
+      APK Builder
+    </div>
+
+    <div class="builder">
+
+      <div class="form-grid">
+
+        <div class="field">
+
+          <label>App Name</label>
+
+          <input
+            id="appName"
+            type="text"
+            value="MobileControl Family"
+          >
+
+        </div>
+
+
+        <div class="field">
+
+          <label>Package Name</label>
+
+          <input
+            id="packageName"
+            type="text"
+            value="com.mobilecontrol.family"
+          >
+
+        </div>
+
+
+        <div class="field full">
+
+          <label>Build Type</label>
+
+          <select id="buildType">
+
+            <option value="family">
+              Family Management
+            </option>
+
+            <option value="basic">
+              Basic Device Management
+            </option>
+
+          </select>
+
+        </div>
+
       </div>
 
-      <button class="logout" onclick="logout()">
-        Sign Out
+
+      <button
+        class="build-btn"
+        onclick="buildApk()"
+      >
+        🚀 BUILD APK
+      </button>
+
+
+      <button
+        class="download-btn"
+        id="downloadBtn"
+        onclick="downloadApk()"
+      >
+        ⬇ DOWNLOAD APK
+      </button>
+
+
+      <div
+        class="status"
+        id="buildStatus"
+      ></div>
+
+    </div>
+
+  </section>
+
+
+  <!-- DEVICES -->
+
+  <section class="panel">
+
+    <div class="panel-title device-header">
+
+      <div>
+        📱 Connected Devices
+        <span style="color:#a979ff;" id="deviceCount">0</span>
+      </div>
+
+      <button
+        class="refresh"
+        onclick="loadDevices()"
+      >
+        ↻
       </button>
 
     </div>
 
-  </header>
+
+    <div class="table">
+
+      <table>
+
+        <thead>
+
+          <tr>
+            <th>Device</th>
+            <th>Battery</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+
+        </thead>
 
 
-  <main class="container">
+        <tbody id="deviceList">
 
-    <!-- HEADING -->
+          <tr>
 
-    <div class="heading">
+            <td
+              colspan="4"
+              style="text-align:center;color:#716d80;"
+            >
+              Loading devices...
 
-      <div>
-        <h1>Command Center</h1>
+            </td>
 
-        <p>
-          Build applications and manage your authorized devices.
-        </p>
-      </div>
+          </tr>
 
-      <div class="uid">
-        YOUR UID:
-        <span id="userId">loading...</span>
-      </div>
+        </tbody>
+
+      </table>
 
     </div>
 
+  </section>
 
-    <!-- APK BUILDER -->
-
-    <section class="panel">
-
-      <div class="panel-title">
-        <span>⚒</span>
-        APK Builder
-      </div>
-
-      <div class="builder">
-
-        <div class="form-grid">
-
-          <div class="field">
-            <label>App Name</label>
-
-            <input
-              id="appName"
-              type="text"
-              value="MobileControl Family"
-            >
-          </div>
+</main>
 
 
-          <div class="field">
-            <label>Package Name</label>
+<script>
 
-            <input
-              id="packageName"
-              type="text"
-              value="com.mobilecontrol.family"
-            >
-          </div>
+/* =========================================
+   CHECK LOGIN SESSION
+========================================= */
 
+async function loadUser(){
 
-          <div class="field full">
-            <label>Build Type</label>
+  try{
 
-            <select id="buildType">
-
-              <option value="family">
-                Family Management
-              </option>
-
-              <option value="basic">
-                Basic Device Management
-              </option>
-
-            </select>
-
-          </div>
-
-        </div>
+    const response = await fetch(
+      "/api/me",
+      {
+        method:"GET",
+        credentials:"same-origin",
+        cache:"no-store"
+      }
+    );
 
 
-        <button
-          class="build-btn"
-          onclick="buildApk()"
-        >
-          🚀 BUILD APK
-        </button>
+    if(!response.ok){
+
+      // Login page is index.html
+      window.location.href="/";
+
+      return;
+    }
 
 
-        <button
-          class="download-btn"
-          id="downloadBtn"
-          onclick="downloadApk()"
-        >
-          ⬇ DOWNLOAD APK
-        </button>
+    const data = await response.json();
 
-
-        <div
-          class="status"
-          id="buildStatus"
-        ></div>
-
-      </div>
-
-    </section>
-
-
-    <!-- DEVICES -->
-
-    <section class="panel">
-
-      <div class="panel-title device-header">
-
-        <div>
-          📱 Connected Devices
-          <span style="color:#a979ff;">0</span>
-        </div>
-
-        <button
-          class="refresh"
-          onclick="loadDevices()"
-        >
-          ↻
-        </button>
-
-      </div>
-
-
-      <div class="table">
-
-        <table>
-
-          <thead>
-
-            <tr>
-              <th>Device</th>
-              <th>Battery</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-
-          </thead>
-
-
-          <tbody id="deviceList">
-
-            <tr>
-
-              <td colspan="4"
-                  style="text-align:center;color:#716d80;">
-                Loading devices...
-              </td>
-
-            </tr>
-
-          </tbody>
-
-        </table>
-
-      </div>
-
-    </section>
-
-  </main>
-
-
-  <script>
 
     /*
-      Dashboard API
+      Server returns:
+
+      {
+        authenticated:true,
+        id:...,
+        email:...
+      }
+
+      It also supports data.user.
     */
 
-    async function loadUser() {
+    const user =
+      data.user || data;
 
-      try {
 
-        const response =
-          await fetch("/api/me");
+    document.getElementById(
+      "userEmail"
+    ).textContent =
+      user.email || "User";
 
-        if (!response.ok) {
-          window.location.href = "/login.html";
-          return;
+
+    document.getElementById(
+      "userId"
+    ).textContent =
+      user.id || "—";
+
+
+  }catch(error){
+
+    console.error(
+      "Session check error:",
+      error
+    );
+
+    window.location.href="/";
+
+  }
+
+}
+
+
+/* =========================================
+   LOAD DEVICES
+========================================= */
+
+async function loadDevices(){
+
+  const list =
+    document.getElementById(
+      "deviceList"
+    );
+
+
+  list.innerHTML=`
+    <tr>
+      <td
+        colspan="4"
+        style="text-align:center;color:#716d80;"
+      >
+        Loading devices...
+      </td>
+    </tr>
+  `;
+
+
+  try{
+
+    const response =
+      await fetch(
+        "/api/devices",
+        {
+          credentials:"same-origin"
         }
+      );
 
-        const data =
-          await response.json();
 
-        document.getElementById("userEmail")
-          .textContent = data.email || "User";
+    /*
+      API doesn't exist yet.
+      Don't kick the user out of dashboard.
+    */
 
-        document.getElementById("userId")
-          .textContent = data.id || "—";
+    if(response.status===404){
 
-      } catch (error) {
+      showNoDevices();
 
-        console.error(error);
-
-      }
-
+      return;
     }
 
 
-    async function loadDevices() {
+    if(!response.ok){
 
-      const list =
-        document.getElementById("deviceList");
-
-      list.innerHTML = `
-        <tr>
-          <td colspan="4"
-              style="text-align:center;color:#716d80;">
-            Loading devices...
-          </td>
-        </tr>
-      `;
-
-      try {
-
-        const response =
-          await fetch("/api/devices");
-
-        if (!response.ok) {
-          throw new Error("Could not load devices");
-        }
-
-        const devices =
-          await response.json();
-
-        if (!devices.length) {
-
-          list.innerHTML = `
-            <tr>
-              <td colspan="4"
-                  style="text-align:center;color:#716d80;">
-                No authorized devices connected.
-              </td>
-            </tr>
-          `;
-
-          return;
-        }
-
-
-        list.innerHTML =
-          devices.map(device => `
-
-            <tr>
-
-              <td>
-                ${escapeHtml(device.name || "Unknown Device")}
-                <small>
-                  ${escapeHtml(device.id || "")}
-                </small>
-              </td>
-
-              <td>
-                ${device.battery ?? "—"}%
-              </td>
-
-              <td>
-
-                ${
-                  device.online
-                    ? `<span class="online">● Online</span>`
-                    : `<span class="offline">● Offline</span>`
-                }
-
-              </td>
-
-              <td>
-
-                <button
-                  class="control"
-                  onclick="openControl('${encodeURIComponent(device.id || "")}')"
-                >
-                  Control
-                </button>
-
-              </td>
-
-            </tr>
-
-          `).join("");
-
-      } catch (error) {
-
-        console.error(error);
-
-        list.innerHTML = `
-          <tr>
-            <td colspan="4"
-                style="text-align:center;color:#ff7180;">
-              Could not load devices.
-            </td>
-          </tr>
-        `;
-
-      }
-
-    }
-
-
-    async function buildApk() {
-
-      const status =
-        document.getElementById("buildStatus");
-
-      const download =
-        document.getElementById("downloadBtn");
-
-      const appName =
-        document.getElementById("appName").value.trim();
-
-      const packageName =
-        document.getElementById("packageName").value.trim();
-
-      const buildType =
-        document.getElementById("buildType").value;
-
-
-      if (!appName || !packageName) {
-
-        status.style.display = "block";
-
-        status.textContent =
-          "Please fill in all required fields.";
-
-        return;
-      }
-
-
-      status.style.display = "block";
-
-      status.textContent =
-        "Build request is being prepared...";
-
-      download.style.display = "none";
-
-
-      try {
-
-        /*
-          Backend will connect this
-          to GitHub Actions later.
-        */
-
-        const response =
-          await fetch("/api/build-apk", {
-
-            method: "POST",
-
-            headers: {
-              "Content-Type": "application/json"
-            },
-
-            body: JSON.stringify({
-              appName,
-              packageName,
-              buildType
-            })
-
-          });
-
-
-        const data =
-          await response.json();
-
-
-        if (!response.ok) {
-
-          status.textContent =
-            data.error || "Build request failed.";
-
-          return;
-        }
-
-
-        status.textContent =
-          "Build started successfully.";
-
-        if (data.downloadUrl) {
-
-          download.style.display =
-            "block";
-
-          download.dataset.url =
-            data.downloadUrl;
-
-        }
-
-      } catch (error) {
-
-        console.error(error);
-
-        status.textContent =
-          "Backend is not connected yet.";
-
-      }
-
-    }
-
-
-    function downloadApk() {
-
-      const url =
-        document.getElementById("downloadBtn")
-          .dataset.url;
-
-      if (url) {
-        window.location.href = url;
-      }
-
-    }
-
-
-    function openControl(id) {
-
-      /*
-        Control page will be added later.
-      */
-
-      alert(
-        "Device control will be added in the next step."
+      throw new Error(
+        "Could not load devices"
       );
 
     }
 
 
-    function logout() {
+    const devices =
+      await response.json();
 
-      fetch("/api/logout", {
-        method: "POST"
-      })
-      .finally(() => {
 
-        window.location.href =
-          "/login.html";
+    if(!Array.isArray(devices) ||
+       devices.length===0){
 
-      });
+      showNoDevices();
+
+      return;
+    }
+
+
+    document.getElementById(
+      "deviceCount"
+    ).textContent =
+      devices.length;
+
+
+    list.innerHTML =
+      devices.map(
+        device => `
+
+        <tr>
+
+          <td>
+
+            ${escapeHtml(
+              device.name ||
+              "Unknown Device"
+            )}
+
+            <small>
+              ${escapeHtml(
+                device.id || ""
+              )}
+            </small>
+
+          </td>
+
+
+          <td>
+            ${
+              device.battery ??
+              "—"
+            }%
+          </td>
+
+
+          <td>
+
+            ${
+              device.online
+
+              ? `<span class="online">
+                   ● Online
+                 </span>`
+
+              : `<span class="offline">
+                   ● Offline
+                 </span>`
+            }
+
+          </td>
+
+
+          <td>
+
+            <button
+              class="control"
+              onclick="openControl('${encodeURIComponent(
+                device.id || ""
+              )}')"
+            >
+              Control
+            </button>
+
+          </td>
+
+        </tr>
+
+      `
+      ).join("");
+
+
+  }catch(error){
+
+    console.error(error);
+
+    showNoDevices();
+
+  }
+
+}
+
+
+function showNoDevices(){
+
+  document.getElementById(
+    "deviceCount"
+  ).textContent="0";
+
+
+  document.getElementById(
+    "deviceList"
+  ).innerHTML=`
+
+    <tr>
+
+      <td
+        colspan="4"
+        style="
+          text-align:center;
+          color:#716d80;
+          padding:30px;
+        "
+      >
+
+        No authorized devices connected.
+
+      </td>
+
+    </tr>
+
+  `;
+
+}
+
+
+/* =========================================
+   APK BUILDER
+========================================= */
+
+async function buildApk(){
+
+  const status =
+    document.getElementById(
+      "buildStatus"
+    );
+
+
+  const download =
+    document.getElementById(
+      "downloadBtn"
+    );
+
+
+  const appName =
+    document.getElementById(
+      "appName"
+    ).value.trim();
+
+
+  const packageName =
+    document.getElementById(
+      "packageName"
+    ).value.trim();
+
+
+  const buildType =
+    document.getElementById(
+      "buildType"
+    ).value;
+
+
+  if(!appName || !packageName){
+
+    status.style.display="block";
+
+    status.textContent =
+      "Please fill in all required fields.";
+
+    return;
+
+  }
+
+
+  status.style.display="block";
+
+  status.textContent =
+    "Build request is being prepared...";
+
+
+  download.style.display="none";
+
+
+  try{
+
+    const response =
+      await fetch(
+        "/api/build-apk",
+        {
+          method:"POST",
+
+          headers:{
+            "Content-Type":
+              "application/json"
+          },
+
+          credentials:"same-origin",
+
+          body:JSON.stringify({
+            appName,
+            packageName,
+            buildType
+          })
+        }
+      );
+
+
+    const data =
+      await response.json();
+
+
+    if(!response.ok){
+
+      status.textContent =
+        data.error ||
+        "Build request failed.";
+
+      return;
 
     }
 
 
-    function escapeHtml(value) {
+    status.textContent =
+      "Build started successfully.";
 
-      return String(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
+
+    if(data.downloadUrl){
+
+      download.style.display="block";
+
+      download.dataset.url =
+        data.downloadUrl;
 
     }
 
+  }catch(error){
 
-    /*
-      Initial load
-    */
+    console.error(error);
 
-    loadUser();
-    loadDevices();
+    status.textContent =
+      "APK builder backend is not connected yet.";
 
-  </script>
+  }
+
+}
+
+
+/* =========================================
+   DOWNLOAD APK
+========================================= */
+
+function downloadApk(){
+
+  const url =
+    document.getElementById(
+      "downloadBtn"
+    ).dataset.url;
+
+
+  if(url){
+
+    window.location.href=url;
+
+  }
+
+}
+
+
+/* =========================================
+   DEVICE CONTROL
+========================================= */
+
+function openControl(id){
+
+  alert(
+    "Device control will be added later."
+  );
+
+}
+
+
+/* =========================================
+   LOGOUT
+========================================= */
+
+async function logout(){
+
+  try{
+
+    await fetch(
+      "/api/logout",
+      {
+        method:"POST",
+        credentials:"same-origin"
+      }
+    );
+
+  }catch(error){
+
+    console.error(error);
+
+  }
+
+
+  // Login is inside index.html
+  window.location.href="/";
+
+}
+
+
+/* =========================================
+   SECURITY
+========================================= */
+
+function escapeHtml(value){
+
+  return String(value)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+
+}
+
+
+/* =========================================
+   START
+========================================= */
+
+loadUser();
+loadDevices();
+
+</script>
 
 </body>
 </html>
