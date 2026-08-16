@@ -557,7 +557,6 @@ async function loadUser(){
 
     if(!response.ok){
 
-      // Login page is index.html
       window.location.href="/";
 
       return;
@@ -566,28 +565,13 @@ async function loadUser(){
 
     const data = await response.json();
 
-
-    /*
-      Server returns:
-
-      {
-        authenticated:true,
-        id:...,
-        email:...
-      }
-
-      It also supports data.user.
-    */
-
     const user =
       data.user || data;
-
 
     document.getElementById(
       "userEmail"
     ).textContent =
       user.email || "User";
-
 
     document.getElementById(
       "userId"
@@ -620,7 +604,6 @@ async function loadDevices(){
       "deviceList"
     );
 
-
   list.innerHTML=`
     <tr>
       <td
@@ -632,7 +615,6 @@ async function loadDevices(){
     </tr>
   `;
 
-
   try{
 
     const response =
@@ -643,32 +625,12 @@ async function loadDevices(){
         }
       );
 
-
-    /*
-      API doesn't exist yet.
-      Don't kick the user out of dashboard.
-    */
-
-    if(response.status===404){
-
-      showNoDevices();
-
-      return;
-    }
-
-
     if(!response.ok){
-
-      throw new Error(
-        "Could not load devices"
-      );
-
+      throw new Error("Failed to load devices");
     }
-
 
     const devices =
       await response.json();
-
 
     if(!Array.isArray(devices) ||
        devices.length===0){
@@ -678,12 +640,10 @@ async function loadDevices(){
       return;
     }
 
-
     document.getElementById(
       "deviceCount"
     ).textContent =
       devices.length;
-
 
     list.innerHTML =
       devices.map(
@@ -700,12 +660,11 @@ async function loadDevices(){
 
             <small>
               ${escapeHtml(
-                device.id || ""
+                device.device_id || ""
               )}
             </small>
 
           </td>
-
 
           <td>
             ${
@@ -713,7 +672,6 @@ async function loadDevices(){
               "—"
             }%
           </td>
-
 
           <td>
 
@@ -731,13 +689,12 @@ async function loadDevices(){
 
           </td>
 
-
           <td>
 
             <button
               class="control"
               onclick="openControl('${encodeURIComponent(
-                device.id || ""
+                device.device_id || ""
               )}')"
             >
               Control
@@ -768,7 +725,6 @@ function showNoDevices(){
     "deviceCount"
   ).textContent="0";
 
-
   document.getElementById(
     "deviceList"
   ).innerHTML=`
@@ -796,7 +752,7 @@ function showNoDevices(){
 
 
 /* =========================================
-   APK BUILDER
+   APK BUILDER (unchanged)
 ========================================= */
 
 async function buildApk(){
@@ -806,30 +762,25 @@ async function buildApk(){
       "buildStatus"
     );
 
-
   const download =
     document.getElementById(
       "downloadBtn"
     );
-
 
   const appName =
     document.getElementById(
       "appName"
     ).value.trim();
 
-
   const packageName =
     document.getElementById(
       "packageName"
     ).value.trim();
 
-
   const buildType =
     document.getElementById(
       "buildType"
     ).value;
-
 
   if(!appName || !packageName){
 
@@ -842,15 +793,12 @@ async function buildApk(){
 
   }
 
-
   status.style.display="block";
 
   status.textContent =
     "Build request is being prepared...";
 
-
   download.style.display="none";
-
 
   try{
 
@@ -875,10 +823,8 @@ async function buildApk(){
         }
       );
 
-
     const data =
       await response.json();
-
 
     if(!response.ok){
 
@@ -890,10 +836,8 @@ async function buildApk(){
 
     }
 
-
     status.textContent =
       "Build started successfully.";
-
 
     if(data.downloadUrl){
 
@@ -927,7 +871,6 @@ function downloadApk(){
       "downloadBtn"
     ).dataset.url;
 
-
   if(url){
 
     window.location.href=url;
@@ -938,14 +881,16 @@ function downloadApk(){
 
 
 /* =========================================
-   DEVICE CONTROL
+   DEVICE CONTROL (updated)
 ========================================= */
 
-function openControl(id){
+function openControl(deviceId){
 
-  alert(
-    "Device control will be added later."
-  );
+  if(deviceId && deviceId !== "undefined"){
+    window.location.href = `/control?deviceId=${encodeURIComponent(deviceId)}`;
+  } else {
+    alert("Device ID missing.");
+  }
 
 }
 
@@ -972,8 +917,6 @@ async function logout(){
 
   }
 
-
-  // Login is inside index.html
   window.location.href="/";
 
 }
