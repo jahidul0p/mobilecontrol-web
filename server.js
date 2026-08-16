@@ -4,12 +4,12 @@ const { Pool } = require("pg");
 const bcrypt = require("bcrypt");
 const session = require("express-session");
 const pgSession = require("connect-pg-simple")(session);
+const crypto = require("crypto");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// IMPORTANT FOR RENDER
-app.set("trust proxy", 1);
+// ================= DATABASE =================
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -34,7 +34,7 @@ app.use(
 
     secret:
       process.env.SESSION_SECRET ||
-      "mobilecontrol-secret-change-this",
+      "change-this-secret-in-render",
 
     resave: false,
     saveUninitialized: false,
@@ -48,7 +48,7 @@ app.use(
   })
 );
 
-// ================= DATABASE =================
+// ================= DATABASE SETUP =================
 
 async function setupDatabase() {
   try {
@@ -61,6 +61,28 @@ async function setupDatabase() {
       );
     `);
 
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS devices (
+        id SERIAL PRIMARY KEY,
+
+        user_id INTEGER NOT NULL
+          REFERENCES users(id)
+          ON DELETE CASCADE,
+
+        device_token TEXT UNIQUE NOT NULL,
+
+        device_name VARCHAR(255) NOT NULL,
+
+        battery INTEGER DEFAULT 0,
+
+        online BOOLEAN DEFAULT FALSE,
+
+        last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
     console.log("Database is ready.");
   } catch (error) {
     console.error("Database setup failed:", error);
@@ -68,6 +90,19 @@ async function setupDatabase() {
 }
 
 setupDatabase();
+
+// ================= AUTH MIDDLEWARE =================
+
+function requireLogin(req, res, next) {
+  if (!req.session.userId) {
+    return res.status(401).json({
+      authenticated: false,
+      error: "Login required."
+    });
+  }
+
+  next();
+}
 
 // ================= HEALTH =================
 
@@ -133,20 +168,9 @@ app.post("/api/signup", async (req, res) => {
 
     req.session.userId = result.rows[0].id;
 
-    // IMPORTANT: save session before responding
-    req.session.save((error) => {
-      if (error) {
-        console.error("Signup session save error:", error);
-
-        return res.status(500).json({
-          error: "Unable to save login session."
-        });
-      }
-
-      res.status(201).json({
-        message: "Account created successfully.",
-        user: result.rows[0]
-      });
+    res.status(201).json({
+      message: "Account created successfully.",
+      user: result.rows[0]
     });
 
   } catch (error) {
@@ -200,35 +224,14 @@ app.post("/api/login", async (req, res) => {
       });
     }
 
-    // Set logged-in user
     req.session.userId = user.id;
 
-    // IMPORTANT:
-    // Wait until session is stored in PostgreSQL
-    // before sending login response.
-    req.session.save((error) => {
-      if (error) {
-        console.error("Login session save error:", error);
-
-        return res.status(500).json({
-          error: "Unable to save login session."
-        });
+    res.json({
+      message: "Login successful.",
+      user: {
+        id: user.id,
+        email: user.email
       }
-
-      console.log(
-        "LOGIN SUCCESS - Session ID:",
-        req.sessionID,
-        "User ID:",
-        req.session.userId
-      );
-
-      res.json({
-        message: "Login successful.",
-        user: {
-          id: user.id,
-          email: user.email
-        }
-      });
     });
 
   } catch (error) {
@@ -244,13 +247,6 @@ app.post("/api/login", async (req, res) => {
 
 app.get("/api/me", async (req, res) => {
   try {
-    console.log(
-      "SESSION CHECK:",
-      req.sessionID,
-      "USER:",
-      req.session.userId
-    );
-
     if (!req.session.userId) {
       return res.status(401).json({
         authenticated: false
@@ -272,16 +268,9 @@ app.get("/api/me", async (req, res) => {
       });
     }
 
-    const user = result.rows[0];
-
     res.json({
       authenticated: true,
-
-      user: user,
-
-      // Also provide these directly
-      id: user.id,
-      email: user.email
+      user: result.rows[0]
     });
 
   } catch (error) {
@@ -293,12 +282,229 @@ app.get("/api/me", async (req, res) => {
   }
 });
 
+// ================= DEVICE REGISTER =================
+//
+// Android app will use this endpoint after
+// the user has authorized/paird the device.
+//
+
+app.post("/api/devices/register", requireLogin, async (req, res) => {
+  try {
+    const {
+      deviceName,
+      battery
+    } = req.body;
+
+    if (!deviceName) {
+      return res.status(400).json({
+        error: "Device name is required."
+      });
+    }
+
+    const token = crypto.randomBytes(32).toString("hex");
+
+    const safeBattery =
+      Number.isInteger(Number(battery))
+        ? Math.max(0, Math.min(100, Number(battery)))
+        : 0;
+
+    const result = await pool.query(
+      `
+      INSERT INTO devices (
+        user_id,
+        device_token,
+        device_name,
+        battery,
+        online,
+        last_seen
+      )
+      VALUES ($1, $2, $3, $4, TRUE, CURRENT_TIMESTAMP)
+      RETURNING
+        id,
+        device_name,
+        battery,
+        online,
+        last_seen,
+        created_at
+      `,
+      [
+        req.session.userId,
+        token,
+        deviceName.trim(),
+        safeBattery
+      ]
+    );
+
+    res.status(201).json({
+      message: "Device registered successfully.",
+      device: result.rows[0],
+      deviceToken: token
+    });
+
+  } catch (error) {
+    console.error("Device registration error:", error);
+
+    res.status(500).json({
+      error: "Unable to register device."
+    });
+  }
+});
+
+// ================= DEVICE LIST =================
+
+app.get("/api/devices", requireLogin, async (req, res) => {
+  try {
+    // Consider a device offline if it has not
+    // checked in for 2 minutes.
+
+    await pool.query(`
+      UPDATE devices
+      SET online = FALSE
+      WHERE last_seen < NOW() - INTERVAL '2 minutes'
+    `);
+
+    const result = await pool.query(
+      `
+      SELECT
+        id,
+        device_name AS name,
+        device_token,
+        battery,
+        online,
+        last_seen,
+        created_at
+      FROM devices
+      WHERE user_id = $1
+      ORDER BY created_at DESC
+      `,
+      [req.session.userId]
+    );
+
+    res.json(result.rows);
+
+  } catch (error) {
+    console.error("Device list error:", error);
+
+    res.status(500).json({
+      error: "Unable to load devices."
+    });
+  }
+});
+
+// ================= DEVICE HEARTBEAT =================
+//
+// Android app periodically calls this endpoint.
+//
+
+app.post("/api/devices/heartbeat", async (req, res) => {
+  try {
+    const {
+      deviceToken,
+      battery
+    } = req.body;
+
+    if (!deviceToken) {
+      return res.status(400).json({
+        error: "Device token is required."
+      });
+    }
+
+    const safeBattery =
+      Number.isInteger(Number(battery))
+        ? Math.max(0, Math.min(100, Number(battery)))
+        : 0;
+
+    const result = await pool.query(
+      `
+      UPDATE devices
+      SET
+        battery = $1,
+        online = TRUE,
+        last_seen = CURRENT_TIMESTAMP
+      WHERE device_token = $2
+      RETURNING
+        id,
+        device_name,
+        battery,
+        online,
+        last_seen
+      `,
+      [
+        safeBattery,
+        deviceToken
+      ]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        error: "Device not found."
+      });
+    }
+
+    res.json({
+      message: "Heartbeat received.",
+      device: result.rows[0]
+    });
+
+  } catch (error) {
+    console.error("Heartbeat error:", error);
+
+    res.status(500).json({
+      error: "Unable to update device."
+    });
+  }
+});
+
+// ================= SINGLE DEVICE =================
+
+app.get(
+  "/api/devices/:id",
+  requireLogin,
+  async (req, res) => {
+    try {
+      const result = await pool.query(
+        `
+        SELECT
+          id,
+          device_name AS name,
+          battery,
+          online,
+          last_seen,
+          created_at
+        FROM devices
+        WHERE id = $1
+        AND user_id = $2
+        `,
+        [
+          req.params.id,
+          req.session.userId
+        ]
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({
+          error: "Device not found."
+        });
+      }
+
+      res.json(result.rows[0]);
+
+    } catch (error) {
+      console.error("Device error:", error);
+
+      res.status(500).json({
+        error: "Unable to load device."
+      });
+    }
+  }
+);
+
 // ================= LOGOUT =================
 
 app.post("/api/logout", (req, res) => {
   req.session.destroy((error) => {
     if (error) {
-      console.error("Logout error:", error);
+      console.error(error);
 
       return res.status(500).json({
         error: "Unable to logout."
@@ -315,31 +521,40 @@ app.post("/api/logout", (req, res) => {
 
 // ================= WEBSITE =================
 
-// Home page
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
+  res.sendFile(
+    path.join(__dirname, "index.html")
+  );
 });
 
-// Dashboard
-app.get("/dashboard.html", (req, res) => {
-  res.sendFile(path.join(__dirname, "dashboard.html"));
-});
-
-app.get("/dashboard", (req, res) => {
-  res.sendFile(path.join(__dirname, "dashboard.html"));
-});
-
-// Keep these only if old links still use them
 app.get("/login.html", (req, res) => {
-  res.redirect("/");
+  res.sendFile(
+    path.join(__dirname, "login.html")
+  );
 });
 
 app.get("/login", (req, res) => {
-  res.redirect("/");
+  res.sendFile(
+    path.join(__dirname, "login.html")
+  );
+});
+
+app.get("/dashboard.html", (req, res) => {
+  res.sendFile(
+    path.join(__dirname, "dashboard.html")
+  );
+});
+
+app.get("/dashboard", (req, res) => {
+  res.sendFile(
+    path.join(__dirname, "dashboard.html")
+  );
 });
 
 // ================= SERVER =================
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(
+    `Server running on port ${PORT}`
+  );
 });
