@@ -283,10 +283,6 @@ app.get("/api/me", async (req, res) => {
 });
 
 // ================= DEVICE REGISTER =================
-//
-// Android app will use this endpoint after
-// the user has authorized/paird the device.
-//
 
 app.post("/api/devices/register", requireLogin, async (req, res) => {
   try {
@@ -354,8 +350,6 @@ app.post("/api/devices/register", requireLogin, async (req, res) => {
 
 app.get("/api/devices", requireLogin, async (req, res) => {
   try {
-    // Consider a device offline if it has not
-    // checked in for 2 minutes.
 
     await pool.query(`
       UPDATE devices
@@ -392,9 +386,6 @@ app.get("/api/devices", requireLogin, async (req, res) => {
 });
 
 // ================= DEVICE HEARTBEAT =================
-//
-// Android app periodically calls this endpoint.
-//
 
 app.post("/api/devices/heartbeat", async (req, res) => {
   try {
@@ -462,6 +453,7 @@ app.get(
   requireLogin,
   async (req, res) => {
     try {
+
       const result = await pool.query(
         `
         SELECT
@@ -499,10 +491,27 @@ app.get(
   }
 );
 
+// ================= CONTROL PAGE =================
+
+// Dashboard-এর Control button এখানেই আসবে
+
+app.get("/control.html", requireLogin, (req, res) => {
+  res.sendFile(
+    path.join(__dirname, "control.html")
+  );
+});
+
+app.get("/control", requireLogin, (req, res) => {
+  res.sendFile(
+    path.join(__dirname, "control.html")
+  );
+});
+
 // ================= LOGOUT =================
 
 app.post("/api/logout", (req, res) => {
   req.session.destroy((error) => {
+
     if (error) {
       console.error(error);
 
@@ -521,11 +530,15 @@ app.post("/api/logout", (req, res) => {
 
 // ================= WEBSITE =================
 
+// Home
+
 app.get("/", (req, res) => {
   res.sendFile(
     path.join(__dirname, "index.html")
   );
 });
+
+// Login
 
 app.get("/login.html", (req, res) => {
   res.sendFile(
@@ -538,6 +551,8 @@ app.get("/login", (req, res) => {
     path.join(__dirname, "login.html")
   );
 });
+
+// Dashboard
 
 app.get("/dashboard.html", (req, res) => {
   res.sendFile(
