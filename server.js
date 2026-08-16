@@ -130,11 +130,20 @@ app.post("/api/signup", async (req, res) => {
       "INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id, email, created_at",
       [normalizedEmail, passwordHash]
     );
+
     req.session.userId = result.rows[0].id;
-    res.status(201).json({
-      message: "Account created successfully.",
-      user: result.rows[0]
+
+    req.session.save((error) => {
+      if (error) {
+        console.error("Signup session save error:", error);
+        return res.status(500).json({ error: "Unable to save session." });
+      }
+      res.status(201).json({
+        message: "Account created successfully.",
+        user: result.rows[0]
+      });
     });
+
   } catch (error) {
     console.error("Signup error:", error);
     res.status(500).json({ error: "Unable to create account." });
@@ -162,11 +171,20 @@ app.post("/api/login", async (req, res) => {
     if (!passwordCorrect) {
       return res.status(401).json({ error: "Invalid email or password." });
     }
+
     req.session.userId = user.id;
-    res.json({
-      message: "Login successful.",
-      user: { id: user.id, email: user.email }
+
+    req.session.save((error) => {
+      if (error) {
+        console.error("Login session save error:", error);
+        return res.status(500).json({ error: "Unable to save session." });
+      }
+      res.json({
+        message: "Login successful.",
+        user: { id: user.id, email: user.email }
+      });
     });
+
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({ error: "Unable to login." });
