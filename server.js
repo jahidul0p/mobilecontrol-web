@@ -4,7 +4,6 @@ const { Pool } = require("pg");
 const bcrypt = require("bcrypt");
 const session = require("express-session");
 const pgSession = require("connect-pg-simple")(session);
-const crypto = require("crypto");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -29,7 +28,6 @@ app.use(
   })
 );
 
-// ================= DATABASE SETUP =================
 async function setupDatabase() {
   try {
     await pool.query(`
@@ -42,26 +40,23 @@ async function setupDatabase() {
       );
     `);
 
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(20) DEFAULT 'parent'`);
+
+    await pool.query(`DROP TABLE IF EXISTS devices CASCADE;`);
+
     await pool.query(`
-      CREATE TABLE IF NOT EXISTS devices (
+      CREATE TABLE devices (
         id SERIAL PRIMARY KEY,
         owner_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         device_id VARCHAR(255) UNIQUE NOT NULL,
-        device_token TEXT UNIQUE NOT NULL,
+        device_token TEXT NOT NULL,
         device_name VARCHAR(255) NOT NULL,
         battery INTEGER DEFAULT 0,
-        authorization_status VARCHAR(50) DEFAULT 'approved',
         online BOOLEAN DEFAULT FALSE,
         last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
-
-    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(20) DEFAULT 'parent'`);
-    await pool.query(`ALTER TABLE devices ADD COLUMN IF NOT EXISTS device_id VARCHAR(255)`);
-    await pool.query(`ALTER TABLE devices ADD COLUMN IF NOT EXISTS device_token TEXT`);
-    await pool.query(`ALTER TABLE devices ADD COLUMN IF NOT EXISTS owner_user_id INTEGER`);
-    await pool.query(`ALTER TABLE devices ADD COLUMN IF NOT EXISTS authorization_status VARCHAR(50) DEFAULT 'approved'`);
 
     console.log("Database ready.");
   } catch (err) {
@@ -70,42 +65,24 @@ async function setupDatabase() {
 }
 setupDatabase();
 
-// ================= AUTH =================
 function requireLogin(req, res, next) {
   if (!req.session.userId) return res.status(401).json({ authenticated: false, error: "Login required." });
   next();
 }
 
-function requireAdmin(req, res, next) {
-  if (!req.session.userId) return res.status(401).json({ error: "Login required." });
-  if (req.session.role !== "admin") return res.status(403).json({ error: "Admin access only." });
-  next();
-}
-
-// ================= HEALTH =================
-app.get("/api/health", async (req, res) => {
-  try {
-    await pool.query("SELECT 1");
-    res.json({ status: "ok", database: "connected" });
-  } catch (e) {
-    res.status(500).json({ status: "error", database: "failed" });
-  }
-});
-
-// ================= SIGNUP =================
+// ================= AUTH =================
 app.post("/api/signup", async (req, res) => {
   try {
-    const { email, password, role } = req.body;
+    const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ error: "Email and password required." });
     if (password.length < 8) return res.status(400).json({ error: "Password must be at least 8 characters." });
     const normalizedEmail = email.trim().toLowerCase();
     const existing = await pool.query("SELECT id FROM users WHERE email=$1", [normalizedEmail]);
     if (existing.rows.length > 0) return res.status(409).json({ error: "Account already exists." });
     const passwordHash = await bcrypt.hash(password, 12);
-    const userRole = role === "admin" ? "admin" : "parent";
     const result = await pool.query(
-      "INSERT INTO users (email, password_hash, role) VALUES ($1,$2,$3) RETURNING id, email, role, created_at",
-      [normalizedEmail, passwordHash, userRole]
+      "INSERT INTO users (email, password_hash, role) VALUES ($1,$2,'parent') RETURNING id, email, role, created_at",
+      [normalizedEmail, passwordHash]
     );
     req.session.userId = result.rows[0].id;
     req.session.role = result.rows[0].role;
@@ -119,7 +96,6 @@ app.post("/api/signup", async (req, res) => {
   }
 });
 
-// ================= LOGIN =================
 app.post("/api/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -142,7 +118,6 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
-// ================= CURRENT USER =================
 app.get("/api/me", requireLogin, async (req, res) => {
   try {
     const result = await pool.query("SELECT id, email, role, created_at FROM users WHERE id=$1", [req.session.userId]);
@@ -153,54 +128,69 @@ app.get("/api/me", requireLogin, async (req, res) => {
   }
 });
 
-// ================= AUTO DEVICE REGISTER (Fixed) =================
-app.post("/api/devices/register-auto", async (req, res) => {
+// ================= DEVICE STATE (Upsert) =================
+const deviceStates = new Map();
+const keylogs = [];
+const deviceUIs = new Map();
+
+app.post("/api/device-state", async (req, res) => {
   try {
-    const { ownerEmail, deviceId, deviceName } = req.body;
-    if (!ownerEmail || !deviceId || !deviceName) {
-      return res.status(400).json({ error: "ownerEmail, deviceId, deviceName required" });
+    const { ownerEmail, deviceId, deviceToken, deviceName, battery, installedApps } = req.body;
+    if (!ownerEmail || !deviceId || !deviceToken) {
+      return res.status(400).json({ error: "ownerEmail, deviceId, deviceToken required" });
     }
 
-    const userRes = await pool.query(
-      "SELECT id FROM users WHERE email=$1",
-      [ownerEmail.toLowerCase().trim()]
-    );
+    const userRes = await pool.query("SELECT id FROM users WHERE email=$1", [ownerEmail.toLowerCase().trim()]);
     if (userRes.rows.length === 0) {
       return res.status(404).json({ error: "User not found" });
     }
-
     const userId = userRes.rows[0].id;
-    const token = crypto.randomBytes(32).toString("hex");
 
-    // Check if device already exists
     const existing = await pool.query("SELECT id FROM devices WHERE device_id=$1", [deviceId]);
     if (existing.rows.length > 0) {
-      // Update existing device
       await pool.query(
-        "UPDATE devices SET device_token=$1, device_name=$2, owner_user_id=$3 WHERE device_id=$4",
-        [token, deviceName, userId, deviceId]
+        "UPDATE devices SET device_token=$1, device_name=$2, battery=$3, online=TRUE, last_seen=CURRENT_TIMESTAMP WHERE device_id=$4",
+        [deviceToken, deviceName || "Unknown Device", battery ?? 0, deviceId]
       );
     } else {
-      // Insert new device
       await pool.query(
-        "INSERT INTO devices (owner_user_id, device_id, device_token, device_name) VALUES ($1,$2,$3,$4)",
-        [userId, deviceId, token, deviceName]
+        "INSERT INTO devices (owner_user_id, device_id, device_token, device_name, battery, online, last_seen) VALUES ($1,$2,$3,$4,$5,TRUE,CURRENT_TIMESTAMP)",
+        [userId, deviceId, deviceToken, deviceName || "Unknown Device", battery ?? 0]
       );
     }
 
-    res.json({ deviceId, deviceToken: token });
-  } catch (error) {
-    console.error("Auto register error:", error);
-    res.status(500).json({ error: "Auto registration failed" });
+    deviceStates.set(deviceId, {
+      deviceName: deviceName || "Unknown Device",
+      battery: battery ?? 0,
+      installedApps: installedApps || [],
+      last_seen: Date.now()
+    });
+
+    res.json({ success: true });
+  } catch (e) {
+    console.error("Device state error:", e);
+    res.status(500).json({ error: "State update failed" });
   }
 });
 
-// ================= DEVICE LIST =================
+app.get("/api/device-state", requireLogin, async (req, res) => {
+  const { deviceId } = req.query;
+  if (!deviceId) return res.status(400).json({ error: "deviceId required" });
+
+  const deviceRes = await pool.query("SELECT owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
+  if (deviceRes.rows.length === 0 || deviceRes.rows[0].owner_user_id !== req.session.userId) {
+    return res.status(403).json({ error: "Not your device." });
+  }
+
+  const live = deviceStates.get(deviceId);
+  if (!live) return res.json({ deviceName: "Unknown", battery: 0, installedApps: [], last_seen: 0 });
+  res.json(live);
+});
+
 app.get("/api/devices", requireLogin, async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT id, device_id, device_name AS name, battery, online, last_seen
-       FROM devices WHERE owner_user_id=$1 ORDER BY created_at DESC`,
+      "SELECT device_id, device_name AS name, battery, online, last_seen FROM devices WHERE owner_user_id=$1 ORDER BY created_at DESC",
       [req.session.userId]
     );
     const devices = result.rows.map(row => {
@@ -220,98 +210,44 @@ app.get("/api/devices", requireLogin, async (req, res) => {
   }
 });
 
-// ================= DEVICE STATE =================
-const deviceStates = new Map();
-
-app.post("/api/device-state", async (req, res) => {
-  try {
-    const { deviceId, deviceToken, deviceName, battery, installedApps } = req.body;
-    if (!deviceId || !deviceToken) return res.status(400).json({ error: "deviceId and deviceToken required." });
-
-    const deviceRes = await pool.query(
-      "SELECT id, owner_user_id, device_token, authorization_status, device_name FROM devices WHERE device_id=$1",
-      [deviceId]
-    );
-    if (deviceRes.rows.length === 0) return res.status(404).json({ error: "Device not found." });
-    const dbDevice = deviceRes.rows[0];
-    if (dbDevice.device_token !== deviceToken) return res.status(401).json({ error: "Invalid device token." });
-    if (dbDevice.authorization_status !== "approved") return res.status(403).json({ error: "Device not authorized." });
-
-    deviceStates.set(deviceId, {
-      deviceName: deviceName || dbDevice.device_name,
-      battery: battery ?? 0,
-      installedApps: installedApps || [],
-      last_seen: Date.now()
-    });
-
-    if (!dbDevice.last_seen || Date.now() - new Date(dbDevice.last_seen).getTime() > 30000) {
-      await pool.query(
-        "UPDATE devices SET battery=$1, online=TRUE, last_seen=CURRENT_TIMESTAMP WHERE device_id=$2",
-        [battery ?? 0, deviceId]
-      );
-    }
-
-    res.json({ success: true });
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: "State update failed." });
-  }
-});
-
-app.get("/api/device-state", requireLogin, async (req, res) => {
-  try {
-    const { deviceId } = req.query;
-    if (!deviceId) return res.status(400).json({ error: "deviceId required." });
-    const deviceRes = await pool.query(
-      "SELECT id, owner_user_id FROM devices WHERE device_id=$1",
-      [deviceId]
-    );
-    if (deviceRes.rows.length === 0) return res.status(404).json({ error: "Device not found." });
-    if (deviceRes.rows[0].owner_user_id !== req.session.userId) {
-      return res.status(403).json({ error: "Not your device." });
-    }
-    const live = deviceStates.get(deviceId);
-    if (!live) return res.json({ deviceName: "Unknown", battery: 0, installedApps: [], last_seen: 0 });
-    res.json(live);
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: "Failed to get state." });
-  }
-});
-
 // ================= KEYLOGGER & UI =================
-const keylogs = [];
-const deviceUIs = new Map();
-
 app.post("/api/keylog", async (req, res) => {
   try {
     const { deviceId, deviceToken, text, timestamp } = req.body;
-    if (!deviceId || !deviceToken || !text) return res.status(400).json({ error: "deviceId, deviceToken and text required." });
+    if (!deviceId || !deviceToken || !text) return res.status(400).json({ error: "deviceId, deviceToken and text required" });
+
     const deviceRes = await pool.query("SELECT device_token FROM devices WHERE device_id=$1", [deviceId]);
     if (deviceRes.rows.length === 0 || deviceRes.rows[0].device_token !== deviceToken) {
       return res.status(401).json({ error: "Invalid device token." });
     }
     keylogs.push({ deviceId, text, timestamp: timestamp || Date.now() });
     res.json({ success: true });
-  } catch (e) { console.error(e); res.status(500).json({ error: "Failed to save keylog." }); }
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Failed to save keylog." });
+  }
 });
 
 app.post("/api/ui", async (req, res) => {
   try {
     const { deviceId, deviceToken, uiText, timestamp } = req.body;
-    if (!deviceId || !deviceToken) return res.status(400).json({ error: "deviceId and deviceToken required." });
+    if (!deviceId || !deviceToken) return res.status(400).json({ error: "deviceId and deviceToken required" });
+
     const deviceRes = await pool.query("SELECT device_token FROM devices WHERE device_id=$1", [deviceId]);
     if (deviceRes.rows.length === 0 || deviceRes.rows[0].device_token !== deviceToken) {
       return res.status(401).json({ error: "Invalid device token." });
     }
     deviceUIs.set(deviceId, { uiText, timestamp: timestamp || Date.now() });
     res.json({ success: true });
-  } catch (e) { console.error(e); res.status(500).json({ error: "Failed to save UI." }); }
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Failed to save UI." });
+  }
 });
 
 app.get("/api/keylog", requireLogin, async (req, res) => {
   const { deviceId } = req.query;
-  if (!deviceId) return res.status(400).json({ error: "deviceId required." });
+  if (!deviceId) return res.status(400).json({ error: "deviceId required" });
   const deviceRes = await pool.query("SELECT owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
   if (deviceRes.rows.length === 0 || deviceRes.rows[0].owner_user_id !== req.session.userId) {
     return res.status(403).json({ error: "Not your device." });
@@ -321,7 +257,7 @@ app.get("/api/keylog", requireLogin, async (req, res) => {
 
 app.get("/api/ui", requireLogin, async (req, res) => {
   const { deviceId } = req.query;
-  if (!deviceId) return res.status(400).json({ error: "deviceId required." });
+  if (!deviceId) return res.status(400).json({ error: "deviceId required" });
   const deviceRes = await pool.query("SELECT owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
   if (deviceRes.rows.length === 0 || deviceRes.rows[0].owner_user_id !== req.session.userId) {
     return res.status(403).json({ error: "Not your device." });
@@ -329,58 +265,29 @@ app.get("/api/ui", requireLogin, async (req, res) => {
   res.json(deviceUIs.get(deviceId) || { uiText: "", timestamp: 0 });
 });
 
-// ================= ADMIN DASHBOARD =================
-app.get("/admin", requireAdmin, (req, res) => {
-  res.sendFile(path.join(__dirname, "admin.html"));
-});
-
-app.get("/api/admin/stats", requireAdmin, async (req, res) => {
+// ================= ADMIN =================
+app.get("/api/admin/stats", async (req, res) => {
   try {
     const totalUsers = await pool.query("SELECT COUNT(*) FROM users");
     const totalDevices = await pool.query("SELECT COUNT(*) FROM devices");
-    const onlineDevices = await pool.query("SELECT COUNT(*) FROM devices WHERE online=TRUE");
-    const offlineDevices = await pool.query("SELECT COUNT(*) FROM devices WHERE online=FALSE");
-    const recentDevices = await pool.query(
-      "SELECT device_id, device_name, battery, online, last_seen FROM devices ORDER BY last_seen DESC LIMIT 10"
-    );
-    const recentUsers = await pool.query(
-      "SELECT id, email, role, created_at FROM users ORDER BY created_at DESC LIMIT 10"
-    );
-    res.json({
-      totalUsers: totalUsers.rows[0].count,
-      totalDevices: totalDevices.rows[0].count,
-      onlineDevices: onlineDevices.rows[0].count,
-      offlineDevices: offlineDevices.rows[0].count,
-      recentDevices: recentDevices.rows,
-      recentUsers: recentUsers.rows
-    });
+    res.json({ totalUsers: totalUsers.rows[0].count, totalDevices: totalDevices.rows[0].count });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: "Admin stats failed." });
   }
 });
 
-// ================= CONTROL PAGE =================
-app.get("/control.html", requireLogin, (req, res) => {
-  res.sendFile(path.join(__dirname, "control.html"));
-});
-app.get("/control", requireLogin, (req, res) => {
-  res.sendFile(path.join(__dirname, "control.html"));
-});
-
-// ================= LOGOUT =================
+// ================= PAGES =================
+app.get("/control.html", requireLogin, (req, res) => res.sendFile(path.join(__dirname, "control.html")));
+app.get("/control", requireLogin, (req, res) => res.sendFile(path.join(__dirname, "control.html")));
+app.get("/dashboard.html", requireLogin, (req, res) => res.sendFile(path.join(__dirname, "dashboard.html")));
+app.get("/dashboard", requireLogin, (req, res) => res.sendFile(path.join(__dirname, "dashboard.html")));
+app.get("/", (req, res) => res.sendFile(path.join(__dirname, "index.html")));
 app.post("/api/logout", (req, res) => {
   req.session.destroy(() => {
     res.clearCookie("connect.sid");
     res.json({ message: "Logged out." });
   });
 });
-
-// ================= WEBSITE ROUTES =================
-app.get("/", (req, res) => res.sendFile(path.join(__dirname, "index.html")));
-app.get("/login.html", (req, res) => res.sendFile(path.join(__dirname, "login.html")));
-app.get("/login", (req, res) => res.sendFile(path.join(__dirname, "login.html")));
-app.get("/dashboard.html", (req, res) => res.sendFile(path.join(__dirname, "dashboard.html")));
-app.get("/dashboard", (req, res) => res.sendFile(path.join(__dirname, "dashboard.html")));
 
 app.listen(PORT, "0.0.0.0", () => console.log(`Server running on port ${PORT}`));
