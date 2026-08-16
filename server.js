@@ -9,6 +9,9 @@ const crypto = require("crypto");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// TRUST PROXY FIX
+app.set("trust proxy", 1);
+
 // ================= DATABASE =================
 
 const pool = new Pool({
@@ -41,7 +44,7 @@ app.use(
 
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: false, // ❗ FIX: Secure off
       sameSite: "lax",
       maxAge: 1000 * 60 * 60 * 24 * 7
     }
