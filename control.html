@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Device Control</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background:
+        radial-gradient(circle at top, #241318 0%, #090708 45%, #050505 100%);
+    color: #eee;
+    font-family: Arial, sans-serif;
+    min-height: 100vh;
+}
+
+.header {
+    height: 58px;
+    border-bottom: 1px solid #32191d;
+    display: flex;
+    align-items: center;
+    padding: 0 15px;
+    gap: 10px;
+    background: rgba(10, 7, 8, .92);
+}
+
+.logo {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    background: #ff3338;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 17px;
+}
+
+.title {
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.nav {
+    display: flex;
+    gap: 8px;
+    margin-left: 8px;
+}
+
+.nav button {
+    background: #171214;
+    border: 1px solid #302126;
+    color: #aaa;
+    padding: 8px 13px;
+    border-radius: 9px;
+    cursor: pointer;
+}
+
+.nav button:hover {
+    color: white;
+    border-color: #ff3d42;
+}
+
+.device-id {
+    margin-left: auto;
+    font-size: 10px;
+    color: #777;
+}
+
+.live {
+    color: #ff4646;
+    border: 1px solid #572226;
+    padding: 6px 9px;
+    border-radius: 15px;
+    font-size: 9px;
+}
+
+.container {
+    padding: 16px;
+    max-width: 1100px;
+    margin: auto;
+}
+
+.device-card {
+    border: 1px solid #3b2529;
+    border-radius: 15px;
+    padding: 18px;
+    background: rgba(22, 15, 17, .82);
+    margin-bottom: 14px;
+}
+
+.device-name {
+    font-size: 17px;
+    font-weight: bold;
+}
+
+.device-status {
+    margin-top: 7px;
+    font-size: 11px;
+    color: #777;
+}
+
+.online-dot {
+    color: #35c76a;
+}
+
+.controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.control-btn {
+    background: transparent;
+    color: #aaa;
+    border: 0;
+    padding: 7px 8px;
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.control-btn:hover {
+    color: #fff;
+}
+
+.control-btn.active {
+    background: #ff3439;
+    color: white;
+    border-radius: 8px;
+    box-shadow: 0 0 15px rgba(255, 50, 55, .35);
+}
+
+.panel {
+    border: 1px solid #3b292d;
+    border-radius: 15px;
+    background: rgba(22, 15, 17, .86);
+    overflow: hidden;
+}
+
+.panel-header {
+    padding: 15px;
+    border-bottom: 1px solid #302125;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.panel-title {
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.refresh {
+    background: #21181a;
+    color: #aaa;
+    border: 1px solid #392327;
+    border-radius: 8px;
+    padding: 7px 11px;
+    cursor: pointer;
+}
+
+.refresh:hover {
+    color: white;
+    border-color: #ff3c42;
+}
+
+.apps {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 9px;
+    padding: 14px;
+}
+
+.app {
+    background: linear-gradient(145deg, #21181b, #161012);
+    border: 1px solid #302126;
+    border-radius: 9px;
+    padding: 13px 11px;
+    min-height: 63px;
+}
+
+.app-name {
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.package {
+    margin-top: 7px;
+    color: #666;
+    font-size: 9px;
+    word-break: break-all;
+}
+
+.gps-box {
+    display: none;
+    padding: 18px;
+}
+
+.gps-status {
+    background: #181214;
+    border: 1px solid #342326;
+    border-radius: 10px;
+    padding: 17px;
+}
+
+.gps-label {
+    color: #777;
+    font-size: 10px;
+}
+
+.gps-value {
+    margin-top: 8px;
+    font-size: 13px;
+    color: #ddd;
+}
+
+.demo-note {
+    margin-top: 12px;
+    color: #666;
+    font-size: 10px;
+}
+
+@media(max-width:700px) {
+    .apps {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .device-id {
+        display: none;
+    }
+}
+
+@media(max-width:430px) {
+    .apps {
+        grid-template-columns: 1fr;
+    }
+
+    .nav {
+        display: none;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header class="header">
+
+    <div class="logo">⌁</div>
+
+    <div class="title">OBEY-ME</div>
+
+    <div class="nav">
+        <button onclick="location.href='/dashboard'">⌂ Home</button>
+        <button onclick="location.href='/dashboard'">← Dashboard</button>
+    </div>
+
+    <div class="device-id">
+        DEVICE ID: <b>9a010d8e6975991e</b>
+    </div>
+
+    <div class="live">● LIVE LINK</div>
+
+</header>
+
+
+<main class="container">
+
+    <section class="device-card">
+
+        <div class="device-name">📱 TECNO KC1j</div>
+
+        <div class="device-status">
+            <span class="online-dot">●</span>
+            Demo Device &nbsp; • &nbsp; Battery 42%
+        </div>
+
+    </section>
+
+
+    <!-- CONTROL BUTTONS -->
+
+    <div class="controls">
+
+        <button class="control-btn active"
+                onclick="showApps(this)">
+            ▦ Installed Apps
+        </button>
+
+        <button class="control-btn"
+                onclick="showGPS(this)">
+            📍 GPS Tracker
+        </button>
+
+    </div>
+
+
+    <!-- INSTALLED APPS -->
+
+    <section class="panel" id="appsPanel">
+
+        <div class="panel-header">
+
+            <div class="panel-title">
+                ▦ Installed Packages & Applications
+            </div>
+
+            <button class="refresh" onclick="demoRefresh()">
+                ⟳ Fetch Apps
+            </button>
+
+        </div>
+
+
+        <div class="apps">
+
+            <div class="app">
+                <div class="app-name">Chrome</div>
+                <div class="package">com.android.chrome</div>
+            </div>
+
+            <div class="app">
+                <div class="app-name">Calendar</div>
+                <div class="package">com.google.android.calendar</div>
+            </div>
+
+            <div class="app">
+                <div class="app-name">Camera</div>
+                <div class="package">com.android.camera</div>
+            </div>
+
+            <div class="app">
+                <div class="app-name">Clock</div>
+                <div class="package">com.android.deskclock</div>
+            </div>
+
+            <div class="app">
+                <div class="app-name">Contacts</div>
+                <div class="package">com.android.contacts</div>
+            </div>
+
+            <div class="app">
+                <div class="app-name">Drive</div>
+                <div class="package">com.google.android.apps.docs</div>
+            </div>
+
+            <div class="app">
+                <div class="app-name">Facebook</div>
+                <div class="package">com.facebook.katana</div>
+            </div>
+
+            <div class="app">
+                <div class="app-name">Free Fire</div>
+                <div class="package">com.dts.freefireth</div>
+            </div>
+
+            <div class="app">
+                <div class="app-name">Gmail</div>
+                <div class="package">com.google.android.gm</div>
+            </div>
+
+            <div class="app">
+                <div class="app-name">Google Maps</div>
+                <div class="package">com.google.android.apps.maps</div>
+            </div>
+
+            <div class="app">
+                <div class="app-name">Instagram</div>
+                <div class="package">com.instagram.android</div>
+            </div>
+
+            <div class="app">
+                <div class="app-name">Messenger</div>
+                <div class="package">com.facebook.orca</div>
+            </div>
+
+            <div class="app">
+                <div class="app-name">Music Player</div>
+                <div class="package">com.android.music</div>
+            </div>
+
+            <div class="app">
+                <div class="app-name">Photos</div>
+                <div class="package">com.google.android.apps.photos</div>
+            </div>
+
+            <div class="app">
+                <div class="app-name">Settings</div>
+                <div class="package">com.android.settings</div>
+            </div>
+
+            <div class="app">
+                <div class="app-name">YouTube</div>
+                <div class="package">com.google.android.youtube</div>
+            </div>
+
+            <div class="app">
+                <div class="app-name">WhatsApp</div>
+                <div class="package">com.whatsapp</div>
+            </div>
+
+            <div class="app">
+                <div class="app-name">Weather</div>
+                <div class="package">com.example.weather</div>
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- GPS DEMO -->
+
+    <section class="panel gps-box" id="gpsPanel">
+
+        <div class="panel-header">
+
+            <div class="panel-title">
+                📍 GPS Tracker
+            </div>
+
+            <button class="refresh" onclick="demoGPS()">
+                ⟳ Refresh
+            </button>
+
+        </div>
+
+        <div class="gps-status">
+
+            <div class="gps-label">
+                LOCATION STATUS
+            </div>
+
+            <div class="gps-value">
+                Demo location — waiting for authorized device location
+            </div>
+
+            <div class="demo-note">
+                This interface is a demonstration and does not collect
+                or transmit a real person's location.
+            </div>
+
+        </div>
+
+    </section>
+
+</main>
+
+
+<script>
+
+function showApps(button) {
+
+    document.querySelectorAll(".control-btn")
+        .forEach(btn => btn.classList.remove("active"));
+
+    button.classList.add("active");
+
+    document.getElementById("appsPanel").style.display = "block";
+    document.getElementById("gpsPanel").style.display = "none";
+}
+
+
+function showGPS(button) {
+
+    document.querySelectorAll(".control-btn")
+        .forEach(btn => btn.classList.remove("active"));
+
+    button.classList.add("active");
+
+    document.getElementById("appsPanel").style.display = "none";
+    document.getElementById("gpsPanel").style.display = "block";
+}
+
+
+function demoRefresh() {
+    alert("Demo: application list refreshed.");
+}
+
+
+function demoGPS() {
+    alert("Demo GPS: no real location is being collected.");
+}
+
+</script>
+
+</body>
+          </html>
