@@ -153,13 +153,14 @@ app.get("/api/me", requireLogin, async (req, res) => {
   }
 });
 
-// ================= AUTO DEVICE REGISTER =================
+// ================= AUTO DEVICE REGISTER (Fixed) =================
 app.post("/api/devices/register-auto", async (req, res) => {
   try {
     const { ownerEmail, deviceId, deviceName } = req.body;
     if (!ownerEmail || !deviceId || !deviceName) {
       return res.status(400).json({ error: "ownerEmail, deviceId, deviceName required" });
     }
+
     const userRes = await pool.query(
       "SELECT id FROM users WHERE email=$1",
       [ownerEmail.toLowerCase().trim()]
@@ -167,18 +168,27 @@ app.post("/api/devices/register-auto", async (req, res) => {
     if (userRes.rows.length === 0) {
       return res.status(404).json({ error: "User not found" });
     }
+
+    const userId = userRes.rows[0].id;
     const token = crypto.randomBytes(32).toString("hex");
-    const insert = await pool.query(
-      `INSERT INTO devices (owner_user_id, device_id, device_token, device_name)
-       VALUES ($1,$2,$3,$4)
-       ON CONFLICT (device_id) DO UPDATE SET device_token=$3, device_name=$4
-       RETURNING id, device_id, device_token, device_name`,
-      [userRes.rows[0].id, deviceId, token, deviceName]
-    );
-    res.json({
-      deviceId: insert.rows[0].device_id,
-      deviceToken: insert.rows[0].device_token
-    });
+
+    // Check if device already exists
+    const existing = await pool.query("SELECT id FROM devices WHERE device_id=$1", [deviceId]);
+    if (existing.rows.length > 0) {
+      // Update existing device
+      await pool.query(
+        "UPDATE devices SET device_token=$1, device_name=$2, owner_user_id=$3 WHERE device_id=$4",
+        [token, deviceName, userId, deviceId]
+      );
+    } else {
+      // Insert new device
+      await pool.query(
+        "INSERT INTO devices (owner_user_id, device_id, device_token, device_name) VALUES ($1,$2,$3,$4)",
+        [userId, deviceId, token, deviceName]
+      );
+    }
+
+    res.json({ deviceId, deviceToken: token });
   } catch (error) {
     console.error("Auto register error:", error);
     res.status(500).json({ error: "Auto registration failed" });
