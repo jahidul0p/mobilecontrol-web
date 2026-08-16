@@ -339,6 +339,44 @@ app.get("/api/ui", async (req, res) => {
   }
 });
 
+// ================= DEVICE STATE (Real Info) =================
+
+const deviceStates = new Map();
+
+app.post("/api/device-state", async (req, res) => {
+  try {
+    const { deviceId, deviceName, battery, installedApps } = req.body;
+    if (!deviceId) return res.status(400).json({ error: "deviceId required" });
+
+    deviceStates.set(deviceId, {
+      deviceName: deviceName || "Unknown Device",
+      battery: battery ?? 0,
+      installedApps: installedApps || [],
+      last_seen: Date.now()
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Device state error:", error);
+    res.status(500).json({ error: "Unable to save device state" });
+  }
+});
+
+app.get("/api/device-state", async (req, res) => {
+  try {
+    const { deviceId } = req.query;
+    if (!deviceId) return res.status(400).json({ error: "deviceId required" });
+
+    const data = deviceStates.get(deviceId);
+    if (!data) return res.json({ deviceName: "Unknown", battery: 0, installedApps: [], last_seen: 0 });
+
+    res.json(data);
+  } catch (error) {
+    console.error("Get device state error:", error);
+    res.status(500).json({ error: "Unable to get device state" });
+  }
+});
+
 // ================= CONTROL PAGE =================
 
 app.get("/control.html", requireLogin, (req, res) => {
