@@ -1083,19 +1083,36 @@ async function fetchGalleryPhotos(fetchAll = false) {
     loading.style.display = 'block';
 
     try {
-        const response = await fetch(`/api/gallery?deviceId=${deviceId}&count=${count}`);
-        if (!response.ok) throw new Error('Failed to fetch gallery');
-        const data = await response.json();
+        // Step 1: Request APK to fetch gallery
+        await fetch(`/api/gallery/request`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ deviceId })
+        });
 
-        if (data && data.media && Array.isArray(data.media)) {
-            galleryItems = data.media;
-            renderGalleryGrids();
-        } else {
-            throw new Error('Invalid gallery data');
+        // Step 2: Wait for APK to upload (poll /api/gallery)
+        let media = [];
+        for (let i = 0; i < 8; i++) { // try 8 times, every 2 sec = 16 sec
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            const res = await fetch(`/api/gallery?deviceId=${deviceId}&count=${count}`);
+            if (!res.ok) throw new Error('Failed to fetch gallery');
+            const data = await res.json();
+            if (data && data.media && data.media.length > 0) {
+                media = data.media;
+                break;
+            }
         }
+
+        if (media.length === 0) {
+            throw new Error('No media received');
+        }
+
+        galleryItems = media;
+        renderGalleryGrids();
+
     } catch (e) {
         console.error(e);
-        errorText.textContent = "Unable to load gallery";
+        errorText.textContent = "Unable to load gallery. Make sure APK is connected and permissions granted.";
         errorDiv.style.display = 'block';
     } finally {
         loading.style.display = 'none';
