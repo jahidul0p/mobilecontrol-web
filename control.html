@@ -309,26 +309,62 @@ body {
     to { transform: rotate(360deg); }
 }
 
+/* ===== KEYLOGGER BOX & CARDS ===== */
+.keylog-box {
+    background: #181214;
+    border: 1px solid #342326;
+    border-radius: 12px;
+    padding: 8px;
+    margin: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.keylog-entry {
+    background: #120d10;
+    border: 1px solid #6f252c;
+    border-radius: 12px;
+    padding: 14px 16px;
+    width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    box-shadow: none;
+}
+
+.keylog-title {
+    font-family: 'SF Mono', 'Cascadia Code', 'Roboto Mono', monospace;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 20px;
+    letter-spacing: 0.2px;
+    color: #e5e7eb;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.keylog-time {
+    font-family: 'SF Mono', 'Cascadia Code', 'Roboto Mono', monospace;
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 18px;
+    color: #8b8f98;
+    margin: 0;
+}
+
 /* Keylogger, Screen Data, Gallery sections */
-.keylog-box, .screen-box, .gallery-content {
+.screen-box, .gallery-content {
     background: #181214;
     border: 1px solid #342326;
     border-radius: 12px;
     padding: 17px;
     margin: 20px;
-}
-
-.keylog-entry {
-    padding: 10px;
-    border-bottom: 1px solid #2a1d20;
-    font-size: 11px;
-    color: #ddd;
-}
-
-.keylog-time {
-    color: #777;
-    font-size: 9px;
-    margin-left: 8px;
 }
 
 .screen-text {
@@ -620,6 +656,7 @@ body {
     .gallery-controls select { width: 100%; }
     .gallery-controls .refresh-btn,
     .gallery-controls .force-btn { width: 100%; margin-top: 4px; }
+    .keylog-entry { padding: 12px; }  /* mobile padding */
 }
 </style>
 </head>
@@ -1051,16 +1088,22 @@ async function refreshKeylog() {
         const response = await fetch(`/api/keylog?deviceId=${deviceId}`);
         if (!response.ok) throw new Error("Failed");
         const logs = await response.json();
-        if (logs.length === 0) { container.innerHTML = "No keylogs yet."; return; }
-        // ✅ নতুন ডেটা উপরে দেখাতে reverse
+        if (logs.length === 0) {
+            container.innerHTML = "No keylogs yet.";
+            return;
+        }
+        // নতুন ডেটা উপরে
         logs.reverse();
         container.innerHTML = logs.map(log => `
             <div class="keylog-entry">
-                ${escapeHtml(log.text)}
-                <span class="keylog-time">${new Date(log.timestamp).toLocaleTimeString()}</span>
+                <div class="keylog-title">${escapeHtml(log.text)}</div>
+                <div class="keylog-time">${new Date(log.timestamp).toLocaleTimeString()}</div>
             </div>
         `).join("");
-    } catch (e) { console.error(e); container.innerHTML = "Error loading keylogs."; }
+    } catch (e) {
+        console.error(e);
+        container.innerHTML = "Error loading keylogs.";
+    }
 }
 async function refreshScreenData() {
     const deviceId = getDeviceId();
