@@ -232,6 +232,225 @@ select:focus{
   display:none;
 }
 
+
+/* =========================================
+   CONNECTED DEVICES — REFERENCE STYLE
+========================================= */
+
+.devices-panel{
+  background:linear-gradient(145deg,rgba(31,17,24,.98),rgba(17,11,17,.98));
+  border:1px solid rgba(143,48,58,.72);
+  border-radius:15px;
+  box-shadow:0 0 0 1px rgba(110,35,46,.12),0 10px 30px rgba(0,0,0,.22);
+}
+
+.devices-panel .panel-title{
+  padding:17px 20px;
+  border-bottom:1px solid rgba(91,48,57,.52);
+}
+
+.devices-title-left{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  color:#f4eef1;
+  font-size:13px;
+  font-weight:800;
+}
+
+.device-header-icon{
+  width:17px;
+  height:20px;
+  display:inline-grid;
+  place-items:center;
+  color:#ff3544;
+  font-size:19px;
+  line-height:1;
+  font-weight:900;
+}
+
+.device-count-badge{
+  min-width:20px;
+  height:20px;
+  padding:0 6px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:999px;
+  background:#ff3b3b;
+  color:#fff;
+  font-size:10px;
+  font-weight:800;
+}
+
+.header-online-pill{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:4px 9px;
+  border:1px solid rgba(255,55,65,.42);
+  border-radius:999px;
+  background:rgba(255,48,59,.07);
+  color:#ff5b64;
+  font-size:9px;
+  font-weight:700;
+}
+
+.header-online-dot{
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  background:#ff3d46;
+  box-shadow:0 0 7px rgba(255,61,70,.45);
+}
+
+.devices-panel .refresh{
+  width:43px;
+  height:30px;
+  display:grid;
+  place-items:center;
+  border:1px solid rgba(117,86,96,.25);
+  background:rgba(255,255,255,.025);
+  color:#9e969d;
+  padding:0;
+  border-radius:999px;
+  cursor:pointer;
+  font-size:17px;
+}
+
+.devices-panel .refresh:hover{
+  color:#fff;
+  border-color:rgba(255,65,75,.35);
+  background:rgba(255,55,65,.05);
+}
+
+.devices-panel th,
+.devices-panel td{
+  padding:15px 20px;
+  border-top:1px solid rgba(88,47,57,.38);
+}
+
+.devices-panel th{
+  color:#746a72;
+  font-size:9px;
+  letter-spacing:.05em;
+}
+
+.devices-panel td{
+  color:#e6dfe2;
+  font-size:11px;
+}
+
+.devices-panel tbody tr{
+  transition:background .18s ease;
+}
+
+.devices-panel tbody tr:hover{
+  background:rgba(255,55,65,.025);
+}
+
+.devices-panel td:first-child{
+  font-weight:800;
+  color:#dcd4d8;
+}
+
+.devices-panel td small{
+  color:#625960;
+  font-size:9px;
+  letter-spacing:.02em;
+}
+
+.devices-panel .online,
+.devices-panel .offline{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  padding:6px 12px;
+  border-radius:999px;
+  font-size:9px;
+  font-weight:700;
+}
+
+.devices-panel .online{
+  background:rgba(69,232,93,.08);
+  border:1px solid rgba(69,232,93,.24);
+  color:#4be862;
+}
+
+.devices-panel .offline{
+  background:rgba(255,55,65,.065);
+  border:1px solid rgba(255,55,65,.28);
+  color:#d84d57;
+}
+
+.devices-panel .control{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  min-width:93px;
+  padding:8px 12px;
+  border:1px solid rgba(110,91,99,.42);
+  border-radius:999px;
+  background:rgba(255,255,255,.045);
+  color:#c9c1c5;
+  font-weight:700;
+  font-size:11px;
+  cursor:pointer;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.025);
+}
+
+.devices-panel .control::after{
+  content:"›";
+  font-size:18px;
+  line-height:10px;
+  color:#8e858a;
+}
+
+.devices-panel .control:hover{
+  color:#fff;
+  border-color:rgba(255,70,80,.38);
+  background:rgba(255,55,65,.06);
+}
+
+.devices-panel .battery-value{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  font-weight:700;
+}
+
+.devices-panel .battery-icon{
+  position:relative;
+  width:14px;
+  height:7px;
+  border:2px solid currentColor;
+  border-radius:2px;
+  display:inline-block;
+}
+
+.devices-panel .battery-icon::after{
+  content:"";
+  position:absolute;
+  right:-4px;
+  top:1px;
+  width:2px;
+  height:3px;
+  border-radius:0 1px 1px 0;
+  background:currentColor;
+}
+
+.devices-panel .battery-good{ color:#39d75a; }
+.devices-panel .battery-low{ color:#e64c54; }
+
+@media(max-width:700px){
+  .devices-panel .panel-title{ padding:15px; }
+  .devices-title-left{ gap:6px; flex-wrap:wrap; }
+  .header-online-pill{ display:none; }
+  .devices-panel th,
+  .devices-panel td{ padding:14px 15px; }
+}
+
 .device-header{
   display:flex;
   justify-content:space-between;
@@ -475,59 +694,48 @@ td small{
 
   <!-- DEVICES -->
 
-  <section class="panel">
+  <section class="panel devices-panel">
 
     <div class="panel-title device-header">
 
-      <div>
-        📱 Connected Devices
-        <span style="color:#a979ff;" id="deviceCount">0</span>
+      <div class="devices-title-left">
+        <span class="device-header-icon">▯</span>
+        <span>Connected Devices</span>
+        <span class="device-count-badge" id="deviceCount">0</span>
+        <span class="header-online-pill">
+          <span class="header-online-dot"></span>
+          <span id="onlineCount">0 Online</span>
+        </span>
       </div>
 
       <button
         class="refresh"
         onclick="loadDevices()"
-      >
-        ↻
-      </button>
+        aria-label="Refresh devices"
+        title="Refresh devices"
+      >↻</button>
 
     </div>
 
-
     <div class="table">
-
       <table>
-
         <thead>
-
           <tr>
             <th>Device</th>
             <th>Battery</th>
             <th>Status</th>
             <th>Action</th>
           </tr>
-
         </thead>
 
-
         <tbody id="deviceList">
-
           <tr>
-
-            <td
-              colspan="4"
-              style="text-align:center;color:#716d80;"
-            >
+            <td colspan="4" style="text-align:center;color:#716d80;">
               Loading devices...
-
             </td>
-
           </tr>
-
         </tbody>
-
       </table>
-
     </div>
 
   </section>
@@ -645,67 +853,67 @@ async function loadDevices(){
     ).textContent =
       devices.length;
 
+    const onlineDevices =
+      devices.filter(device => Boolean(device.online)).length;
+
+    const onlineCount =
+      document.getElementById("onlineCount");
+
+    if(onlineCount){
+      onlineCount.textContent = `${onlineDevices} Online`;
+    }
+
     list.innerHTML =
-      devices.map(
-        device => `
+      devices.map(device => {
 
-        <tr>
+        const battery = Number(device.battery);
+        const hasBattery =
+          device.battery !== null &&
+          device.battery !== undefined &&
+          device.battery !== "" &&
+          Number.isFinite(battery);
 
-          <td>
+        const batteryClass =
+          hasBattery && battery <= 15
+            ? "battery-low"
+            : "battery-good";
 
-            ${escapeHtml(
-              device.name ||
-              "Unknown Device"
-            )}
+        const batteryText =
+          hasBattery ? `${escapeHtml(device.battery)}%` : "—";
 
-            <small>
-              ${escapeHtml(
-                device.device_id || ""
-              )}
-            </small>
+        return `
+          <tr>
+            <td>
+              ${escapeHtml(device.name || "Unknown Device")}
+              <small>${escapeHtml(device.device_id || "")}</small>
+            </td>
 
-          </td>
+            <td>
+              <span class="battery-value ${batteryClass}">
+                ${hasBattery ? '<span class="battery-icon"></span>' : ""}
+                ${batteryText}
+              </span>
+            </td>
 
-          <td>
-            ${
-              device.battery ??
-              "—"
-            }%
-          </td>
+            <td>
+              ${
+                device.online
+                  ? `<span class="online">● Online</span>`
+                  : `<span class="offline">● Offline</span>`
+              }
+            </td>
 
-          <td>
-
-            ${
-              device.online
-
-              ? `<span class="online">
-                   ● Online
-                 </span>`
-
-              : `<span class="offline">
-                   ● Offline
-                 </span>`
-            }
-
-          </td>
-
-          <td>
-
-            <button
-              class="control"
-              onclick="openControl('${encodeURIComponent(
-                device.device_id || ""
-              )}')"
-            >
-              Control
-            </button>
-
-          </td>
-
-        </tr>
-
-      `
-      ).join("");
+            <td>
+              <button
+                class="control"
+                onclick="openControl('${encodeURIComponent(device.device_id || "")}')"
+              >
+                Control
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join("");
 
 
   }catch(error){
@@ -724,6 +932,13 @@ function showNoDevices(){
   document.getElementById(
     "deviceCount"
   ).textContent="0";
+
+  const onlineCount =
+    document.getElementById("onlineCount");
+
+  if(onlineCount){
+    onlineCount.textContent="0 Online";
+  }
 
   document.getElementById(
     "deviceList"
