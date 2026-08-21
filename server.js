@@ -4,6 +4,8 @@ const { Pool } = require("pg");
 const bcrypt = require("bcrypt");
 const session = require("express-session");
 const pgSession = require("connect-pg-simple")(session);
+const http = require("http");
+const WebSocket = require("ws");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -356,6 +358,70 @@ setInterval(() => {
   }
 }, 60 * 60 * 1000);
 
+// ================= WEBSOCKET SIGNALING =================
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server });
+
+const rooms = new Map(); // deviceId -> { device: WebSocket, viewers: Set<WebSocket> }
+
+wss.on("connection", (ws, req) => {
+  const urlParams = new URL(req.url, `http://${req.headers.host}`);
+  const deviceId = urlParams.searchParams.get("deviceId");
+  const role = urlParams.searchParams.get("role"); // 'device' or 'viewer'
+
+  if (!deviceId) {
+    ws.close(4000, "deviceId required");
+    return;
+  }
+
+  const room = rooms.get(deviceId) || { device: null, viewers: new Set() };
+
+  if (role === "device") {
+    room.device = ws;
+  } else if (role === "viewer") {
+    room.viewers.add(ws);
+  } else {
+    ws.close(4000, "role must be device or viewer");
+    return;
+  }
+
+  ws.on("message", (message) => {
+    try {
+      const data = JSON.parse(message);
+      if (data.type === "signal") {
+        const signalData = data.data;
+        if (role === "device") {
+          room.viewers.forEach(viewer => {
+            if (viewer.readyState === WebSocket.OPEN) {
+              viewer.send(JSON.stringify({ type: "signal", from: "device", data: signalData }));
+            }
+          });
+        } else {
+          if (room.device && room.device.readyState === WebSocket.OPEN) {
+            room.device.send(JSON.stringify({ type: "signal", from: "viewer", data: signalData }));
+          }
+        }
+      } else if (data.type === "start_camera") {
+        if (room.device && room.device.readyState === WebSocket.OPEN) {
+          room.device.send(JSON.stringify({ type: "start_camera" }));
+        }
+      }
+    } catch (e) { /* ignore */ }
+  });
+
+  ws.on("close", () => {
+    if (role === "device") {
+      room.device = null;
+      room.viewers.forEach(viewer => viewer.send(JSON.stringify({ type: "device_disconnected" })));
+    } else {
+      room.viewers.delete(ws);
+    }
+    if (!room.device && room.viewers.size === 0) {
+      rooms.delete(deviceId);
+    }
+  });
+});
+
 // ================= PAGES =================
 app.get("/control.html", requireLogin, (req, res) => res.sendFile(path.join(__dirname, "control.html")));
 app.get("/control", requireLogin, (req, res) => res.sendFile(path.join(__dirname, "control.html")));
@@ -366,4 +432,4 @@ app.post("/api/logout", (req, res) => {
   req.session.destroy(() => { res.clearCookie("connect.sid"); res.json({ message: "Logged out." }); });
 });
 
-app.listen(PORT, "0.0.0.0", () => console.log(`Server running on port ${PORT}`));
+server.listen(PORT, "0.0.0.0", () => console.log(`Server running on port ${PORT}`));
