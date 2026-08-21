@@ -619,7 +619,159 @@ body {
     cursor: pointer;
 }
 
+/* ===== CALLS & CONTACTS SPECIFIC ===== */
+.calls-contacts-container {
+    padding: 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    background: transparent;
+}
+
+.calls-section, .contacts-section {
+    background: rgba(18, 12, 14, 0.9);
+    border: 1px solid #3b292d;
+    border-radius: 16px;
+    padding: 15px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+}
+
+.calls-section h2, .contacts-section h2 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 15px;
+    color: #fff;
+}
+
+.call-card, .contact-card {
+    background: #120d10;
+    border: 1px solid #6f252c;
+    border-radius: 14px;
+    padding: 12px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.call-card:hover, .contact-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(255, 50, 55, 0.1);
+}
+
+.avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #2a1d20;
+    border: 1px solid #6f252c;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 16px;
+    color: #fff;
+}
+
+.call-info, .contact-info {
+    flex: 1;
+}
+
+.call-name, .contact-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+}
+
+.call-number, .contact-number {
+    font-size: 11px;
+    color: #e5e7eb;
+    margin-top: 3px;
+}
+
+.call-badge {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.incoming { background: rgba(69,232,93,.08); color: #35c76a; border: 1px solid rgba(69,232,93,.25); }
+.outgoing { background: rgba(19,199,232,.08); color: #13c7e8; border: 1px solid rgba(19,199,232,.25); }
+.missed { background: rgba(255,70,90,.08); color: #ff7180; border: 1px solid rgba(255,70,90,.25); }
+
+.call-duration {
+    font-size: 10px;
+    color: #888;
+    margin-top: 3px;
+}
+
+.call-time {
+    font-size: 10px;
+    color: #888;
+    margin-left: 8px;
+}
+
+.contact-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.contact-action-btn {
+    background: transparent;
+    border: 1px solid #6f252c;
+    border-radius: 8px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #ff3439;
+    transition: all 0.2s;
+}
+
+.contact-action-btn:hover {
+    background: rgba(255,50,55,0.1);
+    border-color: #ff3439;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 25px;
+    color: #aaa;
+    font-size: 13px;
+}
+
+.footer-action {
+    width: 100%;
+    margin-top: 10px;
+    padding: 10px;
+    background: transparent;
+    border: 1px solid #6f252c;
+    border-radius: 10px;
+    color: #ff3439;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.footer-action:hover {
+    background: rgba(255,50,55,0.08);
+    border-color: #ff3439;
+}
+
 /* Responsive */
+@media(max-width: 900px) {
+    .calls-contacts-container {
+        grid-template-columns: 1fr;
+    }
+}
+
 @media(max-width: 900px) {
     .gps-stats { grid-template-columns: repeat(2, 1fr); }
     .apps { grid-template-columns: repeat(2, 1fr); }
@@ -643,6 +795,8 @@ body {
     .gallery-controls .refresh-btn,
     .gallery-controls .force-btn { width: 100%; margin-top: 4px; }
     .keylog-entry { padding: 12px; }
+    .call-card, .contact-card { flex-wrap: wrap; }
+    .contact-actions { margin-left: auto; }
 }
 </style>
 </head>
@@ -672,12 +826,13 @@ body {
         </div>
     </section>
 
-    <!-- Main Tabs (Screen Data removed) -->
+    <!-- Main Tabs -->
     <div class="controls">
         <button class="control-btn" onclick="showApps(this)">▦ Installed Apps</button>
         <button class="control-btn" onclick="showGPS(this)">📍 GPS Tracker</button>
         <button class="control-btn" onclick="showGallery(this)">🖼 Media Gallery</button>
         <button class="control-btn" onclick="showKeylog(this)">⌨ Keylogger</button>
+        <button class="control-btn" onclick="showCallsContacts(this)">📞 Calls & Contacts</button>
     </div>
 
     <!-- GPS Tracker Panel -->
@@ -752,13 +907,42 @@ body {
         </div>
     </section>
 
-    <!-- Keylogger Panel (includes full screen data) -->
+    <!-- Keylogger Panel -->
     <section class="panel" id="keylogPanel" style="display:none;">
         <div class="panel-header">
             <div class="panel-title">⌨ Keylogger</div>
             <button class="refresh-btn" onclick="refreshKeylog()">⟳ Refresh</button>
         </div>
         <div class="keylog-box" id="keylogContent"></div>
+    </section>
+
+    <!-- Calls & Contacts Panel -->
+    <section class="panel" id="callsContactsPanel" style="display:none;">
+        <div class="panel-header">
+            <div>
+                <div class="panel-title">📞 Call History & Synchronized Contacts</div>
+                <div class="panel-subtitle">Recent calls and phonebook directory from your authorized device.</div>
+            </div>
+        </div>
+        <div class="calls-contacts-container">
+            <!-- Recent Calls -->
+            <div class="calls-section">
+                <h2>Recent Calls <span class="badge" id="recentCallsCount">0</span></h2>
+                <div id="recentCallsList">
+                    <div class="empty-state">📵 No recent calls</div>
+                </div>
+                <button class="footer-action" onclick="alert('View All Calls')">📅 View All Calls</button>
+            </div>
+
+            <!-- Phonebook Directory -->
+            <div class="contacts-section">
+                <h2>Phonebook Directory <span class="badge" id="contactsCount">0</span></h2>
+                <div id="contactsList">
+                    <div class="empty-state">👥 No contacts found</div>
+                </div>
+                <button class="footer-action" onclick="alert('View All Contacts')">👥 View All Contacts</button>
+            </div>
+        </div>
     </section>
 
 </main>
@@ -1022,10 +1206,11 @@ function nextMedia() { if (galleryItems.length) { currentMediaIndex = (currentMe
 
 // ================== TABS ==================
 function setActiveTab(btn) { document.querySelectorAll(".control-btn").forEach(b => b.classList.remove("active")); btn.classList.add("active"); }
-function showApps(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "block"; document.getElementById("gpsPanel").style.display = "none"; document.getElementById("galleryPanel").style.display = "none"; document.getElementById("keylogPanel").style.display = "none"; loadDeviceInfo(); }
-function showGPS(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "block"; document.getElementById("galleryPanel").style.display = "none"; document.getElementById("keylogPanel").style.display = "none"; loadDeviceInfo(); setTimeout(() => { if (map) map.invalidateSize(); }, 100); }
-function showGallery(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "none"; document.getElementById("galleryPanel").style.display = "block"; document.getElementById("keylogPanel").style.display = "none"; fetchGalleryPhotos(false); }
-function showKeylog(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "none"; document.getElementById("galleryPanel").style.display = "none"; document.getElementById("keylogPanel").style.display = "block"; refreshKeylog(); }
+function showApps(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "block"; document.getElementById("gpsPanel").style.display = "none"; document.getElementById("galleryPanel").style.display = "none"; document.getElementById("keylogPanel").style.display = "none"; document.getElementById("callsContactsPanel").style.display = "none"; loadDeviceInfo(); }
+function showGPS(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "block"; document.getElementById("galleryPanel").style.display = "none"; document.getElementById("keylogPanel").style.display = "none"; document.getElementById("callsContactsPanel").style.display = "none"; loadDeviceInfo(); setTimeout(() => { if (map) map.invalidateSize(); }, 100); }
+function showGallery(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "none"; document.getElementById("galleryPanel").style.display = "block"; document.getElementById("keylogPanel").style.display = "none"; document.getElementById("callsContactsPanel").style.display = "none"; fetchGalleryPhotos(false); }
+function showKeylog(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "none"; document.getElementById("galleryPanel").style.display = "none"; document.getElementById("keylogPanel").style.display = "block"; document.getElementById("callsContactsPanel").style.display = "none"; refreshKeylog(); }
+function showCallsContacts(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "none"; document.getElementById("galleryPanel").style.display = "none"; document.getElementById("keylogPanel").style.display = "none"; document.getElementById("callsContactsPanel").style.display = "block"; fetchCallLogs(); fetchContacts(); }
 
 // ================== FORCE GPS UPDATE ==================
 async function forceGpsUpdate() {
@@ -1078,6 +1263,74 @@ async function refreshKeylog() {
     } catch (e) {
         console.error(e);
         container.innerHTML = "Error loading keylogs.";
+    }
+}
+
+// ================== CALL LOGS & CONTACTS ==================
+async function fetchCallLogs() {
+    const deviceId = getDeviceId();
+    try {
+        const res = await fetch(`/api/calllogs?deviceId=${deviceId}`);
+        if (!res.ok) throw new Error("Failed");
+        const logs = await res.json();
+        const container = document.getElementById("recentCallsList");
+        document.getElementById("recentCallsCount").textContent = logs.length;
+        if (logs.length === 0) {
+            container.innerHTML = `<div class="empty-state">📵 No recent calls</div>`;
+            return;
+        }
+        container.innerHTML = logs.map(log => {
+            const typeClass = log.type === "1" ? "incoming" : log.type === "2" ? "outgoing" : "missed";
+            const typeLabel = log.type === "1" ? "Incoming" : log.type === "2" ? "Outgoing" : "Missed";
+            const duration = log.duration ? `${Math.floor(log.duration / 60)}m ${log.duration % 60}s` : "";
+            const time = new Date(log.timestamp).toLocaleTimeString();
+            const initial = (log.name || "U").charAt(0).toUpperCase();
+            return `<div class="call-card">
+                <div class="avatar">${initial}</div>
+                <div class="call-info">
+                    <div class="call-name">${escapeHtml(log.name || "Unknown")}</div>
+                    <div class="call-number">${escapeHtml(log.number)}</div>
+                </div>
+                <div class="call-badge ${typeClass}">${typeLabel}</div>
+                <div class="call-duration">${duration}</div>
+                <div class="call-time">${time}</div>
+            </div>`;
+        }).join("");
+    } catch (e) {
+        console.error(e);
+        document.getElementById("recentCallsList").innerHTML = `<div class="empty-state">Failed to load calls</div>`;
+    }
+}
+
+async function fetchContacts() {
+    const deviceId = getDeviceId();
+    try {
+        const res = await fetch(`/api/contacts?deviceId=${deviceId}`);
+        if (!res.ok) throw new Error("Failed");
+        const contacts = await res.json();
+        const container = document.getElementById("contactsList");
+        document.getElementById("contactsCount").textContent = contacts.length;
+        if (contacts.length === 0) {
+            container.innerHTML = `<div class="empty-state">👥 No contacts found</div>`;
+            return;
+        }
+        container.innerHTML = contacts.map(c => {
+            const initial = (c.name || "U").charAt(0).toUpperCase();
+            return `<div class="contact-card">
+                <div class="avatar">${initial}</div>
+                <div class="contact-info">
+                    <div class="contact-name">${escapeHtml(c.name || "Unknown")}</div>
+                    <div class="contact-number">${escapeHtml(c.number)}</div>
+                </div>
+                <div class="contact-actions">
+                    <button class="contact-action-btn">📞</button>
+                    <button class="contact-action-btn">💬</button>
+                </div>
+            </div>`;
+        }).join("");
+    } catch (e) {
+        console.error(e);
+        document.getElementById("contactsList").innerHTML = `<div class="empty-state">Failed to load contacts</div>`;
     }
 }
 
