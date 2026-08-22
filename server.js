@@ -362,12 +362,12 @@ setInterval(() => {
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
-const rooms = new Map(); // deviceId -> { device: WebSocket, viewers: Set<WebSocket> }
+const rooms = new Map();
 
 wss.on("connection", (ws, req) => {
   const urlParams = new URL(req.url, `http://${req.headers.host}`);
   const deviceId = urlParams.searchParams.get("deviceId");
-  const role = urlParams.searchParams.get("role"); // 'device' or 'viewer'
+  const role = urlParams.searchParams.get("role");
 
   if (!deviceId) {
     ws.close(4000, "deviceId required");
@@ -404,6 +404,10 @@ wss.on("connection", (ws, req) => {
       } else if (data.type === "start_camera") {
         if (room.device && room.device.readyState === WebSocket.OPEN) {
           room.device.send(JSON.stringify({ type: "start_camera" }));
+        }
+      } else if (data.type === "switch_camera") {
+        if (room.device && room.device.readyState === WebSocket.OPEN) {
+          room.device.send(JSON.stringify({ type: "switch_camera" }));
         }
       }
     } catch (e) { /* ignore */ }
