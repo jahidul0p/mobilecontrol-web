@@ -71,7 +71,6 @@ async function setupDatabase() {
       );
     `);
     await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(20) DEFAULT 'parent'`);
-
     await pool.query(`
       CREATE TABLE IF NOT EXISTS devices (
         id SERIAL PRIMARY KEY,
@@ -115,6 +114,24 @@ async function setupDatabase() {
   }
 }
 setupDatabase();
+
+// স্বয়ংক্রিয়ভাবে admin email promote করুন (Environment variable থেকে)
+async function promoteAdmin() {
+  try {
+    const adminEmail = process.env.ADMIN_EMAIL;
+    if (adminEmail) {
+      const normalized = adminEmail.trim().toLowerCase();
+      const userRes = await pool.query("SELECT id FROM users WHERE email=$1", [normalized]);
+      if (userRes.rows.length > 0) {
+        await pool.query("UPDATE users SET role='admin' WHERE id=$1", [userRes.rows[0].id]);
+        console.log(`User ${normalized} promoted to admin.`);
+      }
+    }
+  } catch (e) {
+    console.error("Admin promotion failed:", e);
+  }
+}
+promoteAdmin();
 
 function requireLogin(req, res, next) {
   if (!req.session.userId) return res.status(401).json({ authenticated: false, error: "Login required." });
@@ -224,7 +241,6 @@ app.post("/api/device-state", async (req, res) => {
   } catch (e) { console.error(e); res.status(500).json({ error: "State update failed" }); }
 });
 
-// GET device-state (admin bypass)
 app.get("/api/device-state", requireLogin, async (req, res) => {
   const { deviceId } = req.query;
   if (!deviceId) return res.status(400).json({ error: "deviceId required" });
