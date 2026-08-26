@@ -169,9 +169,7 @@ function onDeviceChange() {
     currentDeviceId = document.getElementById('deviceSelect').value;
     if (currentDeviceId) {
         document.getElementById('deviceStatus').textContent = 'Selected: ' + currentDeviceId;
-        // সব প্যানেল রিসেট
         document.querySelectorAll('.panel').forEach(p => p.style.display='none');
-        // ডিফল্ট GPS প্যানেল দেখান
         showTab('gps', document.querySelector('.control-btn'));
         loadDeviceInfo();
         initMap();
@@ -179,9 +177,7 @@ function onDeviceChange() {
 }
 
 function showTab(tabName, btn) {
-    // সব প্যানেল লুকান
     document.querySelectorAll('.panel').forEach(p => p.style.display='none');
-    // ট্যাব হাইলাইট
     document.querySelectorAll('.control-btn').forEach(b => b.classList.remove('active'));
     if (btn) btn.classList.add('active');
 
@@ -249,7 +245,6 @@ async function adminGalleryFetch() {
     });
     const data = await res.json();
     if (data.success) {
-        // অপেক্ষা করে গ্যালারি লোড করা যায়
         setTimeout(async () => { await loadGallery(); }, 5000);
         alert('Gallery fetch requested.');
     } else alert('Failed: ' + data.error);
