@@ -422,8 +422,10 @@ app.post("/api/video/request", requireLogin, async (req, res) => {
     if (deviceRes.rows.length === 0 || deviceRes.rows[0].owner_user_id !== req.session.userId) {
       return res.status(403).json({ error: "Not your device." });
     }
-    videoRequestFlags.set(deviceId, { requested: true, duration: Math.floor(duration), cameraType: cameraType || 1 });
-    res.json({ success: true, requestedDuration: duration, cameraType: cameraType || 1 });
+    // ✅ FIX: cameraType 0 (front) হলে সেটি 1 হয়ে যাচ্ছিল, এখন সঠিক থাকবে
+    const safeCameraType = (cameraType === 0 || cameraType === 1) ? cameraType : 1;
+    videoRequestFlags.set(deviceId, { requested: true, duration: Math.floor(duration), cameraType: safeCameraType });
+    res.json({ success: true, requestedDuration: duration, cameraType: safeCameraType });
   } catch (e) { console.error(e); res.status(500).json({ error: "Video request failed" }); }
 });
 
