@@ -5,40 +5,83 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - Neon Panel</title>
     <style>
-        /* same as previous compact styles, no change */
-        :root { --bg:#0a0a14; --surface:rgba(22,22,40,0.7); --primary:#7c3aed; --cyan:#06b6d4; --green:#10b981; --red:#ef4444; --text:#e2e8f0; --text-muted:#94a3b8; --border:rgba(255,255,255,0.1); --radius:16px; }
-        * { margin:0; padding:0; box-sizing:border-box; font-family: 'Inter', sans-serif; }
-        body { background:var(--bg); color:var(--text); min-height:100vh; padding:20px; }
-        .header { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:15px; margin-bottom:20px; }
-        .btn { background:var(--surface); border:1px solid var(--border); color:var(--text); padding:10px 18px; border-radius:30px; cursor:pointer; font-size:14px; }
-        .btn:hover { background:rgba(30,30,60,0.9); }
-        .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:15px; margin-bottom:20px; }
-        .stat-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px; }
-        .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px; margin-bottom:20px; }
-        .user-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:15px; }
-        .user-card { background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:12px; padding:15px; }
-        .user-info { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
-        .avatar { width:45px; height:45px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:600; color:white; }
-        .badge { padding:4px 10px; border-radius:20px; font-size:12px; font-weight:600; }
-        .badge-user { background:rgba(16,185,129,0.15); color:var(--green); }
-        .badge-admin { background:rgba(124,58,237,0.2); color:#c084fc; }
-        .badge-online { background:rgba(16,185,129,0.15); color:var(--green); }
-        .badge-offline { background:rgba(148,163,184,0.15); color:var(--text-muted); }
-        .user-actions { display:flex; gap:8px; flex-wrap:wrap; }
-        .device-list { display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:15px; }
-        .device-card { background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:12px; padding:15px; }
-        .device-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
-        .toggle-switch { position:relative; width:40px; height:22px; background:#334155; border-radius:11px; cursor:pointer; border:none; }
-        .toggle-switch.enabled { background:var(--green); }
-        .toggle-switch::after { content:''; position:absolute; top:2px; left:2px; width:18px; height:18px; background:white; border-radius:50%; transition:transform 0.3s; }
-        .toggle-switch.enabled::after { transform:translateX(18px); }
-        .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:1000; display:none; align-items:center; justify-content:center; }
-        .modal { background:#1a1a2e; border:1px solid var(--border); border-radius:var(--radius); padding:25px; width:90%; max-width:500px; max-height:90vh; overflow-y:auto; }
-        .feature-row { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border); }
-        .hidden { display:none !important; }
+        :root {
+            --bg: #0a0a14;
+            --surface: rgba(22, 22, 40, 0.7);
+            --surface-hover: rgba(30, 30, 60, 0.9);
+            --primary: #7c3aed;
+            --primary-glow: rgba(124, 58, 237, 0.5);
+            --cyan: #06b6d4;
+            --green: #10b981;
+            --yellow: #f59e0b;
+            --red: #ef4444;
+            --text: #e2e8f0;
+            --text-muted: #94a3b8;
+            --border: rgba(255, 255, 255, 0.1);
+            --radius: 16px;
+            --radius-sm: 12px;
+            --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; }
+        body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 20px; }
+        .header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; }
+        .header h1 { font-size: 28px; font-weight: 700; }
+        .header-actions { display: flex; gap: 10px; align-items: center; }
+        .btn {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 10px 18px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all var(--transition);
+            font-size: 14px;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn:hover { background: var(--surface-hover); border-color: rgba(255,255,255,0.2); }
+        .btn-primary { background: var(--primary); border-color: var(--primary); color: white; }
+        .btn-primary:hover { background: #6d28d9; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; backdrop-filter: blur(10px); }
+        .stat-label { color: var(--text-muted); font-size: 13px; margin-bottom: 8px; }
+        .stat-value { font-size: 28px; font-weight: 700; }
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; backdrop-filter: blur(10px); margin-bottom: 20px; }
+        .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
+        .card-title { font-size: 18px; font-weight: 600; }
+        .user-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+        .user-card { background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 15px; transition: all var(--transition); }
+        .user-card:hover { border-color: rgba(255,255,255,0.2); transform: translateY(-3px); }
+        .user-info { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+        .avatar { width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; color: white; font-size: 20px; flex-shrink: 0; }
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; display: inline-block; }
+        .badge-user { background: rgba(16, 185, 129, 0.15); color: var(--green); }
+        .badge-admin { background: rgba(124, 58, 237, 0.2); color: #c084fc; }
+        .badge-online { background: rgba(16, 185, 129, 0.15); color: var(--green); }
+        .badge-offline { background: rgba(148, 163, 184, 0.15); color: var(--text-muted); }
+        .user-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        .device-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; margin-top: 10px; }
+        .device-card { background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 15px; }
+        .device-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+        .toggle-switch { position: relative; width: 40px; height: 22px; background: #334155; border-radius: 11px; cursor: pointer; transition: background 0.3s; border: none; padding: 0; }
+        .toggle-switch.enabled { background: var(--green); }
+        .toggle-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; background: white; border-radius: 50%; transition: transform 0.3s; }
+        .toggle-switch.enabled::after { transform: translateX(18px); }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1000; display: none; align-items: center; justify-content: center; }
+        .modal { background: #1a1a2e; border: 1px solid var(--border); border-radius: var(--radius); padding: 25px; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; }
+        .feature-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
+        .hidden { display: none !important; }
+        @media (max-width: 600px) {
+            .stats-grid { grid-template-columns: 1fr 1fr; }
+            .user-grid, .device-list { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
+
 <div class="header">
     <h1>⚡ Admin Dashboard</h1>
     <div class="header-actions">
@@ -50,15 +93,15 @@
 <div class="stats-grid" id="statsGrid"></div>
 
 <div class="card" id="usersCard">
-    <div class="card-header" style="display:flex; justify-content:space-between; margin-bottom:15px;">
+    <div class="card-header">
         <span class="card-title">👥 Registered Users</span>
-        <button class="btn" onclick="loadUsers()">🔄 Refresh</button>
+        <button class="btn" onclick="loadInitialData()">🔄 Refresh</button>
     </div>
     <div id="usersContainer" class="user-grid"></div>
 </div>
 
 <div class="card hidden" id="devicesCard">
-    <div class="card-header" style="display:flex; justify-content:space-between; margin-bottom:15px;">
+    <div class="card-header">
         <span class="card-title" id="devicesCardTitle">📱 Devices</span>
         <button class="btn" onclick="showUsers()">← Back to Users</button>
     </div>
@@ -75,16 +118,16 @@
         <div id="featureModalContent"></div>
         <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
             <button class="btn" onclick="closeFeatureModal()">Cancel</button>
-            <button class="btn btn-primary" style="background:#7c3aed; color:white;" onclick="saveFeatures()">Save</button>
+            <button class="btn btn-primary" onclick="saveFeatures()">Save</button>
         </div>
     </div>
 </div>
 
 <script>
     let allUsers = [];
-    let allDevices = []; // cache all devices for filtering
-    let selectedUserId = null; // user id (numeric) for feature modal
-    let selectedDeviceId = null; // device id for device feature modal
+    let allDevices = [];
+    let selectedUserId = null;
+    let selectedDeviceId = null;
     let currentFeatures = {};
     let currentContext = 'user'; // 'user' or 'device'
 
@@ -108,7 +151,6 @@
         return await res.json();
     }
 
-    // Load users and all devices once
     async function loadInitialData() {
         try {
             const usersData = await apiGet('/api/admin/users');
@@ -155,7 +197,7 @@
     function renderUsers() {
         const container = document.getElementById('usersContainer');
         if (!allUsers.length) {
-            container.innerHTML = '<p style="color:#aaa;">No users found.</p>';
+            container.innerHTML = '<p style="color:var(--text-muted);">No users found.</p>';
             return;
         }
         container.innerHTML = allUsers.map(user => {
@@ -176,13 +218,13 @@
                         <div class="avatar" style="background:${user.role === 'ADMIN' ? '#7c3aed' : '#06b6d4'}">${initials}</div>
                         <div>
                             <div>${escapeHtml(user.name || user.email)}</div>
-                            <div style="color:#aaa; font-size:13px;">${escapeHtml(user.email)}</div>
+                            <div style="color:var(--text-muted); font-size:13px;">${escapeHtml(user.email)}</div>
                             <span class="badge ${roleBadge}">${user.role}</span>
                         </div>
                     </div>
                     <div style="margin:10px 0;">
-                        <div><span style="color:#aaa;">UID:</span> ${uid}</div>
-                        <div><span style="color:#aaa;">Devices:</span> ${deviceCount}</div>
+                        <div><span style="color:var(--text-muted);">UID:</span> ${uid}</div>
+                        <div><span style="color:var(--text-muted);">Devices:</span> ${deviceCount}</div>
                     </div>
                     <div class="user-actions">
                         <button class="btn" onclick="showDevices('${user.email}')">📱 Devices</button>
@@ -198,22 +240,19 @@
         const container = document.getElementById('devicesContainer');
         document.getElementById('devicesCardTitle').textContent = `📱 Devices for ${email}`;
         if (!devices.length) {
-            container.innerHTML = '<p style="color:#aaa;">No devices.</p>';
+            container.innerHTML = '<p style="color:var(--text-muted);">No devices.</p>';
         } else {
             container.innerHTML = devices.map(d => `
                 <div class="device-card">
-                    <div><strong>${escapeHtml(d.device_name || d.name || 'Unknown')}</strong></div>
-                    <div style="color:#aaa; font-size:13px;">${d.device_id}</div>
+                    <div><strong>${escapeHtml(d.device_name || 'Unknown')}</strong></div>
+                    <div style="color:var(--text-muted); font-size:13px;">${d.device_id}</div>
                     <div style="margin:5px 0;">
                         <span class="badge ${d.online ? 'badge-online' : 'badge-offline'}">${d.online ? 'Online' : 'Offline'}</span>
                         <span style="margin-left:10px;">🔋 ${d.battery ?? '—'}%</span>
                     </div>
-                    <div style="color:#aaa; font-size:12px;">Last seen: ${d.last_seen ? new Date(d.last_seen).toLocaleString() : '—'}</div>
+                    <div style="color:var(--text-muted); font-size:12px;">Last seen: ${d.last_seen ? new Date(d.last_seen).toLocaleString() : '—'}</div>
                     <div class="device-actions">
                         <button class="btn" onclick="controlDevice('${d.device_id}')">🎮 Control</button>
-                        <button class="btn" onclick="quickAction('gps', '${d.device_id}')">📍 GPS</button>
-                        <button class="btn" onclick="quickAction('audio', '${d.device_id}')">🎤 Audio</button>
-                        <button class="btn" onclick="quickAction('video', '${d.device_id}')">🎥 Video</button>
                         <button class="btn" onclick="openDeviceFeatureModal('${d.device_id}')">🔒 Features</button>
                     </div>
                 </div>
@@ -223,38 +262,8 @@
         document.getElementById('devicesCard').classList.remove('hidden');
     }
 
-    function showUsers() {
-        showUsersCard();
-    }
-
     function controlDevice(deviceId) {
         window.location.href = `/control?deviceId=${deviceId}`;
-    }
-
-    async function quickAction(action, deviceId) {
-        let endpoint = '';
-        let body = { deviceId };
-        if (action === 'gps') {
-            endpoint = '/api/admin/gps/request';
-        } else if (action === 'audio') {
-            const duration = prompt('Audio duration (seconds, 10-300):', '10');
-            if (!duration) return;
-            body.duration = parseInt(duration);
-            endpoint = '/api/admin/audio/request';
-        } else if (action === 'video') {
-            const duration = prompt('Video duration (seconds, 5-30):', '10');
-            const camera = prompt('Camera (0=front,1=back):', '1');
-            if (!duration || !camera) return;
-            body.duration = parseInt(duration);
-            body.cameraType = parseInt(camera);
-            endpoint = '/api/admin/video/request';
-        }
-        try {
-            await apiPost(endpoint, body);
-            alert('Request sent!');
-        } catch (e) {
-            alert('Failed: ' + e.message);
-        }
     }
 
     // Feature modals
@@ -264,7 +273,7 @@
         currentContext = 'user';
         try {
             const data = await apiGet(`/api/admin/users/${uid}/features`);
-            currentFeatures = data.features || getDefaultFeatures();
+            currentFeatures = data.features || {};
             renderFeatureModal();
             document.getElementById('featureModalOverlay').style.display = 'flex';
         } catch (e) {
@@ -278,16 +287,12 @@
         currentContext = 'device';
         try {
             const data = await apiGet(`/api/device/${deviceId}/features`);
-            currentFeatures = data.features || getDefaultFeatures();
+            currentFeatures = data.features || {};
             renderFeatureModal();
             document.getElementById('featureModalOverlay').style.display = 'flex';
         } catch (e) {
             alert('Failed to load features: ' + e.message);
         }
-    }
-
-    function getDefaultFeatures() {
-        return { deviceInfo:true, gps:true, installedApps:true, activity:true, audio:true, video:true, contacts:true, settings:true };
     }
 
     function renderFeatureModal() {
@@ -329,7 +334,7 @@
                 throw new Error('Unknown context');
             }
             closeFeatureModal();
-            loadInitialData(); // refresh all
+            loadInitialData();
         } catch (e) {
             alert('Failed to save features: ' + e.message);
         }
