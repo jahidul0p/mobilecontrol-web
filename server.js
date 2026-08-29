@@ -87,7 +87,7 @@ async function setupDatabase() {
     await pool.query(`ALTER TABLE devices ADD COLUMN IF NOT EXISTS device_token TEXT`);
     await pool.query(`ALTER TABLE devices ADD COLUMN IF NOT EXISTS owner_user_id INTEGER`);
 
-    // নতুন consistent ফিচার কলামসহ টেবিল
+    // ফিচার টেবিল (সঠিক কলামসহ)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS device_features (
         device_id VARCHAR(255) PRIMARY KEY,
@@ -101,7 +101,7 @@ async function setupDatabase() {
         settings BOOLEAN DEFAULT TRUE
       );
     `);
-    // পুরনো কলাম থাকলে যোগ করি (সামঞ্জস্যের জন্য)
+    // পুরনো কলাম থাকলে যোগ করি
     const addCol = async (col) => {
       await pool.query(`ALTER TABLE device_features ADD COLUMN IF NOT EXISTS ${col} BOOLEAN DEFAULT TRUE`);
     };
@@ -682,7 +682,7 @@ app.post("/api/admin/device-feature", requireLogin, requireAdmin, async (req, re
   } catch (e) { console.error(e); res.status(500).json({ error: "Failed to update feature." }); }
 });
 
-// User devices (fixed, uses id or email)
+// ================= USER DEVICES & FEATURES =================
 app.get("/api/admin/users/:uid/devices", requireLogin, requireAdmin, async (req, res) => {
   try {
     const uid = req.params.uid;
@@ -694,7 +694,6 @@ app.get("/api/admin/users/:uid/devices", requireLogin, requireAdmin, async (req,
   } catch (e) { console.error(e); res.status(500).json({ error: "Failed to fetch devices" }); }
 });
 
-// User features (get/set)
 app.get("/api/admin/users/:uid/features", requireLogin, requireAdmin, async (req, res) => {
   try {
     const uid = req.params.uid;
@@ -716,7 +715,7 @@ app.post("/api/admin/users/:uid/features", requireLogin, requireAdmin, async (re
   } catch (e) { console.error(e); res.status(500).json({ error: "Failed to update features" }); }
 });
 
-// Device features for control page (both user and admin)
+// ================= DEVICE FEATURES (FOR CONTROL PAGE) =================
 app.get("/api/device/:deviceId/features", requireLogin, async (req, res) => {
   try {
     const deviceId = req.params.deviceId;
@@ -725,7 +724,16 @@ app.get("/api/device/:deviceId/features", requireLogin, async (req, res) => {
     const featureRes = await pool.query("SELECT * FROM device_features WHERE device_id=$1", [deviceId]);
     if (featureRes.rows.length === 0) return res.json({ features: { deviceInfo:true, gps:true, installedApps:true, activity:true, audio:true, video:true, contacts:true, settings:true } });
     const f = featureRes.rows[0];
-    res.json({ features: { deviceInfo: f.deviceinfo, gps: f.gps, installedApps: f.installedapps, activity: f.activity, audio: f.audio, video: f.video, contacts: f.contacts, settings: f.settings }});
+    res.json({ features: {
+      deviceInfo: f.deviceinfo,   // <-- এখানে capital I রাখা হয়েছে
+      gps: f.gps,
+      installedApps: f.installedapps,
+      activity: f.activity,
+      audio: f.audio,
+      video: f.video,
+      contacts: f.contacts,
+      settings: f.settings
+    }});
   } catch (e) { console.error(e); res.status(500).json({ error: "Failed to fetch features" }); }
 });
 
