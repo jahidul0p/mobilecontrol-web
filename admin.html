@@ -23,8 +23,7 @@
             --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; }
-        body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
-        a { color: var(--cyan); text-decoration: none; }
+        body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 20px; }
         .header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px; }
         .header h1 { font-size: 28px; font-weight: 700; }
         .header-actions { display: flex; gap: 10px; align-items: center; }
@@ -46,7 +45,7 @@
         .btn:hover { background: var(--surface-hover); border-color: rgba(255,255,255,0.2); }
         .btn-primary { background: var(--primary); border-color: var(--primary); color: white; }
         .btn-primary:hover { background: #6d28d9; }
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px; }
         .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; backdrop-filter: blur(10px); }
         .stat-label { color: var(--text-muted); font-size: 13px; margin-bottom: 8px; }
         .stat-value { font-size: 28px; font-weight: 700; }
@@ -127,7 +126,9 @@
 <script>
     let allUsers = [];
     let selectedUserUid = null;
+    let selectedDeviceId = null;
     let currentFeatures = {};
+    let currentContext = 'user'; // 'user' or 'device'
 
     function escapeHtml(str) {
         return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -165,7 +166,6 @@
     function renderStats() {
         const totalUsers = allUsers.length;
         const totalDevices = allUsers.reduce((sum, u) => sum + (u.deviceCount || 0), 0);
-        const onlineDevices = 0; // Could be computed later
         const lockedFeatures = allUsers.reduce((sum, u) => {
             if (u.features) {
                 sum += Object.values(u.features).filter(v => v === false).length;
@@ -175,7 +175,6 @@
         const stats = [
             { label: 'Total Users', value: totalUsers },
             { label: 'Total Devices', value: totalDevices },
-            { label: 'Online Devices', value: onlineDevices },
             { label: 'Locked Features', value: lockedFeatures }
         ];
         document.getElementById('statsGrid').innerHTML = stats.map(s => `
@@ -210,11 +209,10 @@
                     <div style="margin:10px 0;">
                         <div><span style="color:var(--text-muted);">UID:</span> ${uid}</div>
                         <div><span style="color:var(--text-muted);">Devices:</span> ${user.deviceCount || 0}</div>
-                        <div><span style="color:var(--text-muted);">Last Active:</span> ${user.lastActive || '—'}</div>
                     </div>
                     <div class="user-actions">
                         <button class="btn" onclick="showDevices('${uid}')">📱 Devices</button>
-                        <button class="btn" onclick="openFeatureModal('${uid}')">🔒 Features (${featureCount})</button>
+                        <button class="btn" onclick="openUserFeatureModal('${uid}')">🔒 Features (${featureCount})</button>
                     </div>
                 </div>
             `;
@@ -292,9 +290,11 @@
         }
     }
 
-    // ---------- Feature Modal (User) ----------
-    async function openFeatureModal(uid) {
+    // Feature modals
+    async function openUserFeatureModal(uid) {
         selectedUserUid = uid;
+        selectedDeviceId = null;
+        currentContext = 'user';
         try {
             const data = await apiGet(`/api/admin/users/${uid}/features`);
             currentFeatures = data.features || {};
@@ -305,9 +305,10 @@
         }
     }
 
-    // ---------- Feature Modal (Device) ----------
     async function openDeviceFeatureModal(deviceId) {
-        selectedUserUid = deviceId;
+        selectedUserUid = null;
+        selectedDeviceId = deviceId;
+        currentContext = 'device';
         try {
             const data = await apiGet(`/api/device/${deviceId}/features`);
             currentFeatures = data.features || {};
@@ -349,11 +350,12 @@
 
     async function saveFeatures() {
         try {
-            // If selectedUserUid is a deviceId, use device endpoint
-            if (selectedUserUid && selectedUserUid.startsWith('device-')) {
-                await apiPost(`/api/device/${selectedUserUid}/features`, { features: currentFeatures });
-            } else {
+            if (currentContext === 'device' && selectedDeviceId) {
+                await apiPost(`/api/device/${selectedDeviceId}/features`, { features: currentFeatures });
+            } else if (currentContext === 'user' && selectedUserUid) {
                 await apiPost(`/api/admin/users/${selectedUserUid}/features`, { features: currentFeatures });
+            } else {
+                throw new Error('Unknown context');
             }
             closeFeatureModal();
             loadUsers();
@@ -366,6 +368,7 @@
         document.getElementById('featureModalOverlay').style.display = 'none';
     }
 
+    // Initialize
     loadUsers();
 </script>
 </body>
