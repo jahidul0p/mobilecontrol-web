@@ -719,7 +719,7 @@ body {
     </section>
 
     <!-- Main Tabs -->
-    <div class="controls" id="tabControls">
+    <div class="controls">
         <button class="control-btn" data-feature="deviceInfo" onclick="checkFeature('deviceInfo', this)">▦ Installed Apps</button>
         <button class="control-btn" data-feature="gps" onclick="checkFeature('gps', this)">📍 GPS Tracker</button>
         <button class="control-btn" data-feature="installedApps" onclick="checkFeature('installedApps', this)">🖼 Media Gallery</button>
@@ -932,7 +932,7 @@ let marker = null;
 let currentDeviceId = getDeviceId();
 let galleryItems = [];
 let currentMediaIndex = -1;
-let featurePermissions = {}; // device features from server
+let featurePermissions = {};
 
 // ================== UTILITY ==================
 function getDeviceId() {
@@ -957,7 +957,6 @@ async function loadFeaturePermissions() {
     } catch(e) {
         featurePermissions = {};
     }
-    // update lock icons
     document.querySelectorAll('.control-btn[data-feature]').forEach(btn => {
         const feature = btn.dataset.feature;
         if (featurePermissions[feature] === false) {
@@ -970,19 +969,11 @@ function isFeatureLocked(feature) {
     return featurePermissions[feature] === false;
 }
 
-function showLockModal() {
-    document.getElementById('lockModalOverlay').style.display = 'flex';
-}
-function closeLockModal() {
-    document.getElementById('lockModalOverlay').style.display = 'none';
-}
-
 function checkFeature(feature, btn) {
     if (isFeatureLocked(feature)) {
         showLockModal();
         return;
     }
-    // otherwise call the appropriate show function
     switch(feature) {
         case 'deviceInfo': showApps(btn); break;
         case 'gps': showGPS(btn); break;
@@ -994,6 +985,13 @@ function checkFeature(feature, btn) {
         case 'settings': showSettings(btn); break;
         default: showApps(btn);
     }
+}
+
+function showLockModal() {
+    document.getElementById('lockModalOverlay').style.display = 'flex';
+}
+function closeLockModal() {
+    document.getElementById('lockModalOverlay').style.display = 'none';
 }
 
 // ================== LOCALSTORAGE HELPERS ==================
