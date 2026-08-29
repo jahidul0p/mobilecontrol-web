@@ -5,83 +5,40 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - Neon Panel</title>
     <style>
-        :root {
-            --bg: #0a0a14;
-            --surface: rgba(22, 22, 40, 0.7);
-            --surface-hover: rgba(30, 30, 60, 0.9);
-            --primary: #7c3aed;
-            --primary-glow: rgba(124, 58, 237, 0.5);
-            --cyan: #06b6d4;
-            --green: #10b981;
-            --yellow: #f59e0b;
-            --red: #ef4444;
-            --text: #e2e8f0;
-            --text-muted: #94a3b8;
-            --border: rgba(255, 255, 255, 0.1);
-            --radius: 16px;
-            --radius-sm: 12px;
-            --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; }
-        body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 20px; }
-        .header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px; }
-        .header h1 { font-size: 28px; font-weight: 700; }
-        .header-actions { display: flex; gap: 10px; align-items: center; }
-        .btn {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            color: var(--text);
-            padding: 10px 18px;
-            border-radius: 30px;
-            cursor: pointer;
-            transition: all var(--transition);
-            font-size: 14px;
-            font-weight: 500;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .btn:hover { background: var(--surface-hover); border-color: rgba(255,255,255,0.2); }
-        .btn-primary { background: var(--primary); border-color: var(--primary); color: white; }
-        .btn-primary:hover { background: #6d28d9; }
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; backdrop-filter: blur(10px); }
-        .stat-label { color: var(--text-muted); font-size: 13px; margin-bottom: 8px; }
-        .stat-value { font-size: 28px; font-weight: 700; }
-        .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; backdrop-filter: blur(10px); }
-        .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
-        .card-title { font-size: 18px; font-weight: 600; }
-        .user-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
-        .user-card { background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 15px; transition: all var(--transition); }
-        .user-card:hover { border-color: rgba(255,255,255,0.2); transform: translateY(-3px); }
-        .user-info { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-        .avatar { width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; color: white; font-size: 20px; flex-shrink: 0; }
-        .badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; display: inline-block; }
-        .badge-user { background: rgba(16, 185, 129, 0.15); color: var(--green); }
-        .badge-admin { background: rgba(124, 58, 237, 0.2); color: #c084fc; }
-        .badge-online { background: rgba(16, 185, 129, 0.15); color: var(--green); }
-        .badge-offline { background: rgba(148, 163, 184, 0.15); color: var(--text-muted); }
-        .user-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-        .device-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; margin-top: 10px; }
-        .device-card { background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 15px; }
-        .device-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
-        .toggle-switch { position: relative; width: 40px; height: 22px; background: #334155; border-radius: 11px; cursor: pointer; transition: background 0.3s; border: none; padding: 0; }
-        .toggle-switch.enabled { background: var(--green); }
-        .toggle-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; background: white; border-radius: 50%; transition: transform 0.3s; }
-        .toggle-switch.enabled::after { transform: translateX(18px); }
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1000; display: none; align-items: center; justify-content: center; }
-        .modal { background: #1a1a2e; border: 1px solid var(--border); border-radius: var(--radius); padding: 25px; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; }
-        .feature-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
-        .hidden { display: none !important; }
-        @media (max-width: 600px) {
-            .stats-grid { grid-template-columns: 1fr 1fr; }
-            .user-grid, .device-list { grid-template-columns: 1fr; }
-        }
+        /* same as previous compact styles, no change */
+        :root { --bg:#0a0a14; --surface:rgba(22,22,40,0.7); --primary:#7c3aed; --cyan:#06b6d4; --green:#10b981; --red:#ef4444; --text:#e2e8f0; --text-muted:#94a3b8; --border:rgba(255,255,255,0.1); --radius:16px; }
+        * { margin:0; padding:0; box-sizing:border-box; font-family: 'Inter', sans-serif; }
+        body { background:var(--bg); color:var(--text); min-height:100vh; padding:20px; }
+        .header { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:15px; margin-bottom:20px; }
+        .btn { background:var(--surface); border:1px solid var(--border); color:var(--text); padding:10px 18px; border-radius:30px; cursor:pointer; font-size:14px; }
+        .btn:hover { background:rgba(30,30,60,0.9); }
+        .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:15px; margin-bottom:20px; }
+        .stat-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px; }
+        .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px; margin-bottom:20px; }
+        .user-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:15px; }
+        .user-card { background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:12px; padding:15px; }
+        .user-info { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+        .avatar { width:45px; height:45px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:600; color:white; }
+        .badge { padding:4px 10px; border-radius:20px; font-size:12px; font-weight:600; }
+        .badge-user { background:rgba(16,185,129,0.15); color:var(--green); }
+        .badge-admin { background:rgba(124,58,237,0.2); color:#c084fc; }
+        .badge-online { background:rgba(16,185,129,0.15); color:var(--green); }
+        .badge-offline { background:rgba(148,163,184,0.15); color:var(--text-muted); }
+        .user-actions { display:flex; gap:8px; flex-wrap:wrap; }
+        .device-list { display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:15px; }
+        .device-card { background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:12px; padding:15px; }
+        .device-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+        .toggle-switch { position:relative; width:40px; height:22px; background:#334155; border-radius:11px; cursor:pointer; border:none; }
+        .toggle-switch.enabled { background:var(--green); }
+        .toggle-switch::after { content:''; position:absolute; top:2px; left:2px; width:18px; height:18px; background:white; border-radius:50%; transition:transform 0.3s; }
+        .toggle-switch.enabled::after { transform:translateX(18px); }
+        .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:1000; display:none; align-items:center; justify-content:center; }
+        .modal { background:#1a1a2e; border:1px solid var(--border); border-radius:var(--radius); padding:25px; width:90%; max-width:500px; max-height:90vh; overflow-y:auto; }
+        .feature-row { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border); }
+        .hidden { display:none !important; }
     </style>
 </head>
 <body>
-
 <div class="header">
     <h1>⚡ Admin Dashboard</h1>
     <div class="header-actions">
@@ -93,7 +50,7 @@
 <div class="stats-grid" id="statsGrid"></div>
 
 <div class="card" id="usersCard">
-    <div class="card-header">
+    <div class="card-header" style="display:flex; justify-content:space-between; margin-bottom:15px;">
         <span class="card-title">👥 Registered Users</span>
         <button class="btn" onclick="loadUsers()">🔄 Refresh</button>
     </div>
@@ -101,7 +58,7 @@
 </div>
 
 <div class="card hidden" id="devicesCard">
-    <div class="card-header">
+    <div class="card-header" style="display:flex; justify-content:space-between; margin-bottom:15px;">
         <span class="card-title" id="devicesCardTitle">📱 Devices</span>
         <button class="btn" onclick="showUsers()">← Back to Users</button>
     </div>
@@ -118,15 +75,16 @@
         <div id="featureModalContent"></div>
         <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
             <button class="btn" onclick="closeFeatureModal()">Cancel</button>
-            <button class="btn btn-primary" onclick="saveFeatures()">Save</button>
+            <button class="btn btn-primary" style="background:#7c3aed; color:white;" onclick="saveFeatures()">Save</button>
         </div>
     </div>
 </div>
 
 <script>
     let allUsers = [];
-    let selectedUserUid = null;
-    let selectedDeviceId = null;
+    let allDevices = []; // cache all devices for filtering
+    let selectedUserId = null; // user id (numeric) for feature modal
+    let selectedDeviceId = null; // device id for device feature modal
     let currentFeatures = {};
     let currentContext = 'user'; // 'user' or 'device'
 
@@ -150,31 +108,35 @@
         return await res.json();
     }
 
-    async function loadUsers() {
+    // Load users and all devices once
+    async function loadInitialData() {
         try {
-            const data = await apiGet('/api/admin/users');
-            allUsers = data.users || [];
+            const usersData = await apiGet('/api/admin/users');
+            allUsers = usersData.users || [];
+            const devicesData = await apiGet('/api/admin/devices');
+            allDevices = devicesData.devices || [];
             renderStats();
             renderUsers();
-            document.getElementById('usersCard').classList.remove('hidden');
-            document.getElementById('devicesCard').classList.add('hidden');
+            showUsersCard();
         } catch (e) {
-            alert('Failed to load users: ' + e.message);
+            alert('Failed to load data: ' + e.message);
         }
     }
 
     function renderStats() {
         const totalUsers = allUsers.length;
-        const totalDevices = allUsers.reduce((sum, u) => sum + (u.deviceCount || 0), 0);
-        const lockedFeatures = allUsers.reduce((sum, u) => {
-            if (u.features) {
-                sum += Object.values(u.features).filter(v => v === false).length;
-            }
+        const totalDevices = allDevices.length;
+        const onlineDevices = allDevices.filter(d => d.online).length;
+        const lockedFeatures = allDevices.reduce((sum, d) => {
+            ['deviceInfo','gps','installedApps','activity','audio','video','contacts','settings'].forEach(f => {
+                if (d[f] === false) sum++;
+            });
             return sum;
         }, 0);
         const stats = [
             { label: 'Total Users', value: totalUsers },
             { label: 'Total Devices', value: totalDevices },
+            { label: 'Online Devices', value: onlineDevices },
             { label: 'Locked Features', value: lockedFeatures }
         ];
         document.getElementById('statsGrid').innerHTML = stats.map(s => `
@@ -185,79 +147,84 @@
         `).join('');
     }
 
+    function showUsersCard() {
+        document.getElementById('usersCard').classList.remove('hidden');
+        document.getElementById('devicesCard').classList.add('hidden');
+    }
+
     function renderUsers() {
         const container = document.getElementById('usersContainer');
         if (!allUsers.length) {
-            container.innerHTML = '<p style="color:var(--text-muted);">No users found.</p>';
+            container.innerHTML = '<p style="color:#aaa;">No users found.</p>';
             return;
         }
         container.innerHTML = allUsers.map(user => {
-            const uid = user.uid || user.id;
+            const uid = user.uid;
             const initials = (user.email || 'U').substring(0,1).toUpperCase();
             const roleBadge = user.role === 'ADMIN' ? 'badge-admin' : 'badge-user';
-            const featureCount = Object.values(user.features || {}).filter(v => v === false).length;
+            const userDevices = allDevices.filter(d => d.owner_email === user.email);
+            const deviceCount = userDevices.length;
+            const lockedCount = userDevices.reduce((sum, d) => {
+                ['deviceInfo','gps','installedApps','activity','audio','video','contacts','settings'].forEach(f => {
+                    if (d[f] === false) sum++;
+                });
+                return sum;
+            }, 0);
             return `
                 <div class="user-card">
                     <div class="user-info">
                         <div class="avatar" style="background:${user.role === 'ADMIN' ? '#7c3aed' : '#06b6d4'}">${initials}</div>
                         <div>
                             <div>${escapeHtml(user.name || user.email)}</div>
-                            <div style="color:var(--text-muted); font-size:13px;">${escapeHtml(user.email)}</div>
+                            <div style="color:#aaa; font-size:13px;">${escapeHtml(user.email)}</div>
                             <span class="badge ${roleBadge}">${user.role}</span>
                         </div>
                     </div>
                     <div style="margin:10px 0;">
-                        <div><span style="color:var(--text-muted);">UID:</span> ${uid}</div>
-                        <div><span style="color:var(--text-muted);">Devices:</span> ${user.deviceCount || 0}</div>
+                        <div><span style="color:#aaa;">UID:</span> ${uid}</div>
+                        <div><span style="color:#aaa;">Devices:</span> ${deviceCount}</div>
                     </div>
                     <div class="user-actions">
-                        <button class="btn" onclick="showDevices('${uid}')">📱 Devices</button>
-                        <button class="btn" onclick="openUserFeatureModal('${uid}')">🔒 Features (${featureCount})</button>
+                        <button class="btn" onclick="showDevices('${user.email}')">📱 Devices</button>
+                        <button class="btn" onclick="openUserFeatureModal('${uid}')">🔒 Features (${lockedCount})</button>
                     </div>
                 </div>
             `;
         }).join('');
     }
 
-    function showUsers() {
-        document.getElementById('usersCard').classList.remove('hidden');
-        document.getElementById('devicesCard').classList.add('hidden');
+    function showDevices(email) {
+        const devices = allDevices.filter(d => d.owner_email === email);
+        const container = document.getElementById('devicesContainer');
+        document.getElementById('devicesCardTitle').textContent = `📱 Devices for ${email}`;
+        if (!devices.length) {
+            container.innerHTML = '<p style="color:#aaa;">No devices.</p>';
+        } else {
+            container.innerHTML = devices.map(d => `
+                <div class="device-card">
+                    <div><strong>${escapeHtml(d.device_name || d.name || 'Unknown')}</strong></div>
+                    <div style="color:#aaa; font-size:13px;">${d.device_id}</div>
+                    <div style="margin:5px 0;">
+                        <span class="badge ${d.online ? 'badge-online' : 'badge-offline'}">${d.online ? 'Online' : 'Offline'}</span>
+                        <span style="margin-left:10px;">🔋 ${d.battery ?? '—'}%</span>
+                    </div>
+                    <div style="color:#aaa; font-size:12px;">Last seen: ${d.last_seen ? new Date(d.last_seen).toLocaleString() : '—'}</div>
+                    <div class="device-actions">
+                        <button class="btn" onclick="controlDevice('${d.device_id}')">🎮 Control</button>
+                        <button class="btn" onclick="quickAction('gps', '${d.device_id}')">📍 GPS</button>
+                        <button class="btn" onclick="quickAction('audio', '${d.device_id}')">🎤 Audio</button>
+                        <button class="btn" onclick="quickAction('video', '${d.device_id}')">🎥 Video</button>
+                        <button class="btn" onclick="openDeviceFeatureModal('${d.device_id}')">🔒 Features</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        document.getElementById('usersCard').classList.add('hidden');
+        document.getElementById('devicesCard').classList.remove('hidden');
     }
 
-    async function showDevices(uid) {
-        selectedUserUid = uid;
-        try {
-            const data = await apiGet(`/api/admin/users/${uid}/devices`);
-            const devices = data.devices || [];
-            document.getElementById('devicesCardTitle').textContent = `📱 Devices for ${uid}`;
-            const container = document.getElementById('devicesContainer');
-            if (!devices.length) {
-                container.innerHTML = '<p style="color:var(--text-muted);">No devices.</p>';
-            } else {
-                container.innerHTML = devices.map(d => `
-                    <div class="device-card">
-                        <div><strong>${escapeHtml(d.device_name || d.name || 'Unknown')}</strong></div>
-                        <div style="color:var(--text-muted); font-size:13px;">${d.device_id}</div>
-                        <div style="margin:5px 0;">
-                            <span class="badge ${d.online ? 'badge-online' : 'badge-offline'}">${d.online ? 'Online' : 'Offline'}</span>
-                            <span style="margin-left:10px;">🔋 ${d.battery ?? '—'}%</span>
-                        </div>
-                        <div style="color:var(--text-muted); font-size:12px;">Last seen: ${d.last_seen ? new Date(d.last_seen).toLocaleString() : '—'}</div>
-                        <div class="device-actions">
-                            <button class="btn" onclick="controlDevice('${d.device_id}')">🎮 Control</button>
-                            <button class="btn" onclick="quickAction('gps', '${d.device_id}')">📍 GPS</button>
-                            <button class="btn" onclick="quickAction('audio', '${d.device_id}')">🎤 Audio</button>
-                            <button class="btn" onclick="quickAction('video', '${d.device_id}')">🎥 Video</button>
-                            <button class="btn" onclick="openDeviceFeatureModal('${d.device_id}')">🔒 Features</button>
-                        </div>
-                    </div>
-                `).join('');
-            }
-            document.getElementById('usersCard').classList.add('hidden');
-            document.getElementById('devicesCard').classList.remove('hidden');
-        } catch (e) {
-            alert('Failed to load devices: ' + e.message);
-        }
+    function showUsers() {
+        showUsersCard();
     }
 
     function controlDevice(deviceId) {
@@ -292,12 +259,12 @@
 
     // Feature modals
     async function openUserFeatureModal(uid) {
-        selectedUserUid = uid;
+        selectedUserId = uid;
         selectedDeviceId = null;
         currentContext = 'user';
         try {
             const data = await apiGet(`/api/admin/users/${uid}/features`);
-            currentFeatures = data.features || {};
+            currentFeatures = data.features || getDefaultFeatures();
             renderFeatureModal();
             document.getElementById('featureModalOverlay').style.display = 'flex';
         } catch (e) {
@@ -306,12 +273,12 @@
     }
 
     async function openDeviceFeatureModal(deviceId) {
-        selectedUserUid = null;
+        selectedUserId = null;
         selectedDeviceId = deviceId;
         currentContext = 'device';
         try {
             const data = await apiGet(`/api/device/${deviceId}/features`);
-            currentFeatures = data.features || {};
+            currentFeatures = data.features || getDefaultFeatures();
             renderFeatureModal();
             document.getElementById('featureModalOverlay').style.display = 'flex';
         } catch (e) {
@@ -319,17 +286,21 @@
         }
     }
 
+    function getDefaultFeatures() {
+        return { deviceInfo:true, gps:true, installedApps:true, activity:true, audio:true, video:true, contacts:true, settings:true };
+    }
+
     function renderFeatureModal() {
         const container = document.getElementById('featureModalContent');
         const featureLabels = {
             deviceInfo: 'Device Information',
-            battery: 'Battery Status',
             gps: 'GPS Location',
             installedApps: 'Installed Apps',
             activity: 'Device Activity',
-            notifications: 'Notifications',
-            sync: 'Device Sync',
-            remoteConfig: 'Remote Configuration'
+            audio: 'Audio Recorder',
+            video: 'Video Recorder',
+            contacts: 'Contacts',
+            settings: 'Settings'
         };
         container.innerHTML = Object.keys(featureLabels).map(key => {
             const enabled = currentFeatures[key] !== false;
@@ -352,13 +323,13 @@
         try {
             if (currentContext === 'device' && selectedDeviceId) {
                 await apiPost(`/api/device/${selectedDeviceId}/features`, { features: currentFeatures });
-            } else if (currentContext === 'user' && selectedUserUid) {
-                await apiPost(`/api/admin/users/${selectedUserUid}/features`, { features: currentFeatures });
+            } else if (currentContext === 'user' && selectedUserId) {
+                await apiPost(`/api/admin/users/${selectedUserId}/features`, { features: currentFeatures });
             } else {
                 throw new Error('Unknown context');
             }
             closeFeatureModal();
-            loadUsers();
+            loadInitialData(); // refresh all
         } catch (e) {
             alert('Failed to save features: ' + e.message);
         }
@@ -369,7 +340,7 @@
     }
 
     // Initialize
-    loadUsers();
+    loadInitialData();
 </script>
 </body>
 </html>
