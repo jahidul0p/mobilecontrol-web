@@ -124,10 +124,9 @@ async function setupDatabase() {
     console.log("Database ready.");
   } catch (err) {
     console.error("Setup failed:", err);
+    throw err;
   }
 }
-setupDatabase();
-
 // স্বয়ংক্রিয়ভাবে admin email promote করুন (Environment variable থেকে)
 async function promoteAdmin() {
   try {
@@ -144,8 +143,6 @@ async function promoteAdmin() {
     console.error("Admin promotion failed:", e);
   }
 }
-promoteAdmin();
-
 function requireLogin(req, res, next) {
   if (!req.session.userId) return res.status(401).json({ authenticated: false, error: "Login required." });
   next();
@@ -780,4 +777,18 @@ app.post("/api/logout", (req, res) => {
   req.session.destroy(() => { res.clearCookie("connect.sid"); res.json({ message: "Logged out." }); });
 });
 
-app.listen(PORT, "0.0.0.0", () => console.log(`Server running on port ${PORT}`));
+async function startServer() {
+  try {
+    await setupDatabase();
+    await promoteAdmin();
+
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  } catch (err) {
+    console.error("Startup failed:", err);
+    process.exit(1);
+  }
+}
+
+startServer();
