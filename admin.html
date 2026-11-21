@@ -74,6 +74,15 @@
         .modal { background: #1a1a2e; border: 1px solid var(--border); border-radius: var(--radius); padding: 25px; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; }
         .feature-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
         .hidden { display: none !important; }
+        .table-wrap { overflow-x: auto; }
+        table.apk-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        table.apk-table th, table.apk-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+        table.apk-table th { color: var(--text-muted); font-weight: 600; font-size: 12px; text-transform: uppercase; }
+        .badge-pending { background: rgba(245, 158, 11, 0.15); color: var(--yellow); }
+        .badge-completed { background: rgba(16, 185, 129, 0.15); color: var(--green); }
+        .file-input-label { background: var(--surface); border: 1px solid var(--border); padding: 7px 12px; border-radius: 20px; cursor: pointer; font-size: 12.5px; display: inline-block; }
+        .file-input-label:hover { border-color: rgba(255,255,255,0.2); }
+
         @media (max-width: 600px) {
             .stats-grid { grid-template-columns: 1fr 1fr; }
             .user-grid, .device-list { grid-template-columns: 1fr; }
@@ -98,6 +107,25 @@
         <button class="btn" onclick="loadInitialData()">🔄 Refresh</button>
     </div>
     <div id="usersContainer" class="user-grid"></div>
+</div>
+
+<div class="card" id="buildRequestsCard">
+    <div class="card-header">
+        <span class="card-title">📦 APK Build Requests</span>
+        <button class="btn" onclick="loadBuildRequests()">🔄 Refresh</button>
+    </div>
+    <div class="table-wrap">
+        <table class="apk-table">
+            <thead>
+                <tr>
+                    <th>#</th><th>Gmail</th><th>UID</th><th>App</th><th>Package</th><th>Type</th><th>Status</th><th>Requested</th><th>APK</th>
+                </tr>
+            </thead>
+            <tbody id="buildRequestsBody">
+                <tr><td colspan="9" style="color:var(--text-muted);">Loading...</td></tr>
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <div class="card hidden" id="devicesCard">
@@ -162,6 +190,77 @@
             showUsersCard();
         } catch (e) {
             alert('Failed to load data: ' + e.message);
+        }
+    }
+
+    async function loadBuildRequests() {
+        const tbody = document.getElementById('buildRequestsBody');
+        tbody.innerHTML = '<tr><td colspan="9" style="color:var(--text-muted);">Loading...</td></tr>';
+        try {
+            const data = await apiGet('/api/admin/build-requests');
+            renderBuildRequests(data.requests || []);
+        } catch (e) {
+            tbody.innerHTML = `<tr><td colspan="9" style="color:var(--red);">Failed to load: ${escapeHtml(e.message)}</td></tr>`;
+        }
+    }
+
+    function renderBuildRequests(requests) {
+        const tbody = document.getElementById('buildRequestsBody');
+        if (!requests.length) {
+            tbody.innerHTML = '<tr><td colspan="9" style="color:var(--text-muted);">No build requests yet.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = requests.map(r => {
+            const statusBadge = r.status === 'completed'
+                ? '<span class="badge badge-completed">Completed</span>'
+                : '<span class="badge badge-pending">Pending</span>';
+            const when = r.created_at ? new Date(r.created_at).toLocaleString() : '—';
+            const uploadCell = `
+                <label class="file-input-label">
+                    ${r.has_apk ? 'Replace' : 'Upload'}
+                    <input type="file" accept=".apk" style="display:none" onchange="uploadApk(${r.id}, this)">
+                </label>
+            `;
+            return `
+                <tr>
+                    <td>#${r.id}</td>
+                    <td>${escapeHtml(r.email)}</td>
+                    <td>${r.uid}</td>
+                    <td>${escapeHtml(r.app_name || '—')}</td>
+                    <td>${escapeHtml(r.package_name || '—')}</td>
+                    <td>${escapeHtml(r.build_type || '—')}</td>
+                    <td>${statusBadge}</td>
+                    <td>${when}</td>
+                    <td>${uploadCell}</td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    async function uploadApk(requestId, input) {
+        const file = input.files[0];
+        if (!file) return;
+        if (!file.name.toLowerCase().endsWith('.apk')) {
+            alert('Please choose a .apk file.');
+            input.value = '';
+            return;
+        }
+        const formData = new FormData();
+        formData.append('apk', file);
+        try {
+            const res = await fetch(`/api/admin/build-requests/${requestId}/apk`, {
+                method: 'POST',
+                body: formData
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.error || 'Upload failed');
+            }
+            await loadBuildRequests();
+        } catch (e) {
+            alert('APK upload failed: ' + e.message);
+        } finally {
+            input.value = '';
         }
     }
 
@@ -346,6 +445,7 @@
 
     // Initialize
     loadInitialData();
+    loadBuildRequests();
 </script>
 </body>
 </html>
