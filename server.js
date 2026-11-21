@@ -46,6 +46,12 @@ const videoStorage = multer.diskStorage({
 });
 const uploadVideo = multer({ storage: videoStorage, limits: { fileSize: 100 * 1024 * 1024 } });
 
+const uploadApk = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 80 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => cb(null, file.originalname.toLowerCase().endsWith('.apk'))
+});
+
 app.use(
   session({
     store: new pgSession({ pool, tableName: "user_sessions", createTableIfMissing: true }),
@@ -119,6 +125,25 @@ async function setupDatabase() {
     `);
     await pool.query(`ALTER TABLE user_telegram ADD COLUMN IF NOT EXISTS notif_bot_token TEXT`);
     await pool.query(`ALTER TABLE user_telegram ADD COLUMN IF NOT EXISTS notif_chat_id TEXT`);
+
+    // ========== APK BUILD REQUESTS ==========
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS build_requests (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        email VARCHAR(255) NOT NULL,
+        app_name VARCHAR(100),
+        package_name VARCHAR(255),
+        build_type VARCHAR(30),
+        status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','completed')),
+        apk_file TEXT,
+        apk_data BYTEA,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        completed_at TIMESTAMPTZ
+      );
+    `);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_build_requests_user ON build_requests(user_id, created_at DESC)`);
+    await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS uniq_pending_per_user ON build_requests(user_id) WHERE status = 'pending'`);
 
     console.log("Database ready.");
   } catch (err) {
@@ -610,6 +635,106 @@ app.post("/api/gallery/export-done", async (req, res) => {
   const { deviceId, deviceToken, sentCount } = req.body;
   console.log(`Export done for ${deviceId}, sent ${sentCount} items.`);
   res.json({ success: true });
+});
+
+// ========== APK BUILD REQUESTS ==========
+
+app.post("/api/build-apk", requireLogin, async (req, res) => {
+  try {
+    const appName = String(req.body.appName || "").trim().slice(0, 100);
+    const packageName = String(req.body.packageName || "").trim();
+    const buildType = req.body.buildType;
+
+    if (!appName) return res.status(400).json({ error: "App name is required." });
+    if (!/^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z][a-zA-Z0-9_]*)+$/.test(packageName)) {
+      return res.status(400).json({ error: "Package name is not valid." });
+    }
+    if (!["family", "basic"].includes(buildType)) {
+      return res.status(400).json({ error: "Build type is not valid." });
+    }
+
+    const userRes = await pool.query("SELECT email FROM users WHERE id=$1", [req.session.userId]);
+    if (userRes.rows.length === 0) return res.status(401).json({ error: "Session invalid." });
+    const email = userRes.rows[0].email;
+
+    const result = await pool.query(
+      `INSERT INTO build_requests (user_id, email, app_name, package_name, build_type)
+       VALUES ($1,$2,$3,$4,$5) RETURNING id`,
+      [req.session.userId, email, appName, packageName, buildType]
+    );
+    const requestId = result.rows[0].id;
+
+    const adminBotToken = process.env.ADMIN_BOT_TOKEN;
+    const adminChatId = process.env.ADMIN_CHAT_ID;
+    if (adminBotToken && adminChatId) {
+      const message =
+        `🆕 New APK Build Request #${requestId}\n` +
+        `Gmail: ${email}\n` +
+        `UID: ${req.session.userId}\n` +
+        `App: ${appName}\n` +
+        `Package: ${packageName}\n` +
+        `Type: ${buildType}`;
+      sendMessageToTelegram(adminBotToken, adminChatId, message).catch(err => console.error("Admin notify error:", err));
+    }
+
+    res.json({ success: true, requestId, status: "pending" });
+  } catch (e) {
+    if (e.code === "23505") return res.status(409).json({ error: "You already have a pending request." });
+    console.error(e);
+    res.status(500).json({ error: "Build request failed." });
+  }
+});
+
+app.get("/api/build-apk/status", requireLogin, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, status FROM build_requests WHERE user_id=$1 ORDER BY created_at DESC LIMIT 1`,
+      [req.session.userId]
+    );
+    if (result.rows.length === 0) return res.json({ state: "none" });
+    res.json({ state: result.rows[0].status, requestId: result.rows[0].id });
+  } catch (e) { console.error(e); res.status(500).json({ error: "Failed to fetch status." }); }
+});
+
+app.get("/api/build-apk/:id/download", requireLogin, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT apk_data FROM build_requests
+       WHERE id=$1 AND user_id=$2 AND status='completed' AND apk_data IS NOT NULL`,
+      [req.params.id, req.session.userId]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: "APK not found." });
+    res.set({
+      "Content-Type": "application/vnd.android.package-archive",
+      "Content-Disposition": 'attachment; filename="app.apk"'
+    });
+    res.send(result.rows[0].apk_data);
+  } catch (e) { console.error(e); res.status(500).json({ error: "Download failed." }); }
+});
+
+app.get("/api/admin/build-requests", requireLogin, requireAdmin, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, user_id AS uid, email, app_name, package_name, build_type, status,
+              apk_file, (apk_data IS NOT NULL) AS has_apk, created_at, completed_at
+       FROM build_requests ORDER BY created_at DESC`
+    );
+    res.json({ requests: result.rows });
+  } catch (e) { console.error(e); res.status(500).json({ error: "Failed to fetch build requests." }); }
+});
+
+app.post("/api/admin/build-requests/:id/apk", requireLogin, requireAdmin, uploadApk.single("apk"), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: "A .apk file is required." });
+    const result = await pool.query(
+      `UPDATE build_requests
+       SET apk_data=$1, apk_file=$2, status='completed', completed_at=now()
+       WHERE id=$3`,
+      [req.file.buffer, req.file.originalname, req.params.id]
+    );
+    if (result.rowCount === 0) return res.status(404).json({ error: "Request not found." });
+    res.json({ success: true });
+  } catch (e) { console.error(e); res.status(500).json({ error: "APK upload failed." }); }
 });
 
 // ========== ADMIN ==========
