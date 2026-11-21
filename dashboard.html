@@ -201,6 +201,8 @@
   .build-btn:hover::after{left:130%;}
   .build-btn:hover{transform:translateY(-3px);box-shadow:0 18px 44px var(--glow-v);}
   .build-btn:active{transform:translateY(0) scale(.99);}
+  .build-btn:disabled{opacity:.6;cursor:not-allowed;transform:none;box-shadow:none;}
+  .field input:disabled,.field select:disabled{opacity:.6;cursor:not-allowed;}
   .ripple{position:absolute;border-radius:50%;background:rgba(255,255,255,.5);transform:scale(0);animation:rippleAnim .6s ease-out forwards;pointer-events:none;}
   @keyframes rippleAnim{to{transform:scale(2.6);opacity:0;}}
 
@@ -382,7 +384,7 @@
         <div class="pipe-step"><div class="pipe-line"></div><div class="pipe-dot"></div><span>Ready</span></div>
       </div>
 
-      <button class="build-btn" onclick="buildApk()">Build APK</button>
+      <button class="build-btn" id="buildBtn" onclick="buildApk()">Build APK</button>
       <button class="download-btn" id="downloadBtn" onclick="downloadApk()">Download APK</button>
       <div class="status" id="buildStatus"></div>
     </div>
@@ -637,108 +639,120 @@ function showNoDevices(){
 
 
 /* =========================================
-   APK BUILDER (unchanged)
+   APK BUILDER  (per-request system)
+   states: none -> Build APK | pending -> Request Pending | completed -> Download APK
 ========================================= */
 
-async function buildApk(){
+function showStatus(text){
+  const status = document.getElementById("buildStatus");
+  status.style.display = "block";
+  status.textContent = text;
+}
 
-  const status =
-    document.getElementById(
-      "buildStatus"
-    );
+function hideStatus(){
+  document.getElementById("buildStatus").style.display = "none";
+}
 
-  const download =
-    document.getElementById(
-      "downloadBtn"
-    );
+function setFormDisabled(disabled){
+  ["appName","packageName","buildType"].forEach(function(id){
+    const el = document.getElementById(id);
+    if(el) el.disabled = disabled;
+  });
+}
 
-  const appName =
-    document.getElementById(
-      "appName"
-    ).value.trim();
+async function loadApkState(){
 
-  const packageName =
-    document.getElementById(
-      "packageName"
-    ).value.trim();
-
-  const buildType =
-    document.getElementById(
-      "buildType"
-    ).value;
-
-  if(!appName || !packageName){
-
-    status.style.display="block";
-
-    status.textContent =
-      "Please fill in all required fields.";
-
-    return;
-
-  }
-
-  status.style.display="block";
-
-  status.textContent =
-    "Build request is being prepared...";
-
-  download.style.display="none";
+  const buildBtn = document.getElementById("buildBtn");
+  const download = document.getElementById("downloadBtn");
 
   try{
 
-    const response =
-      await fetch(
-        "/api/build-apk",
-        {
-          method:"POST",
+    const response = await fetch("/api/build-apk/status", {
+      credentials:"same-origin",
+      cache:"no-store"
+    });
 
-          headers:{
-            "Content-Type":
-              "application/json"
-          },
+    if(!response.ok) return;
 
-          credentials:"same-origin",
+    const s = await response.json();
 
-          body:JSON.stringify({
-            appName,
-            packageName,
-            buildType
-          })
-        }
-      );
+    if(s.state === "pending"){
 
-    const data =
-      await response.json();
+      buildBtn.textContent = "Request Pending";
+      buildBtn.disabled = true;
+      setFormDisabled(true);
+      download.style.display = "none";
+      showStatus("Request pending. Your APK will appear here once it is ready.");
 
-    if(!response.ok){
+    }else if(s.state === "completed"){
 
-      status.textContent =
-        data.error ||
-        "Build request failed.";
+      buildBtn.textContent = "Request New Build";
+      buildBtn.disabled = false;
+      setFormDisabled(false);
+      download.dataset.url = "/api/build-apk/" + s.requestId + "/download";
+      download.style.display = "block";
+      showStatus("Your APK is ready. Download it below.");
 
-      return;
+    }else{
 
-    }
-
-    status.textContent =
-      "Build started successfully.";
-
-    if(data.downloadUrl){
-
-      download.style.display="block";
-
-      download.dataset.url =
-        data.downloadUrl;
+      buildBtn.textContent = "Build APK";
+      buildBtn.disabled = false;
+      setFormDisabled(false);
+      download.style.display = "none";
+      delete download.dataset.url;
+      hideStatus();
 
     }
 
   }catch(error){
+    console.error("APK status error:", error);
+  }
+
+}
+
+async function buildApk(){
+
+  const buildBtn = document.getElementById("buildBtn");
+  const download = document.getElementById("downloadBtn");
+
+  const appName = document.getElementById("appName").value.trim();
+  const packageName = document.getElementById("packageName").value.trim();
+  const buildType = document.getElementById("buildType").value;
+
+  if(!appName || !packageName){
+    showStatus("Please fill in all required fields.");
+    return;
+  }
+
+  buildBtn.disabled = true;
+  download.style.display = "none";
+  showStatus("Build request is being prepared...");
+
+  try{
+
+    const response = await fetch("/api/build-apk", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      credentials:"same-origin",
+      body:JSON.stringify({ appName, packageName, buildType })
+    });
+
+    const data = await response.json().catch(function(){ return {}; });
+
+    if(!response.ok){
+      showStatus(data.error || "Build request failed.");
+      buildBtn.disabled = false;
+      setTimeout(loadApkState, 2500);
+      return;
+    }
+
+    await loadApkState();
+
+  }catch(error){
 
     console.error(error);
-
-    status.textContent =
-      "APK builder backend is not connected yet.";
+    showStatus("Build request failed. Please try again.");
+    buildBtn.disabled = false;
 
   }
 
@@ -751,18 +765,16 @@ async function buildApk(){
 
 function downloadApk(){
 
-  const url =
-    document.getElementById(
-      "downloadBtn"
-    ).dataset.url;
+  const url = document.getElementById("downloadBtn").dataset.url;
 
   if(url){
-
-    window.location.href=url;
-
+    window.location.href = url;
   }
 
 }
+
+loadApkState();
+setInterval(loadApkState, 15000);
 
 
 /* =========================================
@@ -893,7 +905,10 @@ loadDevices();
     if (text.indexOf("prepared") !== -1 || text.indexOf("preparing") !== -1){
       status.classList.add("busy");
       if (pipeline) pipeline.classList.add("stage-1");
-    } else if (text.indexOf("started successfully") !== -1){
+    } else if (text.indexOf("pending") !== -1){
+      status.classList.add("busy");
+      if (pipeline) pipeline.classList.add("stage-2");
+    } else if (text.indexOf("ready") !== -1 || text.indexOf("started successfully") !== -1){
       status.classList.add("ok");
       if (pipeline) pipeline.classList.add("stage-3");
     } else if (text.indexOf("failed") !== -1 || text.indexOf("not connected") !== -1 || text.indexOf("required fields") !== -1){
