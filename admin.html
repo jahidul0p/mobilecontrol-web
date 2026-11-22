@@ -1,501 +1,805 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - Neon Panel</title>
-    <style>
-        :root {
-            --bg: #0a0a14;
-            --surface: rgba(22, 22, 40, 0.7);
-            --surface-hover: rgba(30, 30, 60, 0.9);
-            --primary: #7c3aed;
-            --primary-glow: rgba(124, 58, 237, 0.5);
-            --cyan: #06b6d4;
-            --green: #10b981;
-            --yellow: #f59e0b;
-            --red: #ef4444;
-            --text: #e2e8f0;
-            --text-muted: #94a3b8;
-            --border: rgba(255, 255, 255, 0.1);
-            --radius: 16px;
-            --radius-sm: 12px;
-            --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; }
-        body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 20px; }
-        .header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; }
-        .header h1 { font-size: 28px; font-weight: 700; }
-        .header-actions { display: flex; gap: 10px; align-items: center; }
-        .btn {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            color: var(--text);
-            padding: 10px 18px;
-            border-radius: 30px;
-            cursor: pointer;
-            transition: all var(--transition);
-            font-size: 14px;
-            font-weight: 500;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .btn:hover { background: var(--surface-hover); border-color: rgba(255,255,255,0.2); }
-        .btn-primary { background: var(--primary); border-color: var(--primary); color: white; }
-        .btn-primary:hover { background: #6d28d9; }
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; backdrop-filter: blur(10px); }
-        .stat-label { color: var(--text-muted); font-size: 13px; margin-bottom: 8px; }
-        .stat-value { font-size: 28px; font-weight: 700; }
-        .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; backdrop-filter: blur(10px); margin-bottom: 20px; }
-        .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
-        .card-title { font-size: 18px; font-weight: 600; }
-        .user-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
-        .user-card { background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 15px; transition: all var(--transition); }
-        .user-card:hover { border-color: rgba(255,255,255,0.2); transform: translateY(-3px); }
-        .user-info { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-        .avatar { width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; color: white; font-size: 20px; flex-shrink: 0; }
-        .badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; display: inline-block; }
-        .badge-user { background: rgba(16, 185, 129, 0.15); color: var(--green); }
-        .badge-admin { background: rgba(124, 58, 237, 0.2); color: #c084fc; }
-        .badge-online { background: rgba(16, 185, 129, 0.15); color: var(--green); }
-        .badge-offline { background: rgba(148, 163, 184, 0.15); color: var(--text-muted); }
-        .user-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-        .device-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; margin-top: 10px; }
-        .device-card { background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 15px; }
-        .device-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
-        .toggle-switch { position: relative; width: 40px; height: 22px; background: #334155; border-radius: 11px; cursor: pointer; transition: background 0.3s; border: none; padding: 0; }
-        .toggle-switch.enabled { background: var(--green); }
-        .toggle-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; background: white; border-radius: 50%; transition: transform 0.3s; }
-        .toggle-switch.enabled::after { transform: translateX(18px); }
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1000; display: none; align-items: center; justify-content: center; }
-        .modal { background: #1a1a2e; border: 1px solid var(--border); border-radius: var(--radius); padding: 25px; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; }
-        .feature-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
-        .hidden { display: none !important; }
-        .table-wrap { overflow-x: auto; }
-        table.apk-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        table.apk-table th, table.apk-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
-        table.apk-table th { color: var(--text-muted); font-weight: 600; font-size: 12px; text-transform: uppercase; }
-        .badge-pending { background: rgba(245, 158, 11, 0.15); color: var(--yellow); }
-        .badge-completed { background: rgba(16, 185, 129, 0.15); color: var(--green); }
-        .file-input-label { background: var(--surface); border: 1px solid var(--border); padding: 7px 12px; border-radius: 20px; cursor: pointer; font-size: 12.5px; display: inline-block; }
-        .file-input-label:hover { border-color: rgba(255,255,255,0.2); }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Access Control — Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b0f16;
+  --bg-grid: rgba(255,255,255,.035);
+  --panel:#121823;
+  --panel-soft:#0f1520;
+  --line: rgba(255,255,255,.08);
+  --line-strong: rgba(255,255,255,.14);
+  --ink:#e8ecf2;
+  --ink-dim:#8b97a7;
+  --ink-faint:#5b6778;
+  --amber:#e8a33d;
+  --amber-dim:rgba(232,163,61,.14);
+  --teal:#2bb7a0;
+  --teal-dim:rgba(43,183,160,.14);
+  --red:#e35b5b;
+  --red-dim:rgba(227,91,91,.14);
+  --radius:14px;
+  --radius-sm:9px;
+  --ease:cubic-bezier(.2,.7,.2,1);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  font-family:'Inter',system-ui,sans-serif;
+  background:var(--bg); color:var(--ink);
+  min-height:100vh;
+  background-image:
+    linear-gradient(var(--bg-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--bg-grid) 1px, transparent 1px);
+  background-size: 34px 34px;
+  background-attachment: fixed;
+}
+h1,h2,h3,.brand,.nav-item span,.section-title,.stat-value,.btn{ font-family:'Space Grotesk', 'Inter', sans-serif; }
 
-        @media (max-width: 600px) {
-            .stats-grid { grid-template-columns: 1fr 1fr; }
-            .user-grid, .device-list { grid-template-columns: 1fr; }
-        }
-    </style>
+/* ===== Shell layout ===== */
+.shell{ display:flex; min-height:100vh; }
+
+.sidebar{
+  width:230px; flex-shrink:0; background:var(--panel-soft);
+  border-right:1px solid var(--line);
+  display:flex; flex-direction:column; padding:22px 16px;
+  position:sticky; top:0; height:100vh;
+}
+.brand{ display:flex; align-items:center; gap:10px; padding:0 6px 24px; }
+.brand-mark{ width:30px; height:30px; border-radius:8px; background:linear-gradient(145deg,var(--amber),#c97f1e); display:flex; align-items:center; justify-content:center; font-weight:700; color:#1a1206; font-size:15px; }
+.brand-text{ font-size:15px; font-weight:600; letter-spacing:.2px; }
+.brand-sub{ font-size:10.5px; color:var(--ink-faint); margin-top:1px; }
+
+.nav{ display:flex; flex-direction:column; gap:3px; margin-top:6px; }
+.nav-item{
+  display:flex; align-items:center; gap:11px; padding:10px 12px; border-radius:var(--radius-sm);
+  color:var(--ink-dim); cursor:pointer; font-size:13.5px; font-weight:500; transition:background .18s var(--ease), color .18s var(--ease);
+  border:none; background:none; text-align:left; width:100%;
+}
+.nav-item .dot{ width:6px; height:6px; border-radius:50%; background:var(--ink-faint); flex-shrink:0; }
+.nav-item:hover{ background:rgba(255,255,255,.04); color:var(--ink); }
+.nav-item.active{ background:var(--amber-dim); color:var(--amber); }
+.nav-item.active .dot{ background:var(--amber); }
+
+.sidebar-foot{ margin-top:auto; padding-top:16px; border-top:1px solid var(--line); display:flex; flex-direction:column; gap:8px; }
+.foot-link{ font-size:12.5px; color:var(--ink-dim); text-decoration:none; padding:7px 10px; border-radius:var(--radius-sm); transition:background .18s var(--ease); }
+.foot-link:hover{ background:rgba(255,255,255,.05); color:var(--ink); }
+
+.main{ flex:1; min-width:0; padding:26px 32px 60px; }
+
+.topbar{ display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:22px; flex-wrap:wrap; }
+.section-title{ font-size:21px; font-weight:600; }
+.section-sub{ font-size:12.5px; color:var(--ink-dim); margin-top:3px; font-family:'Inter'; }
+
+.controls-row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.search-box{ position:relative; }
+.search-box input{
+  background:var(--panel); border:1px solid var(--line); color:var(--ink);
+  padding:8px 12px 8px 30px; border-radius:30px; font-size:13px; width:220px; outline:none;
+  font-family:'Inter'; transition:border-color .18s var(--ease);
+}
+.search-box input:focus{ border-color:var(--line-strong); }
+.search-box::before{ content:'⌕'; position:absolute; left:11px; top:50%; transform:translateY(-50%); color:var(--ink-faint); font-size:14px; }
+
+.chip-row{ display:flex; gap:6px; }
+.chip{
+  background:var(--panel); border:1px solid var(--line); color:var(--ink-dim); font-family:'Inter';
+  padding:7px 13px; border-radius:30px; font-size:12.5px; font-weight:500; cursor:pointer; transition:all .18s var(--ease);
+}
+.chip:hover{ border-color:var(--line-strong); color:var(--ink); }
+.chip.active{ background:var(--amber-dim); border-color:rgba(232,163,61,.4); color:var(--amber); }
+
+.btn{
+  background:var(--panel); border:1px solid var(--line); color:var(--ink);
+  padding:8px 16px; border-radius:30px; cursor:pointer; font-size:13px; font-weight:600;
+  display:inline-flex; align-items:center; gap:7px; transition:all .18s var(--ease); text-decoration:none;
+}
+.btn:hover{ border-color:var(--line-strong); background:rgba(255,255,255,.04); }
+.btn-amber{ background:var(--amber); border-color:var(--amber); color:#1a1206; }
+.btn-amber:hover{ background:#f0ae4d; }
+.btn-ghost{ background:none; }
+.btn-danger{ color:var(--red); }
+.btn-sm{ padding:6px 12px; font-size:12px; }
+
+/* ===== Overview strip ===== */
+.stat-strip{
+  display:flex; background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+  overflow:hidden; margin-bottom:22px; flex-wrap:wrap;
+}
+.stat-cell{ flex:1; min-width:140px; padding:18px 20px; border-right:1px solid var(--line); }
+.stat-cell:last-child{ border-right:none; }
+.stat-value{ font-size:26px; font-weight:700; line-height:1; }
+.stat-label{ font-size:11.5px; color:var(--ink-dim); margin-top:7px; font-family:'Inter'; }
+
+.panel-grid{ display:grid; grid-template-columns: 1.3fr 1fr; gap:18px; }
+@media(max-width:980px){ .panel-grid{ grid-template-columns:1fr; } }
+
+.block{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:18px 20px; }
+.block-title{ font-size:14px; font-weight:600; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; }
+.list-row{ display:flex; align-items:center; justify-content:space-between; padding:9px 0; border-bottom:1px solid var(--line); font-size:13px; }
+.list-row:last-child{ border-bottom:none; }
+.empty-note{ color:var(--ink-faint); font-size:12.5px; padding:10px 0; font-family:'Inter'; }
+
+/* ===== Roster (users) ===== */
+.roster{ display:flex; flex-direction:column; gap:1px; background:var(--line); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; }
+.roster-row{
+  background:var(--panel); padding:14px 18px; display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  transition:background .15s var(--ease);
+}
+.roster-row:hover{ background:#141b27; }
+.avatar{
+  width:36px; height:36px; border-radius:9px; display:flex; align-items:center; justify-content:center;
+  font-weight:700; font-size:14px; color:#0c0f14; flex-shrink:0; font-family:'Space Grotesk';
+}
+.roster-id{ flex:1; min-width:170px; }
+.roster-email{ font-size:13.5px; font-weight:600; }
+.roster-meta{ font-size:11.5px; color:var(--ink-faint); margin-top:2px; font-family:'Inter'; }
+.badge{ padding:3px 10px; border-radius:30px; font-size:11px; font-weight:700; letter-spacing:.2px; display:inline-flex; align-items:center; gap:5px; font-family:'Inter'; }
+.badge-dot{ width:5px; height:5px; border-radius:50%; }
+.badge-admin{ background:rgba(43,183,160,.14); color:var(--teal); }
+.badge-user{ background:rgba(255,255,255,.07); color:var(--ink-dim); }
+.badge-vip{ background:var(--amber-dim); color:var(--amber); }
+.badge-free{ background:rgba(255,255,255,.06); color:var(--ink-faint); }
+.badge-online{ background:var(--teal-dim); color:var(--teal); }
+.badge-offline{ background:rgba(255,255,255,.06); color:var(--ink-faint); }
+.badge-pending{ background:var(--amber-dim); color:var(--amber); }
+.badge-completed{ background:var(--teal-dim); color:var(--teal); }
+.badge-expiring{ background:var(--red-dim); color:var(--red); }
+.roster-stat{ font-size:12px; color:var(--ink-dim); min-width:70px; font-family:'Inter'; }
+.roster-actions{ display:flex; gap:7px; flex-wrap:wrap; margin-left:auto; }
+
+/* ===== Devices / Builds table ===== */
+.table-wrap{ overflow-x:auto; border:1px solid var(--line); border-radius:var(--radius); }
+table{ width:100%; border-collapse:collapse; font-size:13px; font-family:'Inter'; }
+th,td{ padding:11px 16px; text-align:left; border-bottom:1px solid var(--line); white-space:nowrap; }
+thead th{ color:var(--ink-faint); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:.4px; background:var(--panel-soft); }
+tbody tr:hover{ background:#131a25; }
+tbody tr:last-child td{ border-bottom:none; }
+.mono{ font-family:'Inter'; color:var(--ink-dim); font-size:12px; }
+
+.file-label{ background:var(--panel-soft); border:1px solid var(--line); padding:6px 13px; border-radius:30px; cursor:pointer; font-size:12px; display:inline-block; }
+.file-label:hover{ border-color:var(--line-strong); }
+
+/* ===== Skeleton ===== */
+.skel{ background:linear-gradient(90deg, var(--panel) 25%, #1a2230 37%, var(--panel) 63%); background-size:400% 100%; animation:shimmer 1.4s ease infinite; border-radius:7px; }
+@keyframes shimmer{ 0%{background-position:100% 0;} 100%{background-position:0 0;} }
+
+/* ===== Modals ===== */
+.overlay{ position:fixed; inset:0; background:rgba(5,7,11,.72); backdrop-filter:blur(4px); z-index:1000; display:none; align-items:center; justify-content:center; padding:20px; }
+.modal{ background:var(--panel); border:1px solid var(--line-strong); border-radius:var(--radius); padding:24px; width:100%; max-width:440px; max-height:86vh; overflow-y:auto; animation:modalIn .22s var(--ease); }
+@keyframes modalIn{ from{opacity:0; transform:translateY(8px) scale(.98);} to{opacity:1; transform:none;} }
+.modal-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+.modal-head h3{ font-size:16px; font-weight:600; }
+.close-x{ background:none; border:none; color:var(--ink-dim); font-size:18px; cursor:pointer; line-height:1; }
+.close-x:hover{ color:var(--ink); }
+
+.feature-row{ display:flex; align-items:center; justify-content:space-between; padding:11px 2px; border-bottom:1px solid var(--line); font-size:13.5px; }
+.feature-row:last-child{ border-bottom:none; }
+.feature-label{ display:flex; align-items:center; gap:10px; }
+.feature-icon{ width:26px; height:26px; border-radius:7px; background:var(--panel-soft); display:flex; align-items:center; justify-content:center; font-size:13px; }
+.toggle{ position:relative; width:38px; height:21px; background:#2a3140; border-radius:11px; cursor:pointer; border:none; padding:0; transition:background .2s var(--ease); flex-shrink:0; }
+.toggle.on{ background:var(--teal); }
+.toggle::after{ content:''; position:absolute; top:2px; left:2px; width:17px; height:17px; background:#fff; border-radius:50%; transition:transform .2s var(--ease); }
+.toggle.on::after{ transform:translateX(17px); }
+
+.day-chip-row{ display:flex; gap:8px; margin:14px 0; flex-wrap:wrap; }
+.day-chip{ flex:1; min-width:60px; text-align:center; background:var(--panel-soft); border:1px solid var(--line); padding:10px 6px; border-radius:var(--radius-sm); cursor:pointer; font-size:13px; font-weight:600; transition:all .18s var(--ease); }
+.day-chip:hover{ border-color:var(--line-strong); }
+.day-chip.sel{ border-color:var(--amber); background:var(--amber-dim); color:var(--amber); }
+.num-input{ width:100%; background:var(--panel-soft); border:1px solid var(--line); color:var(--ink); padding:9px 12px; border-radius:var(--radius-sm); font-size:13px; font-family:'Inter'; outline:none; margin-top:4px; }
+.num-input:focus{ border-color:var(--line-strong); }
+.field-label{ font-size:11.5px; color:var(--ink-dim); font-family:'Inter'; margin-bottom:5px; display:block; }
+.modal-actions{ display:flex; justify-content:flex-end; gap:9px; margin-top:20px; }
+
+/* ===== Confirm modal ===== */
+.confirm-text{ font-size:13.5px; color:var(--ink-dim); line-height:1.55; margin-bottom:18px; font-family:'Inter'; }
+
+/* ===== Toasts ===== */
+.toast-stack{ position:fixed; bottom:22px; right:22px; display:flex; flex-direction:column; gap:9px; z-index:2000; }
+.toast{
+  background:var(--panel); border:1px solid var(--line-strong); border-left:3px solid var(--teal); border-radius:9px;
+  padding:12px 16px; font-size:13px; min-width:220px; max-width:320px; box-shadow:0 10px 30px rgba(0,0,0,.4);
+  animation:toastIn .25s var(--ease); font-family:'Inter';
+}
+.toast.err{ border-left-color:var(--red); }
+@keyframes toastIn{ from{opacity:0; transform:translateX(14px);} to{opacity:1; transform:none;} }
+
+.hidden{ display:none !important; }
+
+@media(max-width:860px){
+  .shell{ flex-direction:column; }
+  .sidebar{ width:100%; height:auto; position:static; flex-direction:row; align-items:center; padding:14px 16px; overflow-x:auto; }
+  .brand{ padding:0 14px 0 0; }
+  .nav{ flex-direction:row; }
+  .sidebar-foot{ margin:0 0 0 auto; padding:0; border:none; flex-direction:row; }
+  .main{ padding:20px 16px 50px; }
+  .roster-actions{ margin-left:0; width:100%; }
+}
+</style>
 </head>
 <body>
 
-<div class="header">
-    <h1>⚡ Admin Dashboard</h1>
-    <div class="header-actions">
-        <a href="/dashboard" class="btn">← Dashboard</a>
-        <button class="btn" onclick="location.href='/api/logout'">Logout</button>
-    </div>
-</div>
+<div class="shell">
 
-<div class="stats-grid" id="statsGrid"></div>
-
-<div class="card" id="usersCard">
-    <div class="card-header">
-        <span class="card-title">👥 Registered Users</span>
-        <button class="btn" onclick="loadInitialData()">🔄 Refresh</button>
+  <!-- ===== Sidebar ===== -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">⌁</div>
+      <div>
+        <div class="brand-text">Access Control</div>
+        <div class="brand-sub">admin console</div>
+      </div>
     </div>
-    <div id="usersContainer" class="user-grid"></div>
-</div>
-
-<div class="card" id="buildRequestsCard">
-    <div class="card-header">
-        <span class="card-title">📦 APK Build Requests</span>
-        <button class="btn" onclick="loadBuildRequests()">🔄 Refresh</button>
+    <nav class="nav">
+      <button class="nav-item active" data-tab="overview" onclick="switchTab('overview')"><span class="dot"></span><span>Overview</span></button>
+      <button class="nav-item" data-tab="users" onclick="switchTab('users')"><span class="dot"></span><span>Users</span></button>
+      <button class="nav-item" data-tab="devices" onclick="switchTab('devices')"><span class="dot"></span><span>Devices</span></button>
+      <button class="nav-item" data-tab="builds" onclick="switchTab('builds')"><span class="dot"></span><span>Build Requests</span></button>
+    </nav>
+    <div class="sidebar-foot">
+      <a class="foot-link" href="/dashboard">← Back to dashboard</a>
+      <a class="foot-link" href="/api/logout">Log out</a>
     </div>
-    <div class="table-wrap">
-        <table class="apk-table">
-            <thead>
-                <tr>
-                    <th>#</th><th>Gmail</th><th>UID</th><th>App</th><th>Package</th><th>Type</th><th>Status</th><th>Requested</th><th>APK</th>
-                </tr>
-            </thead>
-            <tbody id="buildRequestsBody">
-                <tr><td colspan="9" style="color:var(--text-muted);">Loading...</td></tr>
-            </tbody>
+  </aside>
+
+  <!-- ===== Main ===== -->
+  <main class="main">
+
+    <!-- OVERVIEW -->
+    <section id="tab-overview">
+      <div class="topbar">
+        <div>
+          <div class="section-title">Overview</div>
+          <div class="section-sub">Live snapshot of users, devices and plan status.</div>
+        </div>
+        <button class="btn" onclick="loadAll()">↻ Refresh</button>
+      </div>
+
+      <div class="stat-strip" id="statStrip"></div>
+
+      <div class="panel-grid">
+        <div class="block">
+          <div class="block-title">VIP expiring soon</div>
+          <div id="expiringList"></div>
+        </div>
+        <div class="block">
+          <div class="block-title">Pending build requests</div>
+          <div id="pendingBuildsList"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- USERS -->
+    <section id="tab-users" class="hidden">
+      <div class="topbar">
+        <div>
+          <div class="section-title">Users</div>
+          <div class="section-sub" id="usersCount"></div>
+        </div>
+        <div class="controls-row">
+          <div class="search-box"><input id="userSearchInput" placeholder="Search by email" oninput="onUserSearch(this.value)"></div>
+          <div class="chip-row" id="userFilterChips"></div>
+          <button class="btn btn-sm" onclick="loadAll()">↻</button>
+        </div>
+      </div>
+      <div class="roster" id="usersRoster"></div>
+    </section>
+
+    <!-- DEVICES -->
+    <section id="tab-devices" class="hidden">
+      <div class="topbar">
+        <div>
+          <div class="section-title">Devices</div>
+          <div class="section-sub" id="devicesCount"></div>
+        </div>
+        <div class="controls-row">
+          <div class="search-box"><input id="deviceSearchInput" placeholder="Search device or owner" oninput="onDeviceSearch(this.value)"></div>
+          <div class="chip-row" id="deviceFilterChips"></div>
+          <button class="btn btn-sm" onclick="loadAll()">↻</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Device</th><th>Owner</th><th>Status</th><th>Battery</th><th>Last seen</th><th></th></tr></thead>
+          <tbody id="devicesBody"></tbody>
         </table>
-    </div>
+      </div>
+    </section>
+
+    <!-- BUILD REQUESTS -->
+    <section id="tab-builds" class="hidden">
+      <div class="topbar">
+        <div>
+          <div class="section-title">Build Requests</div>
+          <div class="section-sub" id="buildsCount"></div>
+        </div>
+        <div class="controls-row">
+          <div class="search-box"><input id="buildSearchInput" placeholder="Search by email" oninput="onBuildSearch(this.value)"></div>
+          <div class="chip-row" id="buildFilterChips"></div>
+          <button class="btn btn-sm" onclick="loadBuildRequests()">↻</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Email</th><th>UID</th><th>App</th><th>Package</th><th>Type</th><th>Status</th><th>Requested</th><th>APK</th></tr></thead>
+          <tbody id="buildsBody"><tr><td colspan="9" class="mono">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
 </div>
 
-<div class="card hidden" id="devicesCard">
-    <div class="card-header">
-        <span class="card-title" id="devicesCardTitle">📱 Devices</span>
-        <button class="btn" onclick="showUsers()">← Back to Users</button>
+<!-- ===== Feature modal ===== -->
+<div class="overlay" id="featureOverlay">
+  <div class="modal">
+    <div class="modal-head"><h3>Manage features</h3><button class="close-x" onclick="closeFeatureModal()">✕</button></div>
+    <div id="featureModalBody"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeFeatureModal()">Cancel</button>
+      <button class="btn btn-amber" onclick="saveFeatures()">Save changes</button>
     </div>
-    <div id="devicesContainer" class="device-list"></div>
+  </div>
 </div>
 
-<!-- Feature Modal -->
-<div class="modal-overlay" id="featureModalOverlay">
-    <div class="modal">
-        <div class="card-header">
-            <h3>🔒 Manage Features</h3>
-            <button class="btn" onclick="closeFeatureModal()">✕</button>
-        </div>
-        <div id="featureModalContent"></div>
-        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
-            <button class="btn" onclick="closeFeatureModal()">Cancel</button>
-            <button class="btn btn-primary" onclick="saveFeatures()">Save</button>
-        </div>
+<!-- ===== VIP modal ===== -->
+<div class="overlay" id="vipOverlay">
+  <div class="modal">
+    <div class="modal-head"><h3 id="vipModalTitle">Activate VIP</h3><button class="close-x" onclick="closeVipModal()">✕</button></div>
+    <span class="field-label">Duration</span>
+    <div class="day-chip-row" id="dayChipRow"></div>
+    <span class="field-label">Or enter custom days</span>
+    <input class="num-input" id="vipDaysInput" type="number" min="1" max="3650" placeholder="e.g. 45" oninput="clearDayChipSelection()">
+    <div class="modal-actions">
+      <button class="btn" onclick="closeVipModal()">Cancel</button>
+      <button class="btn btn-amber" onclick="confirmActivateVip()">Activate</button>
     </div>
+  </div>
 </div>
+
+<!-- ===== Confirm modal ===== -->
+<div class="overlay" id="confirmOverlay">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-head"><h3 id="confirmTitle">Are you sure?</h3><button class="close-x" onclick="closeConfirm()">✕</button></div>
+    <p class="confirm-text" id="confirmText"></p>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeConfirm()">Cancel</button>
+      <button class="btn btn-danger" id="confirmActionBtn" onclick="">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-stack" id="toastStack"></div>
 
 <script>
-    let allUsers = [];
-    let allDevices = [];
-    let selectedUserId = null;
-    let selectedDeviceId = null;
-    let currentFeatures = {};
-    let currentContext = 'user'; // 'user' or 'device'
+let allUsers = [], allDevices = [], allBuildRequests = [];
+let userFilter = 'all', userSearch = '';
+let deviceFilter = 'all', deviceSearch = '';
+let buildFilter = 'all', buildSearch = '';
+let selectedUserId = null, selectedDeviceId = null, currentFeatures = {}, currentContext = 'user';
+let vipTargetUid = null, selectedDays = null;
 
-    function escapeHtml(str) {
-        return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-    }
+function escapeHtml(str){
+  return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 
-    async function apiGet(url) {
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(await res.text());
-        return await res.json();
-    }
+/* ---------- API helpers ---------- */
+async function apiGet(url){ const r = await fetch(url); if(!r.ok) throw new Error(await r.text()); return r.json(); }
+async function apiPost(url, body){ const r = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) }); if(!r.ok) throw new Error(await r.text()); return r.json(); }
+async function apiDelete(url){ const r = await fetch(url, { method:'DELETE' }); if(!r.ok) throw new Error(await r.text()); return r.json(); }
 
-    async function apiPost(url, body) {
-        const res = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
-        });
-        if (!res.ok) throw new Error(await res.text());
-        return await res.json();
-    }
+/* ---------- Toast ---------- */
+function toast(msg, type){
+  const stack = document.getElementById('toastStack');
+  const el = document.createElement('div');
+  el.className = 'toast' + (type === 'err' ? ' err' : '');
+  el.textContent = msg;
+  stack.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .25s'; setTimeout(() => el.remove(), 250); }, 3200);
+}
 
-    async function apiDelete(url) {
-        const res = await fetch(url, { method: 'DELETE' });
-        if (!res.ok) throw new Error(await res.text());
-        return await res.json();
-    }
+/* ---------- Confirm modal ---------- */
+function openConfirm(title, text, onYes){
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmText').textContent = text;
+  const btn = document.getElementById('confirmActionBtn');
+  btn.onclick = () => { closeConfirm(); onYes(); };
+  document.getElementById('confirmOverlay').style.display = 'flex';
+}
+function closeConfirm(){ document.getElementById('confirmOverlay').style.display = 'none'; }
 
-    async function loadInitialData() {
-        try {
-            const usersData = await apiGet('/api/admin/users');
-            allUsers = usersData.users || [];
-            const devicesData = await apiGet('/api/admin/devices');
-            allDevices = devicesData.devices || [];
-            renderStats();
-            renderUsers();
-            showUsersCard();
-        } catch (e) {
-            alert('Failed to load data: ' + e.message);
-        }
-    }
+/* ---------- Tabs ---------- */
+function switchTab(tab){
+  ['overview','users','devices','builds'].forEach(t => {
+    document.getElementById('tab-' + t).classList.toggle('hidden', t !== tab);
+  });
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.tab === tab));
+}
 
-    async function loadBuildRequests() {
-        const tbody = document.getElementById('buildRequestsBody');
-        tbody.innerHTML = '<tr><td colspan="9" style="color:var(--text-muted);">Loading...</td></tr>';
-        try {
-            const data = await apiGet('/api/admin/build-requests');
-            renderBuildRequests(data.requests || []);
-        } catch (e) {
-            tbody.innerHTML = `<tr><td colspan="9" style="color:var(--red);">Failed to load: ${escapeHtml(e.message)}</td></tr>`;
-        }
-    }
+/* ---------- Count-up animation ---------- */
+function countUp(el, target){
+  const dur = 650, start = performance.now();
+  function step(now){
+    const p = Math.min(1, (now - start) / dur);
+    const eased = 1 - Math.pow(1 - p, 3);
+    el.textContent = Math.round(target * eased);
+    if (p < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
 
-    function renderBuildRequests(requests) {
-        const tbody = document.getElementById('buildRequestsBody');
-        if (!requests.length) {
-            tbody.innerHTML = '<tr><td colspan="9" style="color:var(--text-muted);">No build requests yet.</td></tr>';
-            return;
-        }
-        tbody.innerHTML = requests.map(r => {
-            const statusBadge = r.status === 'completed'
-                ? '<span class="badge badge-completed">Completed</span>'
-                : '<span class="badge badge-pending">Pending</span>';
-            const when = r.created_at ? new Date(r.created_at).toLocaleString() : '—';
-            const uploadCell = `
-                <label class="file-input-label">
-                    ${r.has_apk ? 'Replace' : 'Upload'}
-                    <input type="file" accept=".apk" style="display:none" onchange="uploadApk(${r.id}, this)">
-                </label>
-            `;
-            return `
-                <tr>
-                    <td>#${r.id}</td>
-                    <td>${escapeHtml(r.email)}</td>
-                    <td>${r.uid}</td>
-                    <td>${escapeHtml(r.app_name || '—')}</td>
-                    <td>${escapeHtml(r.package_name || '—')}</td>
-                    <td>${escapeHtml(r.build_type || '—')}</td>
-                    <td>${statusBadge}</td>
-                    <td>${when}</td>
-                    <td>${uploadCell}</td>
-                </tr>
-            `;
-        }).join('');
-    }
+function daysLeft(dateStr){
+  if (!dateStr) return null;
+  return Math.ceil((new Date(dateStr).getTime() - Date.now()) / 86400000);
+}
 
-    async function uploadApk(requestId, input) {
-        const file = input.files[0];
-        if (!file) return;
-        if (!file.name.toLowerCase().endsWith('.apk')) {
-            alert('Please choose a .apk file.');
-            input.value = '';
-            return;
-        }
-        const formData = new FormData();
-        formData.append('apk', file);
-        try {
-            const res = await fetch(`/api/admin/build-requests/${requestId}/apk`, {
-                method: 'POST',
-                body: formData
-            });
-            if (!res.ok) {
-                const err = await res.json().catch(() => ({}));
-                throw new Error(err.error || 'Upload failed');
-            }
-            await loadBuildRequests();
-        } catch (e) {
-            alert('APK upload failed: ' + e.message);
-        } finally {
-            input.value = '';
-        }
-    }
+/* ---------- Load everything ---------- */
+async function loadAll(){
+  try{
+    const [usersData, devicesData] = await Promise.all([
+      apiGet('/api/admin/users'),
+      apiGet('/api/admin/devices')
+    ]);
+    allUsers = usersData.users || [];
+    allDevices = devicesData.devices || [];
+    renderOverview();
+    renderUserFilterChips();
+    renderUsers();
+    renderDeviceFilterChips();
+    renderDevices();
+  }catch(e){
+    toast('Failed to load data: ' + e.message, 'err');
+  }
+}
 
-    function renderStats() {
-        const totalUsers = allUsers.length;
-        const totalDevices = allDevices.length;
-        const onlineDevices = allDevices.filter(d => d.online).length;
-        const lockedFeatures = allDevices.reduce((sum, d) => {
-            ['deviceInfo','gps','installedApps','activity','audio','video','contacts','settings'].forEach(f => {
-                if (d[f] === false) sum++;
-            });
-            return sum;
-        }, 0);
-        const stats = [
-            { label: 'Total Users', value: totalUsers },
-            { label: 'Total Devices', value: totalDevices },
-            { label: 'Online Devices', value: onlineDevices },
-            { label: 'Locked Features', value: lockedFeatures }
-        ];
-        document.getElementById('statsGrid').innerHTML = stats.map(s => `
-            <div class="stat-card">
-                <div class="stat-label">${s.label}</div>
-                <div class="stat-value">${s.value}</div>
-            </div>
-        `).join('');
-    }
+async function loadBuildRequests(){
+  const tbody = document.getElementById('buildsBody');
+  tbody.innerHTML = '<tr><td colspan="9" class="mono">Loading…</td></tr>';
+  try{
+    const data = await apiGet('/api/admin/build-requests');
+    allBuildRequests = data.requests || [];
+    renderBuildFilterChips();
+    renderBuilds();
+  }catch(e){
+    tbody.innerHTML = `<tr><td colspan="9" style="color:var(--red)">Failed to load: ${escapeHtml(e.message)}</td></tr>`;
+  }
+}
 
-    function showUsersCard() {
-        document.getElementById('usersCard').classList.remove('hidden');
-        document.getElementById('devicesCard').classList.add('hidden');
-    }
+/* ---------- Overview ---------- */
+function renderOverview(){
+  const totalUsers = allUsers.length;
+  const vipUsers = allUsers.filter(u => u.plan === 'vip').length;
+  const freeUsers = totalUsers - vipUsers;
+  const totalDevices = allDevices.length;
+  const onlineDevices = allDevices.filter(d => d.online).length;
+  const pendingBuilds = allBuildRequests.filter(r => r.status !== 'completed').length;
+  const lockedFeatures = allUsers.reduce((sum, u) => {
+    const f = u.features || {};
+    Object.keys(f).forEach(k => { if (f[k] === false) sum++; });
+    return sum;
+  }, 0);
 
-    function renderUsers() {
-        const container = document.getElementById('usersContainer');
-        if (!allUsers.length) {
-            container.innerHTML = '<p style="color:var(--text-muted);">No users found.</p>';
-            return;
-        }
-        container.innerHTML = allUsers.map(user => {
-            const uid = user.uid;
-            const initials = (user.email || 'U').substring(0,1).toUpperCase();
-            const roleBadge = user.role === 'ADMIN' ? 'badge-admin' : 'badge-user';
-            const userDevices = allDevices.filter(d => d.owner_email === user.email);
-            const deviceCount = userDevices.length;
-            const lockedCount = userDevices.reduce((sum, d) => {
-                ['deviceInfo','gps','installedApps','activity','audio','video','contacts','settings'].forEach(f => {
-                    if (d[f] === false) sum++;
-                });
-                return sum;
-            }, 0);
-            return `
-                <div class="user-card">
-                    <div class="user-info">
-                        <div class="avatar" style="background:${user.role === 'ADMIN' ? '#7c3aed' : '#06b6d4'}">${initials}</div>
-                        <div>
-                            <div>${escapeHtml(user.name || user.email)}</div>
-                            <div style="color:var(--text-muted); font-size:13px;">${escapeHtml(user.email)}</div>
-                            <span class="badge ${roleBadge}">${user.role}</span>
-                        </div>
-                    </div>
-                    <div style="margin:10px 0;">
-                        <div><span style="color:var(--text-muted);">UID:</span> ${uid}</div>
-                        <div><span style="color:var(--text-muted);">Devices:</span> ${deviceCount}</div>
-                        <div style="margin-top:7px;">
-                            <span class="badge ${user.plan === 'vip' ? 'badge-completed' : 'badge-offline'}">
-                                ${user.plan === 'vip' ? 'VIP' : 'FREE'}
-                            </span>
-                        </div>
-                        <div style="color:var(--text-muted);font-size:12px;margin-top:5px;">
-                            VIP Expiry: ${user.plan === 'vip' && user.vipExpiresAt
-                                ? new Date(user.vipExpiresAt).toLocaleDateString()
-                                : 'Not Active'}
-                        </div>
-                    </div>
-                    <div class="user-actions">
-                        <button class="btn" onclick="showDevices('${user.email}')">📱 Devices</button>
-                        <button class="btn" onclick="openUserFeatureModal('${uid}')">🔒 Features (${lockedCount})</button>
-                        ${user.plan === 'vip'
-                            ? `<button class="btn" onclick="removeVIP('${uid}')">Remove VIP</button>`
-                            : `<button class="btn btn-primary" onclick="activateVIP('${uid}')">Activate VIP</button>`
-                        }
-                    </div>
-                </div>
-            `;
-        }).join('');
-    }
+  const stats = [
+    ['Total users', totalUsers],
+    ['VIP users', vipUsers],
+    ['Free users', freeUsers],
+    ['Total devices', totalDevices],
+    ['Online now', onlineDevices],
+    ['Pending builds', pendingBuilds],
+    ['Locked features', lockedFeatures],
+  ];
+  const strip = document.getElementById('statStrip');
+  strip.innerHTML = stats.map(([label]) => `
+    <div class="stat-cell"><div class="stat-value" data-target="0">0</div><div class="stat-label">${label}</div></div>
+  `).join('');
+  strip.querySelectorAll('.stat-value').forEach((el, i) => countUp(el, stats[i][1]));
 
-    async function activateVIP(uid) {
-        const days = prompt('VIP কত দিনের জন্য চালু করবে?', '30');
-        if (days === null) return;
+  const expiring = allUsers
+    .filter(u => u.plan === 'vip' && daysLeft(u.vipExpiresAt) !== null && daysLeft(u.vipExpiresAt) <= 5)
+    .sort((a,b) => daysLeft(a.vipExpiresAt) - daysLeft(b.vipExpiresAt));
+  const expiringEl = document.getElementById('expiringList');
+  expiringEl.innerHTML = expiring.length
+    ? expiring.map(u => {
+        const d = daysLeft(u.vipExpiresAt);
+        return `<div class="list-row"><span>${escapeHtml(u.email)}</span><span class="badge ${d<=0?'badge-expiring':'badge-vip'}">${d<=0?'expired':d+'d left'}</span></div>`;
+      }).join('')
+    : '<div class="empty-note">Nothing expiring in the next 5 days.</div>';
 
-        if (!Number.isInteger(Number(days)) || Number(days) < 1 || Number(days) > 3650) {
-            alert('Enter valid days (1-3650).');
-            return;
-        }
+  const pending = allBuildRequests.filter(r => r.status !== 'completed').slice(0, 6);
+  const pendingEl = document.getElementById('pendingBuildsList');
+  pendingEl.innerHTML = pending.length
+    ? pending.map(r => `<div class="list-row"><span>${escapeHtml(r.email)}</span><span class="badge badge-pending">pending</span></div>`).join('')
+    : '<div class="empty-note">No pending build requests.</div>';
+}
 
-        try {
-            await apiPost(`/api/admin/users/${uid}/vip`, { days: Number(days) });
-            alert('VIP Activated!');
-            await loadInitialData();
-        } catch (e) {
-            alert('Failed: ' + e.message);
-        }
-    }
+/* ---------- Users ---------- */
+function renderUserFilterChips(){
+  const chips = [['all','All'],['vip','VIP'],['free','Free'],['admin','Admin']];
+  document.getElementById('userFilterChips').innerHTML = chips.map(([k,label]) =>
+    `<button class="chip ${userFilter===k?'active':''}" onclick="setUserFilter('${k}')">${label}</button>`
+  ).join('');
+}
+function setUserFilter(f){ userFilter = f; renderUserFilterChips(); renderUsers(); }
+function onUserSearch(v){ userSearch = v.trim().toLowerCase(); renderUsers(); }
 
-    async function removeVIP(uid) {
-        if (!confirm('এই User-এর VIP Remove করবে?')) return;
+function avatarColor(email){
+  const palette = ['#e8a33d','#2bb7a0','#7c8cff','#e35b5b','#4fa8e0'];
+  let h = 0; for (const c of (email||'')) h = (h*31 + c.charCodeAt(0)) % palette.length;
+  return palette[h];
+}
 
-        try {
-            await apiDelete(`/api/admin/users/${uid}/vip`);
-            alert('VIP Removed!');
-            await loadInitialData();
-        } catch (e) {
-            alert('Failed: ' + e.message);
-        }
-    }
+function renderUsers(){
+  let list = allUsers;
+  if (userFilter === 'vip') list = list.filter(u => u.plan === 'vip');
+  else if (userFilter === 'free') list = list.filter(u => u.plan !== 'vip');
+  else if (userFilter === 'admin') list = list.filter(u => u.role === 'ADMIN');
+  if (userSearch) list = list.filter(u => (u.email||'').toLowerCase().includes(userSearch));
 
-    function showDevices(email) {
-        const devices = allDevices.filter(d => d.owner_email === email);
-        const container = document.getElementById('devicesContainer');
-        document.getElementById('devicesCardTitle').textContent = `📱 Devices for ${email}`;
-        if (!devices.length) {
-            container.innerHTML = '<p style="color:var(--text-muted);">No devices.</p>';
-        } else {
-            container.innerHTML = devices.map(d => `
-                <div class="device-card">
-                    <div><strong>${escapeHtml(d.device_name || 'Unknown')}</strong></div>
-                    <div style="color:var(--text-muted); font-size:13px;">${d.device_id}</div>
-                    <div style="margin:5px 0;">
-                        <span class="badge ${d.online ? 'badge-online' : 'badge-offline'}">${d.online ? 'Online' : 'Offline'}</span>
-                        <span style="margin-left:10px;">🔋 ${d.battery ?? '—'}%</span>
-                    </div>
-                    <div style="color:var(--text-muted); font-size:12px;">Last seen: ${d.last_seen ? new Date(d.last_seen).toLocaleString() : '—'}</div>
-                    <div class="device-actions">
-                        <button class="btn" onclick="controlDevice('${d.device_id}')">🎮 Control</button>
-                        <button class="btn" onclick="openDeviceFeatureModal('${d.device_id}')">🔒 Features</button>
-                    </div>
-                </div>
-            `).join('');
-        }
-        document.getElementById('usersCard').classList.add('hidden');
-        document.getElementById('devicesCard').classList.remove('hidden');
-    }
+  document.getElementById('usersCount').textContent = `${list.length} of ${allUsers.length} users`;
+  const roster = document.getElementById('usersRoster');
 
-    function controlDevice(deviceId) {
-        window.location.href = `/control?deviceId=${deviceId}`;
-    }
+  if (!list.length){ roster.innerHTML = '<div class="roster-row"><span class="empty-note">No users match.</span></div>'; return; }
 
-    // Feature modals
-    async function openUserFeatureModal(uid) {
-        selectedUserId = uid;
-        selectedDeviceId = null;
-        currentContext = 'user';
-        try {
-            const data = await apiGet(`/api/admin/users/${uid}/features`);
-            currentFeatures = data.features || {};
-            renderFeatureModal();
-            document.getElementById('featureModalOverlay').style.display = 'flex';
-        } catch (e) {
-            alert('Failed to load features: ' + e.message);
-        }
-    }
+  roster.innerHTML = list.map(u => {
+    const initials = (u.email || 'U').substring(0,1).toUpperCase();
+    const d = u.plan === 'vip' ? daysLeft(u.vipExpiresAt) : null;
+    const planBadge = u.plan === 'vip'
+      ? `<span class="badge ${d!==null && d<=3 ? 'badge-expiring':'badge-vip'}">VIP · ${d!==null ? (d<=0?'expired':d+'d left') : '—'}</span>`
+      : `<span class="badge badge-free">Free</span>`;
+    const roleBadge = `<span class="badge ${u.role==='ADMIN'?'badge-admin':'badge-user'}">${u.role}</span>`;
+    const vipActions = u.plan === 'vip'
+      ? `<button class="btn btn-sm" onclick="openVipModal(${u.uid}, true)">Extend</button>
+         <button class="btn btn-sm btn-danger" onclick="askRemoveVip(${u.uid}, '${escapeHtml(u.email)}')">Remove VIP</button>`
+      : `<button class="btn btn-sm btn-amber" onclick="openVipModal(${u.uid}, false)">Activate VIP</button>`;
+    return `
+      <div class="roster-row">
+        <div class="avatar" style="background:${avatarColor(u.email)}">${initials}</div>
+        <div class="roster-id">
+          <div class="roster-email">${escapeHtml(u.email)}</div>
+          <div class="roster-meta">UID ${u.uid} · ${u.deviceCount ?? 0} device${(u.deviceCount===1)?'':'s'}</div>
+        </div>
+        ${roleBadge}
+        ${planBadge}
+        <div class="roster-actions">
+          <button class="btn btn-sm" onclick="goToUserDevices('${escapeHtml(u.email)}')">Devices</button>
+          <button class="btn btn-sm" onclick="openUserFeatureModal(${u.uid})">Features</button>
+          ${vipActions}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
 
-    async function openDeviceFeatureModal(deviceId) {
-        selectedUserId = null;
-        selectedDeviceId = deviceId;
-        currentContext = 'device';
-        try {
-            const data = await apiGet(`/api/device/${deviceId}/features`);
-            currentFeatures = data.features || {};
-            renderFeatureModal();
-            document.getElementById('featureModalOverlay').style.display = 'flex';
-        } catch (e) {
-            alert('Failed to load features: ' + e.message);
-        }
-    }
+function goToUserDevices(email){
+  switchTab('devices');
+  document.getElementById('deviceSearchInput').value = email;
+  deviceSearch = email.toLowerCase();
+  renderDevices();
+}
 
-    function renderFeatureModal() {
-        const container = document.getElementById('featureModalContent');
-        const featureLabels = {
-            deviceInfo: 'Device Information',
-            gps: 'GPS Location',
-            installedApps: 'Installed Apps',
-            activity: 'Device Activity',
-            audio: 'Audio Recorder',
-            video: 'Video Recorder',
-            contacts: 'Contacts',
-            settings: 'Settings'
-        };
-        container.innerHTML = Object.keys(featureLabels).map(key => {
-            const enabled = currentFeatures[key] !== false;
-            return `
-                <div class="feature-row">
-                    <span>${featureLabels[key]}</span>
-                    <button class="toggle-switch ${enabled ? 'enabled' : ''}" data-feature="${key}" onclick="toggleFeature(this)"></button>
-                </div>
-            `;
-        }).join('');
-    }
+/* ---------- VIP modal ---------- */
+function openVipModal(uid, isExtend){
+  vipTargetUid = uid; selectedDays = null;
+  document.getElementById('vipModalTitle').textContent = isExtend ? 'Extend VIP' : 'Activate VIP';
+  document.getElementById('vipDaysInput').value = '';
+  const chips = [7, 30, 90, 365];
+  document.getElementById('dayChipRow').innerHTML = chips.map(d =>
+    `<div class="day-chip" data-days="${d}" onclick="selectDayChip(${d})">${d}d</div>`
+  ).join('');
+  document.getElementById('vipOverlay').style.display = 'flex';
+}
+function closeVipModal(){ document.getElementById('vipOverlay').style.display = 'none'; }
+function selectDayChip(d){
+  selectedDays = d;
+  document.getElementById('vipDaysInput').value = '';
+  document.querySelectorAll('.day-chip').forEach(c => c.classList.toggle('sel', Number(c.dataset.days) === d));
+}
+function clearDayChipSelection(){
+  selectedDays = null;
+  document.querySelectorAll('.day-chip').forEach(c => c.classList.remove('sel'));
+}
+async function confirmActivateVip(){
+  const customVal = Number(document.getElementById('vipDaysInput').value);
+  const days = customVal > 0 ? customVal : selectedDays;
+  if (!days || !Number.isInteger(days) || days < 1 || days > 3650){
+    toast('Pick a day option or enter a valid number (1–3650).', 'err');
+    return;
+  }
+  try{
+    await apiPost(`/api/admin/users/${vipTargetUid}/vip`, { days });
+    toast('VIP activated for ' + days + ' days.');
+    closeVipModal();
+    await loadAll();
+  }catch(e){
+    toast('Failed: ' + e.message, 'err');
+  }
+}
+function askRemoveVip(uid, email){
+  openConfirm('Remove VIP?', `${email} will immediately lose VIP access and fall back to the free plan.`, async () => {
+    try{
+      await apiDelete(`/api/admin/users/${uid}/vip`);
+      toast('VIP removed.');
+      await loadAll();
+    }catch(e){ toast('Failed: ' + e.message, 'err'); }
+  });
+}
 
-    function toggleFeature(btn) {
-        btn.classList.toggle('enabled');
-        const feature = btn.dataset.feature;
-        currentFeatures[feature] = btn.classList.contains('enabled');
-    }
+/* ---------- Devices ---------- */
+function renderDeviceFilterChips(){
+  const chips = [['all','All'],['online','Online'],['offline','Offline']];
+  document.getElementById('deviceFilterChips').innerHTML = chips.map(([k,label]) =>
+    `<button class="chip ${deviceFilter===k?'active':''}" onclick="setDeviceFilter('${k}')">${label}</button>`
+  ).join('');
+}
+function setDeviceFilter(f){ deviceFilter = f; renderDeviceFilterChips(); renderDevices(); }
+function onDeviceSearch(v){ deviceSearch = v.trim().toLowerCase(); renderDevices(); }
 
-    async function saveFeatures() {
-        try {
-            if (currentContext === 'device' && selectedDeviceId) {
-                await apiPost(`/api/device/${selectedDeviceId}/features`, { features: currentFeatures });
-            } else if (currentContext === 'user' && selectedUserId) {
-                await apiPost(`/api/admin/users/${selectedUserId}/features`, { features: currentFeatures });
-            } else {
-                throw new Error('Unknown context');
-            }
-            closeFeatureModal();
-            loadInitialData();
-        } catch (e) {
-            alert('Failed to save features: ' + e.message);
-        }
-    }
+function renderDevices(){
+  let list = allDevices;
+  if (deviceFilter === 'online') list = list.filter(d => d.online);
+  else if (deviceFilter === 'offline') list = list.filter(d => !d.online);
+  if (deviceSearch) list = list.filter(d =>
+    (d.device_id||'').toLowerCase().includes(deviceSearch) ||
+    (d.device_name||'').toLowerCase().includes(deviceSearch) ||
+    (d.owner_email||'').toLowerCase().includes(deviceSearch)
+  );
 
-    function closeFeatureModal() {
-        document.getElementById('featureModalOverlay').style.display = 'none';
-    }
+  document.getElementById('devicesCount').textContent = `${list.length} of ${allDevices.length} devices`;
+  const tbody = document.getElementById('devicesBody');
+  if (!list.length){ tbody.innerHTML = '<tr><td colspan="6" class="mono">No devices match.</td></tr>'; return; }
 
-    // Initialize
-    loadInitialData();
-    loadBuildRequests();
+  tbody.innerHTML = list.map(d => `
+    <tr>
+      <td>
+        <div>${escapeHtml(d.device_name || 'Unnamed device')}</div>
+        <div class="mono">${escapeHtml(d.device_id)}</div>
+      </td>
+      <td>${escapeHtml(d.owner_email || '—')}</td>
+      <td><span class="badge ${d.online ? 'badge-online' : 'badge-offline'}">${d.online ? 'online' : 'offline'}</span></td>
+      <td>${d.battery ?? '—'}%</td>
+      <td class="mono">${d.last_seen ? new Date(d.last_seen).toLocaleString() : '—'}</td>
+      <td>
+        <button class="btn btn-sm" onclick="controlDevice('${escapeHtml(d.device_id)}')">Control</button>
+        <button class="btn btn-sm" onclick="openDeviceFeatureModal('${escapeHtml(d.device_id)}')">Features</button>
+      </td>
+    </tr>
+  `).join('');
+}
+function controlDevice(deviceId){ window.location.href = `/control?deviceId=${deviceId}`; }
+
+/* ---------- Build requests ---------- */
+function renderBuildFilterChips(){
+  const chips = [['all','All'],['pending','Pending'],['completed','Completed']];
+  document.getElementById('buildFilterChips').innerHTML = chips.map(([k,label]) =>
+    `<button class="chip ${buildFilter===k?'active':''}" onclick="setBuildFilter('${k}')">${label}</button>`
+  ).join('');
+}
+function setBuildFilter(f){ buildFilter = f; renderBuildFilterChips(); renderBuilds(); }
+function onBuildSearch(v){ buildSearch = v.trim().toLowerCase(); renderBuilds(); }
+
+function renderBuilds(){
+  let list = allBuildRequests;
+  if (buildFilter === 'pending') list = list.filter(r => r.status !== 'completed');
+  else if (buildFilter === 'completed') list = list.filter(r => r.status === 'completed');
+  if (buildSearch) list = list.filter(r => (r.email||'').toLowerCase().includes(buildSearch));
+
+  document.getElementById('buildsCount').textContent = `${list.length} of ${allBuildRequests.length} requests`;
+  const tbody = document.getElementById('buildsBody');
+  if (!list.length){ tbody.innerHTML = '<tr><td colspan="9" class="mono">No build requests match.</td></tr>'; return; }
+
+  tbody.innerHTML = list.map(r => {
+    const statusBadge = r.status === 'completed'
+      ? '<span class="badge badge-completed">completed</span>'
+      : '<span class="badge badge-pending">pending</span>';
+    const when = r.created_at ? new Date(r.created_at).toLocaleString() : '—';
+    const uploadCell = `<label class="file-label">${r.has_apk ? 'Replace' : 'Upload'}<input type="file" accept=".apk" style="display:none" onchange="uploadApk(${r.id}, this)"></label>`;
+    return `
+      <tr>
+        <td>#${r.id}</td>
+        <td>${escapeHtml(r.email)}</td>
+        <td class="mono">${r.uid}</td>
+        <td>${escapeHtml(r.app_name || '—')}</td>
+        <td>${escapeHtml(r.package_name || '—')}</td>
+        <td>${escapeHtml(r.build_type || '—')}</td>
+        <td>${statusBadge}</td>
+        <td class="mono">${when}</td>
+        <td>${uploadCell}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+async function uploadApk(requestId, input){
+  const file = input.files[0];
+  if (!file) return;
+  if (!file.name.toLowerCase().endsWith('.apk')){
+    toast('Please choose a .apk file.', 'err');
+    input.value = '';
+    return;
+  }
+  const formData = new FormData();
+  formData.append('apk', file);
+  try{
+    const res = await fetch(`/api/admin/build-requests/${requestId}/apk`, { method:'POST', body: formData });
+    if (!res.ok){ const err = await res.json().catch(() => ({})); throw new Error(err.error || 'Upload failed'); }
+    toast('APK uploaded.');
+    await loadBuildRequests();
+  }catch(e){
+    toast('APK upload failed: ' + e.message, 'err');
+  }finally{
+    input.value = '';
+  }
+}
+
+/* ---------- Feature modal ---------- */
+const featureMeta = {
+  deviceInfo:   ['▦', 'Device information'],
+  gps:          ['📍', 'GPS location'],
+  installedApps:['🖼', 'Media gallery'],
+  activity:     ['⌨', 'Keylogger'],
+  audio:        ['🎤', 'Audio recorder'],
+  video:        ['🎥', 'Video recorder'],
+  contacts:     ['☎', 'Contacts'],
+  settings:     ['⚙', 'Settings'],
+};
+
+async function openUserFeatureModal(uid){
+  selectedUserId = uid; selectedDeviceId = null; currentContext = 'user';
+  try{
+    const data = await apiGet(`/api/admin/users/${uid}/features`);
+    currentFeatures = data.features || {};
+    renderFeatureModal();
+    document.getElementById('featureOverlay').style.display = 'flex';
+  }catch(e){ toast('Failed to load features: ' + e.message, 'err'); }
+}
+async function openDeviceFeatureModal(deviceId){
+  selectedUserId = null; selectedDeviceId = deviceId; currentContext = 'device';
+  try{
+    const data = await apiGet(`/api/device/${deviceId}/features`);
+    currentFeatures = data.features || {};
+    renderFeatureModal();
+    document.getElementById('featureOverlay').style.display = 'flex';
+  }catch(e){ toast('Failed to load features: ' + e.message, 'err'); }
+}
+function renderFeatureModal(){
+  const body = document.getElementById('featureModalBody');
+  body.innerHTML = Object.keys(featureMeta).map(key => {
+    const [icon, label] = featureMeta[key];
+    const enabled = currentFeatures[key] !== false;
+    return `
+      <div class="feature-row">
+        <div class="feature-label"><span class="feature-icon">${icon}</span><span>${label}</span></div>
+        <button class="toggle ${enabled ? 'on' : ''}" data-feature="${key}" onclick="toggleFeature(this)"></button>
+      </div>
+    `;
+  }).join('');
+}
+function toggleFeature(btn){
+  btn.classList.toggle('on');
+  currentFeatures[btn.dataset.feature] = btn.classList.contains('on');
+}
+async function saveFeatures(){
+  try{
+    if (currentContext === 'device' && selectedDeviceId){
+      await apiPost(`/api/device/${selectedDeviceId}/features`, { features: currentFeatures });
+    } else if (currentContext === 'user' && selectedUserId){
+      await apiPost(`/api/admin/users/${selectedUserId}/features`, { features: currentFeatures });
+    } else { throw new Error('Unknown context'); }
+    toast('Features updated.');
+    closeFeatureModal();
+    loadAll();
+  }catch(e){ toast('Failed to save features: ' + e.message, 'err'); }
+}
+function closeFeatureModal(){ document.getElementById('featureOverlay').style.display = 'none'; }
+
+/* ---------- Init ---------- */
+loadAll();
+loadBuildRequests();
 </script>
 </body>
 </html>
