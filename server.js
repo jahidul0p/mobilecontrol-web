@@ -1135,8 +1135,14 @@ app.get("/control.html", requireLogin, (req, res) => res.sendFile(path.join(__di
 app.get("/control", requireLogin, (req, res) => res.sendFile(path.join(__dirname, "control.html")));
 app.get("/admin.html", requireLogin, requireAdmin, (req, res) => res.sendFile(path.join(__dirname, "admin.html")));
 app.get("/admin", requireLogin, requireAdmin, (req, res) => res.sendFile(path.join(__dirname, "admin.html")));
-app.get("/dashboard.html", requireLogin, (req, res) => res.sendFile(path.join(__dirname, "dashboard.html")));
-app.get("/dashboard", requireLogin, (req, res) => res.sendFile(path.join(__dirname, "dashboard.html")));
+app.get("/dashboard.html", requireLogin, (req, res) => {
+  if (req.session.role === 'admin') return res.redirect('/admin');
+  res.sendFile(path.join(__dirname, "dashboard.html"));
+});
+app.get("/dashboard", requireLogin, (req, res) => {
+  if (req.session.role === 'admin') return res.redirect('/admin');
+  res.sendFile(path.join(__dirname, "dashboard.html"));
+});
 app.get("/", (req, res) => res.sendFile(path.join(__dirname, "index.html")));
 app.post("/api/logout", (req, res) => {
   req.session.destroy(() => { res.clearCookie("connect.sid"); res.json({ message: "Logged out." }); });
