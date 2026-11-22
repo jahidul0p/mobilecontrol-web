@@ -393,7 +393,11 @@ app.get("/api/device-state", requireLogin, async (req, res) => {
 app.get("/api/devices", requireLogin, async (req, res) => {
   try {
     if (req.session.role === 'admin') {
-      const result = await pool.query("SELECT device_id, device_name AS name, battery, online, last_seen FROM devices ORDER BY created_at DESC");
+      const result = await pool.query(`
+  SELECT id AS uid, email, role, plan, vip_expires_at, created_at
+  FROM users
+  ORDER BY id DESC
+`);
       const devices = result.rows.map(row => {
         const live = deviceStates.get(row.device_id);
         if (live && live.last_seen > Date.now() - 120000) { row.online = true; row.battery = live.battery ?? row.battery; }
@@ -854,6 +858,8 @@ app.get("/api/admin/users", requireLogin, requireAdmin, async (req, res) => {
       const features = userFeaturesData.get(u.uid) || { deviceInfo:true, gps:true, installedApps:true, activity:true, audio:true, video:true, contacts:true, settings:true };
       users.push({
         uid: u.uid,
+        plan: u.plan,
+        vipExpiresAt: u.vip_expires_at
         name: u.email.split('@')[0],
         email: u.email,
         role: u.role === 'admin' ? 'ADMIN' : 'USER',
@@ -866,6 +872,92 @@ app.get("/api/admin/users", requireLogin, requireAdmin, async (req, res) => {
     res.json({ users });
   } catch (e) { console.error(e); res.status(500).json({ error: "Failed to fetch users." }); }
 });
+
+
+// ========== ADMIN VIP MANAGEMENT ==========
+
+// Activate VIP
+app.post(
+  "/api/admin/users/:uid/vip",
+  requireLogin,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const userId = Number(req.params.uid);
+      const days = Number(req.body.days || 30);
+
+      if (!Number.isInteger(userId) || userId <= 0) {
+        return res.status(400).json({ error: "Invalid user ID." });
+      }
+
+      if (!Number.isInteger(days) || days < 1 || days > 3650) {
+        return res.status(400).json({ error: "Days must be between 1 and 3650." });
+      }
+
+      const result = await pool.query(
+        `UPDATE users
+         SET plan = 'vip',
+             vip_expires_at = NOW() + ($1 * INTERVAL '1 day')
+         WHERE id = $2
+         RETURNING id, email, plan, vip_expires_at`,
+        [days, userId]
+      );
+
+      if (!result.rowCount) {
+        return res.status(404).json({ error: "User not found." });
+      }
+
+      res.json({
+        success: true,
+        message: "VIP activated successfully.",
+        user: result.rows[0]
+      });
+
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "VIP activation failed." });
+    }
+  }
+);
+
+// Revoke VIP
+app.delete(
+  "/api/admin/users/:uid/vip",
+  requireLogin,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const userId = Number(req.params.uid);
+
+      if (!Number.isInteger(userId) || userId <= 0) {
+        return res.status(400).json({ error: "Invalid user ID." });
+      }
+
+      const result = await pool.query(
+        `UPDATE users
+         SET plan = 'free',
+             vip_expires_at = NULL
+         WHERE id = $1
+         RETURNING id, email, plan`,
+        [userId]
+      );
+
+      if (!result.rowCount) {
+        return res.status(404).json({ error: "User not found." });
+      }
+
+      res.json({
+        success: true,
+        message: "VIP access revoked.",
+        user: result.rows[0]
+      });
+
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "VIP revocation failed." });
+    }
+  }
+);
 
 app.get("/api/admin/devices", requireLogin, requireAdmin, async (req, res) => {
   try {
