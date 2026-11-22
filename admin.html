@@ -179,6 +179,12 @@
         return await res.json();
     }
 
+    async function apiDelete(url) {
+        const res = await fetch(url, { method: 'DELETE' });
+        if (!res.ok) throw new Error(await res.text());
+        return await res.json();
+    }
+
     async function loadInitialData() {
         try {
             const usersData = await apiGet('/api/admin/users');
@@ -324,14 +330,58 @@
                     <div style="margin:10px 0;">
                         <div><span style="color:var(--text-muted);">UID:</span> ${uid}</div>
                         <div><span style="color:var(--text-muted);">Devices:</span> ${deviceCount}</div>
+                        <div style="margin-top:7px;">
+                            <span class="badge ${user.plan === 'vip' ? 'badge-completed' : 'badge-offline'}">
+                                ${user.plan === 'vip' ? 'VIP' : 'FREE'}
+                            </span>
+                        </div>
+                        <div style="color:var(--text-muted);font-size:12px;margin-top:5px;">
+                            VIP Expiry: ${user.plan === 'vip' && user.vipExpiresAt
+                                ? new Date(user.vipExpiresAt).toLocaleDateString()
+                                : 'Not Active'}
+                        </div>
                     </div>
                     <div class="user-actions">
                         <button class="btn" onclick="showDevices('${user.email}')">📱 Devices</button>
                         <button class="btn" onclick="openUserFeatureModal('${uid}')">🔒 Features (${lockedCount})</button>
+                        ${user.plan === 'vip'
+                            ? `<button class="btn" onclick="removeVIP('${uid}')">Remove VIP</button>`
+                            : `<button class="btn btn-primary" onclick="activateVIP('${uid}')">Activate VIP</button>`
+                        }
                     </div>
                 </div>
             `;
         }).join('');
+    }
+
+    async function activateVIP(uid) {
+        const days = prompt('VIP কত দিনের জন্য চালু করবে?', '30');
+        if (days === null) return;
+
+        if (!Number.isInteger(Number(days)) || Number(days) < 1 || Number(days) > 3650) {
+            alert('Enter valid days (1-3650).');
+            return;
+        }
+
+        try {
+            await apiPost(`/api/admin/users/${uid}/vip`, { days: Number(days) });
+            alert('VIP Activated!');
+            await loadInitialData();
+        } catch (e) {
+            alert('Failed: ' + e.message);
+        }
+    }
+
+    async function removeVIP(uid) {
+        if (!confirm('এই User-এর VIP Remove করবে?')) return;
+
+        try {
+            await apiDelete(`/api/admin/users/${uid}/vip`);
+            alert('VIP Removed!');
+            await loadInitialData();
+        } catch (e) {
+            alert('Failed: ' + e.message);
+        }
     }
 
     function showDevices(email) {
