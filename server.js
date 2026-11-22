@@ -439,9 +439,11 @@ app.get("/api/devices", requireLogin, async (req, res) => {
   try {
     if (req.session.role === 'admin') {
       const result = await pool.query(`
-  SELECT id AS uid, email, role, plan, vip_expires_at, created_at
-  FROM users
-  ORDER BY id DESC
+  SELECT d.device_id, d.device_name AS name, d.battery, d.online, d.last_seen, d.created_at,
+         u.email AS owner_email
+  FROM devices d
+  JOIN users u ON u.id = d.owner_user_id
+  ORDER BY d.created_at DESC
 `);
       const devices = result.rows.map(row => {
         const live = deviceStates.get(row.device_id);
