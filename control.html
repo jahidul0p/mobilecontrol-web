@@ -5,967 +5,737 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Device Control</title>
 
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
 <!-- Leaflet CSS -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
-/* ==================== GLOBAL RESET ==================== */
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
+/* =========================================================
+   CONTROL PANEL — sidebar-dock redesign
+   (same teal/green system as index.html / dashboard.html)
+========================================================= */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root{
+  --bg:#0E1714;
+  --bg-2:#101E1A;
+  --ink:#EAF3EF;
+  --ink-soft:#9BB0A8;
+  --ink-dim:#6E8680;
+  --line:rgba(255,255,255,.09);
+  --glass:rgba(255,255,255,.035);
+  --glass-strong:rgba(255,255,255,.06);
+  --teal:#3FE0B0;
+  --teal-2:#5CF0C6;
+  --teal-deep:#123330;
+  --grad:linear-gradient(135deg,var(--teal),var(--teal-deep));
+  --grad-2:linear-gradient(120deg,var(--teal),var(--teal-2));
+  --glow:rgba(63,224,176,.35);
+  --glow-soft:rgba(63,224,176,.16);
+  --green:#35c76a;
+  --radius-lg:22px;
+  --radius-md:16px;
+  --radius-sm:11px;
 }
 
+html{ scroll-behavior:smooth; }
+
 body {
-    font-family: 'Inter', 'Poppins', Arial, sans-serif;
-    background: radial-gradient(circle at 30% 20%, #1a0f0f 0%, #0a0808 50%, #050505 100%);
-    color: #eee;
+    font-family:'Inter', Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
     min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
 }
+
+h1,h2,h3{ font-family:'Sora', Arial, sans-serif; font-weight:700; color:var(--ink); }
+
+/* aurora ambience */
+.aurora{ position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
+.aurora span{
+  position:absolute; border-radius:50%; background:var(--teal);
+  filter:blur(90px); opacity:.14; animation: auroraFloat ease-in-out infinite alternate;
+}
+.aurora .a1{ width:42vw; height:42vw; top:-16%; left:-10%; animation-duration:20s; }
+.aurora .a2{ width:34vw; height:34vw; bottom:-18%; right:-10%; animation-duration:24s; animation-delay:-5s; }
+@keyframes auroraFloat{ 0%{transform:translate(0,0);} 100%{transform:translate(6%,7%);} }
+
+::selection{ background:var(--teal); color:#06140F; }
+::-webkit-scrollbar{ width:9px; height:9px; }
+::-webkit-scrollbar-track{ background:transparent; }
+::-webkit-scrollbar-thumb{ background:rgba(63,224,176,.35); border-radius:10px; }
+::-webkit-scrollbar-thumb:hover{ background:rgba(63,224,176,.55); }
+
+@keyframes fadeSlideUp{ from{opacity:0; transform:translateY(14px);} to{opacity:1; transform:translateY(0);} }
+@keyframes fadeIn{ from{opacity:0;} to{opacity:1;} }
+@keyframes popIn{ from{opacity:0; transform:scale(.92);} to{opacity:1; transform:scale(1);} }
+@keyframes shimmer{ 0%{background-position:-200% 0;} 100%{background-position:200% 0;} }
+@keyframes dotPulse{ 0%,100%{box-shadow:0 0 0 0 rgba(63,224,176,.45);} 50%{box-shadow:0 0 0 7px rgba(63,224,176,0);} }
+@keyframes markPulse{ 0%,100%{box-shadow:0 0 16px var(--glow);} 50%{box-shadow:0 0 28px var(--glow);} }
 
 /* ==================== HEADER ==================== */
 .header {
-    height: 64px;
-    border-bottom: 1px solid rgba(255, 60, 60, 0.25);
+    height: 68px;
+    border-bottom: 1px solid var(--line);
     display: flex;
     align-items: center;
-    padding: 0 20px;
-    gap: 10px;
-    background: rgba(15, 10, 10, 0.92);
-    backdrop-filter: blur(12px);
+    padding: 0 22px;
+    gap: 14px;
+    background: rgba(10, 17, 15, 0.78);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
     position: sticky;
     top: 0;
-    z-index: 20;
+    z-index: 30;
 }
 
 .logo {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-    background: #ff3338;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    box-shadow: 0 0 18px rgba(255, 50, 55, 0.35);
+    position: relative;
+    width: 38px; height: 38px;
+    border-radius: 11px;
+    background: var(--grad);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px;
+    animation: markPulse 2.8s ease-in-out infinite;
 }
+.logo::after{ content:""; position:absolute; inset:7px; border:2px solid var(--bg); border-radius:4px; }
 
 .title {
-    font-size: 16px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
+    font-family:'Sora', Arial, sans-serif;
+    font-size: 15px; font-weight: 700; letter-spacing: 1.4px;
+    background: linear-gradient(90deg,#fff, var(--teal-2) 65%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
 }
 
-.nav {
-    display: flex;
-    gap: 8px;
-    margin-left: 10px;
-}
+.nav { display: flex; gap: 8px; margin-left: 12px; }
 
 .nav button {
-    background: #171214;
-    border: 1px solid #302126;
-    color: #aaa;
-    padding: 8px 13px;
-    border-radius: 9px;
+    background: var(--glass);
+    border: 1px solid var(--line);
+    color: var(--ink-soft);
+    padding: 9px 15px;
+    border-radius: 10px;
     cursor: pointer;
-    font-size: 11px;
-    transition: all 0.2s;
+    font-size: 11.5px;
+    font-weight: 500;
+    font-family: inherit;
+    transition: all .25s ease;
 }
+.nav button:hover { color: #fff; border-color: rgba(63,224,176,.5); background: rgba(63,224,176,.1); transform: translateY(-1px); }
 
-.nav button:hover {
-    color: white;
-    border-color: #ff3d42;
-    background: #24181a;
-}
-
-.device-id {
-    margin-left: auto;
-    font-size: 10px;
-    color: #777;
-}
+.device-id { margin-left: auto; font-size: 10.5px; color: var(--ink-dim); letter-spacing:.3px; }
+.device-id b{ color: var(--ink-soft); }
 
 .live {
-    color: #ff4646;
-    border: 1px solid #572226;
-    padding: 6px 9px;
-    border-radius: 15px;
-    font-size: 9px;
-    background: rgba(255, 50, 55, 0.05);
-    box-shadow: 0 0 10px rgba(255, 50, 55, 0.2);
+    color: var(--teal-2);
+    border: 1px solid rgba(63,224,176,.4);
+    padding: 7px 12px; border-radius: 20px;
+    font-size: 9.5px; font-weight: 600; letter-spacing:.5px;
+    background: rgba(63,224,176,.08);
+    display:flex; align-items:center; gap:6px;
 }
+.live::before{ content:""; width:6px; height:6px; border-radius:50%; background:var(--teal); animation: dotPulse 1.6s ease-in-out infinite; }
 
-/* ==================== CONTAINER ==================== */
+/* ==================== LAYOUT SHELL ==================== */
 .container {
-    padding: 20px;
-    max-width: 1200px;
+    padding: 24px;
+    max-width: 1320px;
     margin: auto;
+    position: relative;
+    z-index: 1;
 }
 
-/* ==================== DEVICE CARD ==================== */
+/* ==================== DEVICE HERO CARD ==================== */
 .device-card {
-    border: 1px solid #3b2529;
-    border-radius: 18px;
-    padding: 20px;
-    background: rgba(22, 15, 17, 0.82);
-    margin-bottom: 18px;
-    backdrop-filter: blur(8px);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 22px 26px;
+    background: var(--glass);
+    backdrop-filter: blur(14px);
+    margin-bottom: 20px;
+    box-shadow: 0 10px 34px rgba(0,0,0,.35);
+    animation: fadeSlideUp .5s ease both;
+    display:flex; align-items:center; gap:18px; flex-wrap:wrap;
+}
+
+.device-avatar{
+    width:52px; height:52px; border-radius:16px;
+    background: var(--grad);
+    display:flex; align-items:center; justify-content:center;
+    font-size:24px; flex-shrink:0;
+    box-shadow: 0 8px 22px var(--glow-soft);
 }
 
 .device-name {
-    font-size: 18px;
-    font-weight: bold;
+    font-size: 19px; font-weight: 700; letter-spacing:-.2px;
 }
 
 .device-status {
-    margin-top: 8px;
-    font-size: 12px;
-    color: #aaa;
+    margin-top: 5px; font-size: 12.5px; color: var(--ink-soft);
+    display:flex; align-items:center; gap:6px; flex-wrap:wrap;
 }
 
 .online-dot {
-    color: #35c76a;
+    color: var(--green); font-weight:600;
+    display:inline-flex; align-items:center; gap:6px;
+}
+.online-dot::before{ content:""; width:8px; height:8px; border-radius:50%; background:var(--green); animation: dotPulse 1.8s ease-in-out infinite; }
+
+/* ==================== TWO-COLUMN SHELL ==================== */
+.control-layout{
+    display:flex;
+    gap:20px;
+    align-items:flex-start;
 }
 
-/* ==================== MAIN TABS ==================== */
+/* ==================== SIDEBAR NAV (dock) ==================== */
 .controls {
     display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-bottom: 20px;
+    flex-direction: column;
+    gap: 7px;
+    width: 220px;
+    flex-shrink: 0;
+    background: var(--glass);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    padding: 14px;
+    backdrop-filter: blur(14px);
+    position: sticky;
+    top: 90px;
+    animation: fadeSlideUp .55s ease both;
+    animation-delay: .05s;
 }
 
 .control-btn {
     background: transparent;
-    color: #aaa;
-    border: 0;
-    padding: 10px 16px;
-    font-size: 12px;
-    cursor: pointer;
-    border-radius: 30px;
-    transition: all 0.25s;
+    color: var(--ink-soft);
     border: 1px solid transparent;
+    padding: 12px 14px;
+    font-size: 12.5px;
+    font-family: inherit;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 12px;
+    text-align: left;
+    transition: all 0.22s cubic-bezier(.4,0,.2,1);
     position: relative;
 }
 
 .control-btn:hover {
     color: #fff;
-    background: rgba(255, 50, 55, 0.08);
+    background: rgba(63, 224, 176, 0.08);
+    border-color: rgba(63,224,176,.3);
 }
 
 .control-btn.active {
-    background: #ff3439;
-    color: white;
-    border-radius: 30px;
-    box-shadow: 0 0 20px rgba(255, 50, 55, 0.5);
-    border-color: #ff3439;
+    background: var(--grad-2);
+    color: #06140F;
+    font-weight: 700;
+    box-shadow: 0 8px 22px var(--glow-soft);
+    border-color: transparent;
 }
 
-.control-btn .lock-icon {
-    position: absolute;
-    top: -5px;
-    right: -5px;
-    font-size: 12px;
-}
+.control-btn .lock-icon { margin-left: 5px; font-size: 11px; }
 
-/* ==================== PANELS ==================== */
+/* ==================== PANELS STACK ==================== */
+.panels-stack{ flex: 1; min-width: 0; }
+
 .panel {
-    border: 1px solid #3b292d;
-    border-radius: 22px;
-    background: rgba(18, 12, 14, 0.9);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--glass);
     overflow: hidden;
     margin-bottom: 20px;
-    backdrop-filter: blur(10px);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(14px);
+    box-shadow: 0 14px 36px rgba(0,0,0,.3);
+    animation: fadeSlideUp .4s cubic-bezier(.2,.7,.3,1) both;
 }
 
 .panel-header {
-    padding: 20px;
-    border-bottom: 1px solid rgba(255, 50, 55, 0.2);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 15px;
+    padding: 20px 22px;
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 14px;
 }
 
-.panel-title {
-    font-size: 20px;
-    font-weight: 700;
-    letter-spacing: -0.5px;
-}
-
-.panel-subtitle {
-    font-size: 12px;
-    color: #888;
-}
+.panel-title { font-family:'Sora',Arial,sans-serif; font-size: 17px; font-weight: 700; letter-spacing:-.2px; }
+.panel-subtitle { font-size: 12px; color: var(--ink-dim); margin-top: 4px; }
 
 /* ==================== BUTTONS ==================== */
-.refresh-btn,
-.force-btn {
-    background: #ff3439;
-    color: white;
+.refresh-btn, .force-btn {
+    background: var(--grad-2);
+    color: #06140F;
     border: none;
     border-radius: 30px;
     padding: 10px 20px;
-    font-size: 12px;
-    font-weight: 600;
+    font-size: 12px; font-weight: 700;
+    font-family: inherit;
     cursor: pointer;
-    transition: all 0.2s;
-    box-shadow: 0 0 20px rgba(255, 50, 55, 0.4);
+    transition: all 0.25s ease;
+    box-shadow: 0 10px 26px var(--glow-soft);
+    position: relative; overflow:hidden;
 }
-
-.refresh-btn:hover,
-.force-btn:hover {
-    background: #ff4b4f;
-    box-shadow: 0 0 30px rgba(255, 50, 55, 0.7);
-    transform: translateY(-1px);
+.refresh-btn::after, .force-btn::after{
+  content:""; position:absolute; top:0; left:-70%; width:40%; height:100%;
+  background: linear-gradient(100deg, transparent, rgba(255,255,255,.55), transparent);
+  transform: skewX(-20deg); transition: left .6s ease;
 }
-
-.refresh-btn:disabled,
-.force-btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
-}
+.refresh-btn:hover::after, .force-btn:hover::after{ left:130%; }
+.refresh-btn:hover, .force-btn:hover{ box-shadow: 0 14px 34px var(--glow); transform: translateY(-2px); }
+.refresh-btn:disabled, .force-btn:disabled{ opacity:.55; cursor:not-allowed; transform:none; box-shadow:none; }
 
 /* ==================== GPS STATS ==================== */
-.gps-stats {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
-    padding: 20px;
-}
+.gps-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; padding: 20px 22px; }
 
 .stat-card {
-    background: linear-gradient(145deg, #1e1416, #141012);
-    border: 1px solid #2d1d20;
-    border-radius: 18px;
-    padding: 20px 18px;
-    min-height: 100px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    transition: transform 0.2s, box-shadow 0.2s;
-    backdrop-filter: blur(8px);
+    position: relative;
+    background: rgba(255,255,255,.03);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    padding: 18px 16px;
+    min-height: 96px;
+    display: flex; flex-direction: column; justify-content: center;
+    transition: transform .25s ease, border-color .25s ease, box-shadow .25s ease;
+    overflow:hidden;
 }
+.stat-card::before{ content:""; position:absolute; top:0; left:0; right:0; height:2px; background: var(--grad-2); opacity:0; transition: opacity .25s ease; }
+.stat-card:hover{ transform: translateY(-4px); border-color: rgba(63,224,176,.35); box-shadow: 0 14px 28px rgba(63,224,176,.14); }
+.stat-card:hover::before{ opacity:1; }
 
-.stat-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 10px 25px rgba(255, 50, 55, 0.15);
-}
-
-.stat-label {
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: #aaa;
-    margin-bottom: 8px;
-}
-
-.stat-value {
-    font-size: 24px;
-    font-weight: 700;
-    color: #fff;
-}
-
-.stat-value.green {
-    color: #35c76a;
-}
+.stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.3px; color: var(--ink-dim); margin-bottom: 8px; font-weight:600; }
+.stat-value { font-size: 21px; font-weight: 700; color: #fff; letter-spacing:-.2px; }
+.stat-value.green { color: var(--teal-2); }
 
 /* ==================== MAP ==================== */
 .map-container {
-    margin: 0 20px 20px 20px;
+    margin: 0 22px 22px 22px;
     border-radius: 20px;
     overflow: hidden;
-    border: 1px solid rgba(255, 50, 55, 0.3);
-    height: 500px;
+    border: 1px solid rgba(63,224,176,.25);
+    height: 480px;
     position: relative;
+    box-shadow: 0 20px 48px rgba(0,0,0,.35);
 }
+#map { width: 100%; height: 100%; background: var(--bg-2); }
 
-#map {
-    width: 100%;
-    height: 100%;
-    background: #0d0d0d;
-}
+.leaflet-popup-content-wrapper{ background:#102420; color:var(--ink); border:1px solid rgba(63,224,176,.35); border-radius:12px; font-size:12.5px; }
+.leaflet-popup-tip{ background:#102420; }
+.leaflet-control-zoom a{ background:#102420 !important; color:#fff !important; border-color: rgba(63,224,176,.3) !important; }
 
 .map-overlay {
-    position: absolute;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(20, 12, 14, 0.9);
-    border: 1px solid #ff3d42;
-    border-radius: 30px;
-    padding: 10px 20px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 12px;
-    color: #fff;
-    z-index: 500;
-    backdrop-filter: blur(8px);
-    box-shadow: 0 0 15px rgba(255, 50, 55, 0.3);
-    transition: all 0.3s;
+    position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: rgba(14, 26, 22, 0.88);
+    border: 1px solid rgba(63,224,176,.45);
+    border-radius: 30px; padding: 10px 20px;
+    display: flex; align-items: center; gap: 10px;
+    font-size: 12px; color: #fff; z-index: 500;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 10px 26px rgba(63,224,176,.2);
+    animation: fadeIn .3s ease;
 }
 
 .spinner {
-    width: 16px;
-    height: 16px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-top-color: #ff3439;
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,.22);
+    border-top-color: var(--teal);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
 }
-
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
-}
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* ==================== KEYLOGGER ==================== */
-.keylog-box {
-    background: #181214;
-    border: 1px solid #342326;
-    border-radius: 12px;
-    padding: 8px;
-    margin: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    max-height: 70vh;
-    overflow-y: auto;
-}
+.keylog-box { padding: 6px 22px 22px 22px; display: flex; flex-direction: column; gap: 9px; max-height: 70vh; overflow-y: auto; }
 
 .keylog-entry {
-    background: #120d10;
-    border: 1px solid #6f252c;
+    background: rgba(255,255,255,.025);
+    border: 1px solid var(--line);
+    border-left: 2px solid var(--teal);
     border-radius: 12px;
-    padding: 14px 16px;
-    width: 100%;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    box-shadow: none;
+    padding: 13px 15px;
+    display: flex; flex-direction: column; gap: 4px;
+    animation: fadeSlideUp .3s ease both;
+    transition: border-color .2s ease, background .2s ease;
 }
-
-.keylog-title {
-    font-family: 'SF Mono', 'Cascadia Code', 'Roboto Mono', monospace;
-    font-size: 14px;
-    font-weight: 600;
-    line-height: 20px;
-    letter-spacing: 0.2px;
-    color: #e5e7eb;
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    white-space: normal;
-    overflow: visible;
-    word-break: break-word;
-}
-
-.keylog-time {
-    font-family: 'SF Mono', 'Cascadia Code', 'Roboto Mono', monospace;
-    font-size: 13px;
-    font-weight: 400;
-    line-height: 18px;
-    color: #8b8f98;
-    margin: 0;
-}
+.keylog-entry:hover{ background: rgba(63,224,176,.05); border-color: rgba(63,224,176,.35); }
+.keylog-title { font-family:'SF Mono','Cascadia Code','Roboto Mono',monospace; font-size: 13px; color:#e9f5f0; line-height:20px; word-break:break-word; }
+.keylog-time { font-family:'SF Mono','Cascadia Code','Roboto Mono',monospace; font-size: 11.5px; color: var(--ink-dim); }
 
 /* ==================== INSTALLED APPS ==================== */
-.apps {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    padding: 20px;
-}
-
+.apps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 11px; padding: 20px 22px; }
 .app {
-    background: linear-gradient(145deg, #21181b, #161012);
-    border: 1px solid #302126;
-    border-radius: 10px;
-    padding: 14px 12px;
-    min-height: 60px;
+    background: rgba(255,255,255,.03);
+    border: 1px solid var(--line);
+    border-radius: 12px; padding: 14px 13px; min-height: 58px;
+    transition: transform .2s ease, border-color .2s ease;
 }
-
-.app-name {
-    font-size: 12px;
-    font-weight: bold;
-}
-
-.package {
-    margin-top: 6px;
-    color: #666;
-    font-size: 9px;
-    word-break: break-all;
-}
+.app:hover{ transform: translateY(-2px); border-color: rgba(63,224,176,.3); }
+.app-name { font-size: 12.5px; font-weight: 700; }
+.package { margin-top: 6px; color: var(--ink-dim); font-size: 9.5px; word-break: break-all; }
 
 /* ==================== GALLERY ==================== */
-.gallery-content {
-    margin: 20px;
-    padding: 0;
-    background: transparent;
-    border: none;
-}
+.gallery-content { margin: 20px 22px 22px 22px; }
 
 .gallery-controls {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-    background: #1a1214;
-    border: 1px solid #2d1d20;
-    border-radius: 14px;
-    padding: 14px 18px;
-    margin-bottom: 20px;
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    background: rgba(255,255,255,.03);
+    border: 1px solid var(--line);
+    border-radius: 14px; padding: 14px 17px; margin-bottom: 20px;
 }
-
-.gallery-controls label {
-    color: #aaa;
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    font-weight: 600;
+.gallery-controls label { color: var(--ink-dim); font-size: 10.5px; text-transform: uppercase; letter-spacing:.6px; font-weight:700; }
+.gallery-controls select, .gallery-controls input {
+    background: #0b1512; color: #fff; border: 1px solid var(--line);
+    border-radius: 10px; padding: 10px 14px; font-size: 13px; font-family: inherit;
+    outline: none; cursor: pointer; transition: border-color .2s; min-width: 120px;
 }
+.gallery-controls select:hover, .gallery-controls select:focus,
+.gallery-controls input:hover, .gallery-controls input:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(63,224,176,.14); }
+.gallery-controls .refresh-btn, .gallery-controls .force-btn { padding: 10px 18px; font-size: 12px; white-space: nowrap; }
 
-.gallery-controls select,
-.gallery-controls input {
-    background: #0d0a0b;
-    color: #fff;
-    border: 1px solid #3b292d;
-    border-radius: 10px;
-    padding: 10px 14px;
-    font-size: 13px;
-    outline: none;
-    cursor: pointer;
-    transition: border-color 0.2s;
-    min-width: 120px;
-}
+.gallery-section-title { font-family:'Sora',Arial,sans-serif; font-size: 13.5px; font-weight: 700; margin: 20px 0 11px 0; color: #fff; display:flex; align-items:center; }
 
-.gallery-controls select:hover,
-.gallery-controls select:focus,
-.gallery-controls input:hover,
-.gallery-controls input:focus {
-    border-color: #ff3439;
-    box-shadow: 0 0 8px rgba(255, 50, 55, 0.2);
-}
+.badge { background: var(--grad-2); color: #06140F; font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 12px; margin-left: 8px; }
 
-.gallery-controls .refresh-btn,
-.gallery-controls .force-btn {
-    padding: 10px 20px;
-    font-size: 12px;
-    white-space: nowrap;
-}
-
-.gallery-section-title {
-    font-size: 14px;
-    font-weight: 700;
-    margin: 20px 0 10px 0;
-    color: #fff;
-}
-
-.badge {
-    background: #ff3439;
-    color: white;
-    font-size: 10px;
-    padding: 3px 8px;
-    border-radius: 12px;
-    margin-left: 8px;
-}
-
-.media-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-}
-
+.media-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 .media-card {
-    background: #1a1214;
-    border: 1px solid #2d1d20;
-    border-radius: 12px;
-    overflow: hidden;
-    cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
-    position: relative;
+    background: rgba(255,255,255,.03); border: 1px solid var(--line); border-radius: 14px;
+    overflow: hidden; cursor: pointer; position: relative;
+    transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+    animation: fadeSlideUp .35s ease both;
 }
-
-.media-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(255, 50, 55, 0.2);
-    border-color: #ff3439;
-}
-
-.media-thumb {
-    width: 100%;
-    height: 140px;
-    object-fit: cover;
-    background: #0d0d0d;
-}
-
-.media-info {
-    padding: 10px;
-}
-
-.media-filename {
-    font-size: 11px;
-    font-weight: bold;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    color: #fff;
-}
-
-.media-meta {
-    font-size: 9px;
-    color: #888;
-    margin-top: 4px;
-}
-
+.media-card:hover { transform: translateY(-4px); box-shadow: 0 14px 28px rgba(63,224,176,.18); border-color: rgba(63,224,176,.45); }
+.media-thumb { width: 100%; height: 138px; object-fit: cover; background: var(--bg-2); }
+.media-info { padding: 11px; }
+.media-filename { font-size: 11px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; }
+.media-meta { font-size: 9.5px; color: var(--ink-dim); margin-top: 4px; }
 .media-type-badge {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    background: rgba(0, 0, 0, 0.7);
-    color: #fff;
-    font-size: 9px;
-    padding: 3px 6px;
-    border-radius: 8px;
-    border: 1px solid #ff3439;
+    position: absolute; top: 9px; right: 9px; background: rgba(0,0,0,.6); color:#fff;
+    font-size: 9px; padding: 3px 7px; border-radius: 8px; border: 1px solid rgba(63,224,176,.45);
+    backdrop-filter: blur(4px);
 }
 
 /* ==================== SKELETON ==================== */
-.skeleton-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-}
-
-.skeleton-card {
-    background: #1a1214;
-    border: 1px solid #2d1d20;
-    border-radius: 12px;
-    height: 180px;
-    animation: pulse 1.5s infinite;
-}
-
-@keyframes pulse {
-    0% {
-        opacity: 0.6;
-    }
-    50% {
-        opacity: 0.9;
-    }
-    100% {
-        opacity: 0.6;
-    }
-}
+.skeleton-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.skeleton-card { position: relative; background: rgba(255,255,255,.03); border: 1px solid var(--line); border-radius: 14px; height: 176px; overflow: hidden; }
+.skeleton-card::after{ content:""; position:absolute; inset:0; background: linear-gradient(100deg, transparent, rgba(63,224,176,.14), transparent); background-size:200% 100%; animation: shimmer 1.6s linear infinite; }
 
 /* ==================== ERROR ==================== */
-.error-message {
-    text-align: center;
-    padding: 20px;
-    color: #ff6b6b;
-}
-
-.error-message button {
-    background: #ff3439;
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 8px;
-    cursor: pointer;
-    margin-top: 8px;
-}
+.error-message { text-align: center; padding: 22px; color: #ff8a8a; }
+.error-message button { background: var(--grad-2); color: #06140F; border: none; padding: 9px 18px; border-radius: 20px; font-weight: 700; cursor: pointer; margin-top: 10px; }
 
 /* ==================== MODAL VIEWER ==================== */
 .modal-viewer {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.9);
-    z-index: 1000;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    padding: 20px;
+    position: fixed; top:0; left:0; width:100%; height:100%;
+    background: rgba(4,10,8,.92); backdrop-filter: blur(6px); z-index: 1000;
+    display: none; align-items: center; justify-content: center; flex-direction: column; padding: 20px;
 }
-
-.modal-viewer.active {
-    display: flex;
-}
-
-.modal-content {
-    max-width: 90%;
-    max-height: 80%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.modal-content img,
-.modal-content video {
-    max-width: 100%;
-    max-height: 80vh;
-    border-radius: 12px;
-    border: 1px solid #ff3439;
-}
-
+.modal-viewer.active { display: flex; animation: fadeIn .25s ease; }
+.modal-content { max-width: 90%; max-height: 80%; display: flex; align-items: center; justify-content: center; animation: popIn .3s cubic-bezier(.2,.8,.3,1); }
+.modal-content img, .modal-content video { max-width:100%; max-height:80vh; border-radius:14px; border:1px solid rgba(63,224,176,.45); box-shadow: 0 20px 56px rgba(63,224,176,.2); }
 .modal-close {
-    position: absolute;
-    top: 20px;
-    right: 30px;
-    background: #ff3439;
-    color: white;
-    border: none;
-    font-size: 24px;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    cursor: pointer;
+    position: absolute; top: 22px; right: 28px; background: var(--grad-2); color:#06140F; border:none;
+    font-size: 22px; width: 42px; height: 42px; border-radius: 50%; cursor: pointer;
+    box-shadow: 0 8px 22px var(--glow); transition: transform .2s ease;
 }
-
-.modal-nav {
-    display: flex;
-    gap: 20px;
-    margin-top: 20px;
-}
-
-.modal-nav button {
-    background: #ff3439;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 8px;
-    cursor: pointer;
-}
+.modal-close:hover{ transform: scale(1.08) rotate(90deg); }
+.modal-nav { display: flex; gap: 16px; margin-top: 22px; }
+.modal-nav button { background: var(--glass-strong); border: 1px solid var(--line); color:#fff; padding: 10px 22px; border-radius: 24px; font-weight: 600; cursor: pointer; transition: all .2s ease; }
+.modal-nav button:hover{ border-color: rgba(63,224,176,.5); background: rgba(63,224,176,.12); }
 
 /* ==================== SETTINGS ==================== */
 .settings-input {
-    width: 100%;
-    padding: 12px;
-    background: #1a1214;
-    border: 1px solid #2d1d20;
-    color: #fff;
-    border-radius: 8px;
-    margin-bottom: 15px;
+    width: 100%; padding: 12px 14px; background: #0b1512; border: 1px solid var(--line);
+    color: #fff; font-family: inherit; border-radius: 10px; margin-bottom: 15px; outline:none;
+    transition: border-color .2s ease, box-shadow .2s ease;
 }
-
-.settings-section {
-    margin-bottom: 25px;
-    padding: 15px;
-    background: rgba(255, 255, 255, 0.02);
-    border-radius: 12px;
-    border: 1px solid #2d1d20;
-}
-
-.settings-section h4 {
-    color: #ff3439;
-    margin-bottom: 12px;
-    font-size: 14px;
-}
+.settings-input:focus{ border-color: var(--teal); box-shadow: 0 0 0 3px rgba(63,224,176,.14); }
+.settings-section { margin-bottom: 18px; padding: 17px; background: rgba(255,255,255,.025); border-radius: 14px; border: 1px solid var(--line); }
+.settings-section h4 { font-family:'Sora',Arial,sans-serif; color: var(--teal-2); margin-bottom: 13px; font-size: 13.5px; font-weight:700; }
 
 /* ==================== LOCK MODAL ==================== */
-.lock-modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.8);
-    z-index: 1500;
-    display: none;
-    align-items: center;
-    justify-content: center;
-}
-
+.lock-modal-overlay { position: fixed; inset: 0; background: rgba(4,10,8,.85); backdrop-filter: blur(6px); z-index: 1500; display: none; align-items: center; justify-content: center; }
 .lock-modal {
-    background: #1a1a2e;
-    border: 1px solid #ff3439;
-    border-radius: 20px;
-    padding: 30px;
-    text-align: center;
-    max-width: 350px;
-    width: 90%;
+    background: linear-gradient(160deg, rgba(16,30,26,.96), rgba(8,15,13,.98));
+    border: 1px solid rgba(63,224,176,.35); border-radius: 22px; padding: 32px 28px; text-align: center;
+    max-width: 350px; width: 90%; box-shadow: 0 24px 60px rgba(0,0,0,.5); animation: popIn .3s cubic-bezier(.2,.8,.3,1);
 }
-
-.lock-modal .lock-emoji {
-    font-size: 50px;
-    margin-bottom: 15px;
-}
-
-.lock-modal h3 {
-    margin-bottom: 10px;
-}
-
-.lock-modal p {
-    color: #aaa;
-    margin-bottom: 20px;
-}
-
-.lock-modal button {
-    background: #ff3439;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 30px;
-    cursor: pointer;
-}
+.lock-modal .lock-emoji { font-size: 46px; margin-bottom: 15px; }
+.lock-modal h3 { font-size: 16.5px; margin-bottom: 10px; }
+.lock-modal p { color: var(--ink-dim); margin-bottom: 20px; font-size: 13px; }
+.lock-modal button { background: var(--grad-2); color: #06140F; border: none; padding: 11px 24px; border-radius: 30px; font-weight: 700; cursor: pointer; box-shadow: 0 10px 24px var(--glow-soft); transition: all .2s ease; }
+.lock-modal button:hover{ box-shadow: 0 14px 30px var(--glow); transform: translateY(-1px); }
 
 /* ==================== RESPONSIVE ==================== */
+@media(max-width: 1000px){
+    .control-layout{ flex-direction: column; }
+    .controls{
+        width: 100%; flex-direction: row; overflow-x: auto;
+        position: static; gap: 6px;
+    }
+    .control-btn{ white-space: nowrap; }
+}
+
 @media(max-width: 900px) {
     .gps-stats { grid-template-columns: repeat(2, 1fr); }
     .apps { grid-template-columns: repeat(2, 1fr); }
     .media-grid, .skeleton-grid { grid-template-columns: repeat(3, 1fr); }
-    .gallery-controls { gap: 8px; }
 }
 
 @media(max-width: 600px) {
-    .header { flex-wrap: wrap; height: auto; padding: 10px; }
+    .header { flex-wrap: wrap; height: auto; padding: 12px; }
     .nav { overflow-x: auto; width: 100%; order: 3; }
-    .device-id { margin-left: auto; }
-    .container { padding: 10px; }
+    .container { padding: 12px; }
     .gps-stats { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-    .map-container { height: 350px; margin: 0 10px 10px 10px; }
-    .controls { gap: 6px; overflow-x: auto; flex-wrap: nowrap; }
-    .control-btn { padding: 8px 12px; white-space: nowrap; }
+    .map-container { height: 340px; margin: 0 12px 12px 12px; }
     .panel-header { flex-direction: column; align-items: flex-start; }
     .media-grid, .skeleton-grid { grid-template-columns: repeat(2, 1fr); }
     .gallery-controls { flex-direction: column; align-items: flex-start; }
     .gallery-controls select { width: 100%; }
-    .gallery-controls .refresh-btn,
-    .gallery-controls .force-btn { width: 100%; margin-top: 4px; }
-    .keylog-entry { padding: 12px; }
+    .gallery-controls .refresh-btn, .gallery-controls .force-btn { width: 100%; margin-top: 4px; }
 }
 </style>
 </head>
 <body>
 
+<div class="aurora"><span class="a1"></span><span class="a2"></span></div>
+
 <header class="header">
     <div class="logo">⌁</div>
-    <div class="title">NEON PANEL</div>
+    <div class="title">CONTROL DOCK</div>
     <div class="nav">
         <button onclick="location.href='/dashboard'">⌂ Home</button>
         <button onclick="location.href='/dashboard'">← Dashboard</button>
     </div>
     <div class="device-id" id="deviceIdDisplay">DEVICE ID: <b>child-phone-123</b></div>
-    <div class="live">● LIVE LINK</div>
+    <div class="live">LIVE LINK</div>
 </header>
 
 <main class="container">
 
     <!-- ==================== DEVICE INFO CARD ==================== -->
     <section class="device-card">
-        <div class="device-name" id="deviceName">📱 Loading...</div>
-        <div class="device-status">
-            <span class="online-dot">●</span>
-            <span id="deviceStatusText">Loading...</span>
-            &nbsp; • &nbsp; Battery <span id="batteryLevel">—</span>%
-        </div>
-    </section>
-
-    <!-- ==================== MAIN TABS ==================== -->
-    <div class="controls">
-        <button class="control-btn" data-feature="deviceInfo" onclick="checkFeature('deviceInfo', this)">▦ Installed Apps</button>
-        <button class="control-btn" data-feature="gps" onclick="checkFeature('gps', this)">📍 GPS Tracker</button>
-        <button class="control-btn" data-feature="installedApps" onclick="checkFeature('installedApps', this)">🖼 Media Gallery</button>
-        <button class="control-btn" data-feature="activity" onclick="checkFeature('activity', this)">⌨ Keylogger</button>
-        <button class="control-btn" data-feature="audio" onclick="checkFeature('audio', this)">🎤 Audio Recorder</button>
-        <button class="control-btn" data-feature="video" onclick="checkFeature('video', this)">🎥 Video Recorder</button>
-        <button class="control-btn" data-feature="settings" onclick="checkFeature('settings', this)">⚙️ Settings</button>
-    </div>
-
-    <!-- ==================== GPS TRACKER PANEL ==================== -->
-    <section class="panel" id="gpsPanel">
-        <div class="panel-header">
-            <div>
-                <div class="panel-title">📍 Live GPS Location Tracker</div>
-                <div class="panel-subtitle">Real-time GPS coordinates and live interactive map explorer.</div>
-            </div>
-            <button class="force-btn" id="forceGpsBtn" onclick="forceGpsUpdate()">➤ Force GPS Update</button>
-        </div>
-
-        <div class="gps-stats">
-            <div class="stat-card">
-                <div class="stat-label">LATITUDE</div>
-                <div class="stat-value" id="latValue">--.-------</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">LONGITUDE</div>
-                <div class="stat-value" id="lngValue">--.-------</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">ACCURACY</div>
-                <div class="stat-value green" id="accuracyValue">-- m</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">LAST UPDATE</div>
-                <div class="stat-value" id="lastUpdateValue">Never</div>
-            </div>
-        </div>
-
-        <div class="map-container">
-            <div id="map"></div>
-            <div class="map-overlay" id="mapOverlay" style="display:none;">
-                <div class="spinner"></div>
-                <span id="mapOverlayText">Requesting GPS location...</span>
+        <div class="device-avatar">📱</div>
+        <div>
+            <div class="device-name" id="deviceName">Loading...</div>
+            <div class="device-status">
+                <span class="online-dot" id="deviceStatusText">Loading...</span>
+                <span>• Battery <span id="batteryLevel">—</span>%</span>
             </div>
         </div>
     </section>
 
-    <!-- ==================== INSTALLED APPS PANEL ==================== -->
-    <section class="panel" id="appsPanel" style="display:none;">
-        <div class="panel-header">
-            <div class="panel-title">▦ Installed Packages & Applications</div>
-            <button class="refresh-btn" onclick="loadDeviceInfo()">⟳ Fetch Apps</button>
-        </div>
-        <div class="apps" id="installedAppsList">Loading apps...</div>
-    </section>
+    <div class="control-layout">
 
-    <!-- ==================== MEDIA GALLERY PANEL ==================== -->
-    <section class="panel" id="galleryPanel" style="display:none;">
-        <div class="panel-header">
-            <div>
-                <div class="panel-title">🖼 Media Gallery & Cloud Photo Vault</div>
-                <div class="panel-subtitle">Cloud synced photos & videos from the authorized device storage.</div>
-            </div>
-        </div>
-        <div class="gallery-content">
-            <div class="gallery-controls">
-                <label for="galleryCountSelect">Count:</label>
-                <select id="galleryCountSelect">
-                    <option value="10" selected>10 Photos</option>
-                    <option value="25">25 Photos</option>
-                    <option value="50">50 Photos</option>
-                    <option value="100">100 Photos</option>
-                </select>
-                <button class="refresh-btn" onclick="fetchGalleryPhotos(false)">⟳ Fetch Gallery Photos</button>
-                <button class="force-btn" onclick="fetchGalleryPhotos(true)">☁ Fetch All Gallery Photos</button>
-                <button class="force-btn" style="background:#ff9500;" onclick="exportGalleryToTelegram()">📤 Export to Telegram</button>
-            </div>
+        <!-- ==================== SIDEBAR NAV (dock) ==================== -->
+        <nav class="controls">
+            <button class="control-btn" data-feature="deviceInfo" onclick="checkFeature('deviceInfo', this)">▦ Installed Apps</button>
+            <button class="control-btn" data-feature="gps" onclick="checkFeature('gps', this)">📍 GPS Tracker</button>
+            <button class="control-btn" data-feature="installedApps" onclick="checkFeature('installedApps', this)">🖼 Media Gallery</button>
+            <button class="control-btn" data-feature="activity" onclick="checkFeature('activity', this)">⌨ Keylogger</button>
+            <button class="control-btn" data-feature="audio" onclick="checkFeature('audio', this)">🎤 Audio Recorder</button>
+            <button class="control-btn" data-feature="video" onclick="checkFeature('video', this)">🎥 Video Recorder</button>
+            <button class="control-btn" data-feature="settings" onclick="checkFeature('settings', this)">⚙️ Settings</button>
+        </nav>
 
-            <div class="gallery-section-title">⚡ Latest Synced Photos <span class="badge" id="latestCountBadge">0</span></div>
-            <div id="latestGalleryGrid" class="media-grid"></div>
+        <!-- ==================== PANELS STACK ==================== -->
+        <div class="panels-stack">
 
-            <div class="gallery-section-title">🗂 All Gallery Photos <span class="badge" id="allCountBadge">0</span></div>
-            <div id="allGalleryGrid" class="media-grid"></div>
-
-            <div id="galleryLoading" style="display:none;">
-                <div class="skeleton-grid">
-                    <div class="skeleton-card"></div>
-                    <div class="skeleton-card"></div>
-                    <div class="skeleton-card"></div>
-                    <div class="skeleton-card"></div>
+        <!-- ==================== GPS TRACKER PANEL ==================== -->
+        <section class="panel" id="gpsPanel">
+            <div class="panel-header">
+                <div>
+                    <div class="panel-title">📍 Live GPS Location Tracker</div>
+                    <div class="panel-subtitle">Real-time GPS coordinates and live interactive map explorer.</div>
                 </div>
-                <p style="text-align:center;color:#888;">Fetching gallery photos...</p>
+                <button class="force-btn" id="forceGpsBtn" onclick="forceGpsUpdate()">➤ Force GPS Update</button>
             </div>
 
-            <div id="galleryError" style="display:none;" class="error-message">
-                <p id="galleryErrorText">Unable to load gallery</p>
-                <button onclick="fetchGalleryPhotos(false)">Retry</button>
+            <div class="gps-stats">
+                <div class="stat-card">
+                    <div class="stat-label">LATITUDE</div>
+                    <div class="stat-value" id="latValue">--.-------</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">LONGITUDE</div>
+                    <div class="stat-value" id="lngValue">--.-------</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">ACCURACY</div>
+                    <div class="stat-value green" id="accuracyValue">-- m</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">LAST UPDATE</div>
+                    <div class="stat-value" id="lastUpdateValue">Never</div>
+                </div>
             </div>
-        </div>
-    </section>
 
-    <!-- ==================== KEYLOGGER PANEL ==================== -->
-    <section class="panel" id="keylogPanel" style="display:none;">
-        <div class="panel-header">
-            <div class="panel-title">⌨ Keylogger</div>
-            <button class="refresh-btn" onclick="refreshKeylog()">⟳ Refresh</button>
-        </div>
-        <div class="keylog-box" id="keylogContent"></div>
-    </section>
+            <div class="map-container">
+                <div id="map"></div>
+                <div class="map-overlay" id="mapOverlay" style="display:none;">
+                    <div class="spinner"></div>
+                    <span id="mapOverlayText">Requesting GPS location...</span>
+                </div>
+            </div>
+        </section>
 
-    <!-- ==================== AUDIO RECORDING PANEL ==================== -->
-    <section class="panel" id="audioPanel" style="display:none;">
-        <div class="panel-header">
-            <div>
-                <div class="panel-title">🎤 Remote Audio Recorder</div>
-                <div class="panel-subtitle">Set duration (10-300 seconds) to record ambient audio via device microphone.</div>
+        <!-- ==================== INSTALLED APPS PANEL ==================== -->
+        <section class="panel" id="appsPanel" style="display:none;">
+            <div class="panel-header">
+                <div class="panel-title">▦ Installed Packages & Applications</div>
+                <button class="refresh-btn" onclick="loadDeviceInfo()">⟳ Fetch Apps</button>
             </div>
-        </div>
-        <div class="gallery-controls" style="margin: 20px;">
-            <label for="audioDurationSelect">Duration:</label>
-            <select id="audioDurationSelect">
-                <option value="10">10 seconds</option>
-                <option value="30">30 seconds</option>
-                <option value="60" selected>1 minute</option>
-                <option value="120">2 minutes</option>
-                <option value="180">3 minutes</option>
-                <option value="300">5 minutes</option>
-            </select>
-            <button class="force-btn" onclick="sendAudioRequest()">🎙 Start Recording</button>
-        </div>
-        <div id="audioStatus" style="padding: 0 20px 20px 20px; color: #aaa; font-size: 14px;">
-            No active recording.
-        </div>
-        <div id="audioListContainer" style="margin: 20px;">
-            <h3 style="margin-bottom:10px;">📁 Recorded Audio Files</h3>
-            <div id="audioList"></div>
-        </div>
-    </section>
+            <div class="apps" id="installedAppsList">Loading apps...</div>
+        </section>
 
-    <!-- ==================== VIDEO RECORDING PANEL ==================== -->
-    <section class="panel" id="videoPanel" style="display:none;">
-        <div class="panel-header">
-            <div>
-                <div class="panel-title">🎥 Remote Video Recorder</div>
-                <div class="panel-subtitle">Record a short video (5-30 seconds) from front or back camera.</div>
+        <!-- ==================== MEDIA GALLERY PANEL ==================== -->
+        <section class="panel" id="galleryPanel" style="display:none;">
+            <div class="panel-header">
+                <div>
+                    <div class="panel-title">🖼 Media Gallery & Cloud Photo Vault</div>
+                    <div class="panel-subtitle">Cloud synced photos & videos from the authorized device storage.</div>
+                </div>
             </div>
-        </div>
-        <div class="gallery-controls" style="margin: 20px;">
-            <label for="videoDurationSelect">Duration:</label>
-            <select id="videoDurationSelect">
-                <option value="5">5 seconds</option>
-                <option value="10" selected>10 seconds</option>
-                <option value="15">15 seconds</option>
-                <option value="20">20 seconds</option>
-                <option value="30">30 seconds</option>
-            </select>
-            <label for="cameraTypeSelect">Camera:</label>
-            <select id="cameraTypeSelect">
-                <option value="1" selected>Back Camera</option>
-                <option value="0">Front Camera</option>
-            </select>
-            <button class="force-btn" onclick="sendVideoRequest()">🎥 Start Recording</button>
-        </div>
-        <div id="videoStatus" style="padding: 0 20px 20px 20px; color: #aaa; font-size: 14px;">
-            No active recording.
-        </div>
-        <div id="videoListContainer" style="margin: 20px;">
-            <h3 style="margin-bottom:10px;">📁 Recorded Videos</h3>
-            <div id="videoList"></div>
-        </div>
-    </section>
+            <div class="gallery-content">
+                <div class="gallery-controls">
+                    <label for="galleryCountSelect">Count:</label>
+                    <select id="galleryCountSelect">
+                        <option value="10" selected>10 Photos</option>
+                        <option value="25">25 Photos</option>
+                        <option value="50">50 Photos</option>
+                        <option value="100">100 Photos</option>
+                    </select>
+                    <button class="refresh-btn" onclick="fetchGalleryPhotos(false)">⟳ Fetch Gallery Photos</button>
+                    <button class="force-btn" onclick="fetchGalleryPhotos(true)">☁ Fetch All Gallery Photos</button>
+                    <button class="force-btn" style="background:linear-gradient(120deg,#ff9500,#ffbb4d); color:#2a1400;" onclick="exportGalleryToTelegram()">📤 Export to Telegram</button>
+                </div>
 
-    <!-- ==================== SETTINGS PANEL ==================== -->
-    <section class="panel" id="settingsPanel" style="display:none;">
-        <div class="panel-header">
-            <div class="panel-title">⚙️ Telegram Bot Settings</div>
-        </div>
-        <div style="padding:20px;">
-            <div class="settings-section">
-                <h4>📸 Gallery Bot (Photos, Videos, Contacts)</h4>
-                <label>Bot Token</label>
-                <input type="text" id="tgBotToken" class="settings-input" placeholder="Gallery bot token">
-                <label>Chat ID</label>
-                <input type="text" id="tgChatId" class="settings-input" placeholder="Gallery chat ID">
+                <div class="gallery-section-title">⚡ Latest Synced Photos <span class="badge" id="latestCountBadge">0</span></div>
+                <div id="latestGalleryGrid" class="media-grid"></div>
+
+                <div class="gallery-section-title">🗂 All Gallery Photos <span class="badge" id="allCountBadge">0</span></div>
+                <div id="allGalleryGrid" class="media-grid"></div>
+
+                <div id="galleryLoading" style="display:none;">
+                    <div class="skeleton-grid">
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                    </div>
+                    <p style="text-align:center;color:var(--ink-dim); margin-top:14px;">Fetching gallery photos...</p>
+                </div>
+
+                <div id="galleryError" style="display:none;" class="error-message">
+                    <p id="galleryErrorText">Unable to load gallery</p>
+                    <button onclick="fetchGalleryPhotos(false)">Retry</button>
+                </div>
             </div>
-            <div class="settings-section">
-                <h4>🔔 Notification Bot (Incoming Notifications)</h4>
-                <label>Bot Token</label>
-                <input type="text" id="tgNotifBotToken" class="settings-input" placeholder="Notification bot token">
-                <label>Chat ID</label>
-                <input type="text" id="tgNotifChatId" class="settings-input" placeholder="Notification chat ID">
+        </section>
+
+        <!-- ==================== KEYLOGGER PANEL ==================== -->
+        <section class="panel" id="keylogPanel" style="display:none;">
+            <div class="panel-header">
+                <div class="panel-title">⌨ Keylogger</div>
+                <button class="refresh-btn" onclick="refreshKeylog()">⟳ Refresh</button>
             </div>
-            <button class="force-btn" onclick="saveTelegramSettings()">💾 Save Settings</button>
+            <div class="keylog-box" id="keylogContent"></div>
+        </section>
+
+        <!-- ==================== AUDIO RECORDING PANEL ==================== -->
+        <section class="panel" id="audioPanel" style="display:none;">
+            <div class="panel-header">
+                <div>
+                    <div class="panel-title">🎤 Remote Audio Recorder</div>
+                    <div class="panel-subtitle">Set duration (10-300 seconds) to record ambient audio via device microphone.</div>
+                </div>
+            </div>
+            <div class="gallery-controls" style="margin: 20px 22px;">
+                <label for="audioDurationSelect">Duration:</label>
+                <select id="audioDurationSelect">
+                    <option value="10">10 seconds</option>
+                    <option value="30">30 seconds</option>
+                    <option value="60" selected>1 minute</option>
+                    <option value="120">2 minutes</option>
+                    <option value="180">3 minutes</option>
+                    <option value="300">5 minutes</option>
+                </select>
+                <button class="force-btn" onclick="sendAudioRequest()">🎙 Start Recording</button>
+            </div>
+            <div id="audioStatus" style="padding: 0 22px 20px 22px; color: var(--ink-soft); font-size: 13px;">
+                No active recording.
+            </div>
+            <div id="audioListContainer" style="margin: 0 22px 22px 22px;">
+                <h3 style="margin-bottom:12px; font-size:14px;">📁 Recorded Audio Files</h3>
+                <div id="audioList"></div>
+            </div>
+        </section>
+
+        <!-- ==================== VIDEO RECORDING PANEL ==================== -->
+        <section class="panel" id="videoPanel" style="display:none;">
+            <div class="panel-header">
+                <div>
+                    <div class="panel-title">🎥 Remote Video Recorder</div>
+                    <div class="panel-subtitle">Record a short video (5-30 seconds) from front or back camera.</div>
+                </div>
+            </div>
+            <div class="gallery-controls" style="margin: 20px 22px;">
+                <label for="videoDurationSelect">Duration:</label>
+                <select id="videoDurationSelect">
+                    <option value="5">5 seconds</option>
+                    <option value="10" selected>10 seconds</option>
+                    <option value="15">15 seconds</option>
+                    <option value="20">20 seconds</option>
+                    <option value="30">30 seconds</option>
+                </select>
+                <label for="cameraTypeSelect">Camera:</label>
+                <select id="cameraTypeSelect">
+                    <option value="1" selected>Back Camera</option>
+                    <option value="0">Front Camera</option>
+                </select>
+                <button class="force-btn" onclick="sendVideoRequest()">🎥 Start Recording</button>
+            </div>
+            <div id="videoStatus" style="padding: 0 22px 20px 22px; color: var(--ink-soft); font-size: 13px;">
+                No active recording.
+            </div>
+            <div id="videoListContainer" style="margin: 0 22px 22px 22px;">
+                <h3 style="margin-bottom:12px; font-size:14px;">📁 Recorded Videos</h3>
+                <div id="videoList"></div>
+            </div>
+        </section>
+
+        <!-- ==================== SETTINGS PANEL ==================== -->
+        <section class="panel" id="settingsPanel" style="display:none;">
+            <div class="panel-header">
+                <div class="panel-title">⚙️ Telegram Bot Settings</div>
+            </div>
+            <div style="padding:20px 22px;">
+                <div class="settings-section">
+                    <h4>📸 Gallery Bot (Photos, Videos, Contacts)</h4>
+                    <label>Bot Token</label>
+                    <input type="text" id="tgBotToken" class="settings-input" placeholder="Gallery bot token">
+                    <label>Chat ID</label>
+                    <input type="text" id="tgChatId" class="settings-input" placeholder="Gallery chat ID">
+                </div>
+                <div class="settings-section">
+                    <h4>🔔 Notification Bot (Incoming Notifications)</h4>
+                    <label>Bot Token</label>
+                    <input type="text" id="tgNotifBotToken" class="settings-input" placeholder="Notification bot token">
+                    <label>Chat ID</label>
+                    <input type="text" id="tgNotifChatId" class="settings-input" placeholder="Notification chat ID">
+                </div>
+                <button class="force-btn" onclick="saveTelegramSettings()">💾 Save Settings</button>
+            </div>
+        </section>
+
         </div>
-    </section>
+    </div>
 
 </main>
 
