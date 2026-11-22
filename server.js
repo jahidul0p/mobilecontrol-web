@@ -849,17 +849,38 @@ app.post("/api/admin/build-requests/:id/apk", requireLogin, requireAdmin, upload
 });
 
 // ========== ADMIN ==========
+
 app.get("/api/admin/users", requireLogin, requireAdmin, async (req, res) => {
   try {
-    const result = await pool.query("SELECT id AS uid, email, role, created_at FROM users ORDER BY id DESC");
+    const result = await pool.query(`
+      SELECT id AS uid, email, role, plan, vip_expires_at, created_at
+      FROM users
+      ORDER BY id DESC
+    `);
+
     const users = [];
+
     for (const u of result.rows) {
-      const deviceCount = await pool.query("SELECT COUNT(*) FROM devices WHERE owner_user_id=$1", [u.uid]);
-      const features = userFeaturesData.get(u.uid) || { deviceInfo:true, gps:true, installedApps:true, activity:true, audio:true, video:true, contacts:true, settings:true };
+      const deviceCount = await pool.query(
+        "SELECT COUNT(*) FROM devices WHERE owner_user_id=$1",
+        [u.uid]
+      );
+
+      const features = userFeaturesData.get(u.uid) || {
+        deviceInfo: true,
+        gps: true,
+        installedApps: true,
+        activity: true,
+        audio: true,
+        video: true,
+        contacts: true,
+        settings: true
+      };
+
       users.push({
         uid: u.uid,
         plan: u.plan,
-        vipExpiresAt: u.vip_expires_at
+        vipExpiresAt: u.vip_expires_at,
         name: u.email.split('@')[0],
         email: u.email,
         role: u.role === 'admin' ? 'ADMIN' : 'USER',
@@ -869,9 +890,14 @@ app.get("/api/admin/users", requireLogin, requireAdmin, async (req, res) => {
         features
       });
     }
+
     res.json({ users });
-  } catch (e) { console.error(e); res.status(500).json({ error: "Failed to fetch users." }); }
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Failed to fetch users." });
+  }
 });
+
 
 
 // ========== ADMIN VIP MANAGEMENT ==========
