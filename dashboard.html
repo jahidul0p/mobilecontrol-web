@@ -399,6 +399,26 @@
     </div>
   </section>
 
+  <!-- REFERRAL -->
+  <section class="panel reveal">
+    <div class="panel-title"><span class="mark">&#9733;</span> Invite &amp; earn VIP</div>
+    <div class="builder">
+      <p style="color:var(--ink-soft);font-size:12.5px;margin-bottom:16px;">
+        Share your link — you get <b style="color:var(--teal-2);">2 free VIP days</b> per signup, they get <b style="color:var(--teal-2);">1 free VIP day</b>.
+      </p>
+      <div class="field full">
+        <label>Your referral link</label>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <input id="referralLink" type="text" readonly value="Loading..." style="flex:1;min-width:220px;">
+          <button class="build-btn" id="copyReferralBtn" style="width:auto;margin-top:0;padding:13px 22px;" onclick="copyReferralLink()">Copy</button>
+        </div>
+      </div>
+      <div class="status show" style="margin-top:16px;">
+        <span id="referralCount">0</span> friend(s) joined with your link so far.
+      </div>
+    </div>
+  </section>
+
   <!-- DEVICES -->
   <section class="panel reveal">
     <div class="panel-title device-header">
@@ -545,6 +565,69 @@ async function loadAccess(){
 
     console.error("Access status error:", error);
 
+  }
+
+}
+
+
+/* =========================================
+   REFERRAL
+========================================= */
+
+async function loadReferral(){
+
+  const linkEl = document.getElementById("referralLink");
+  const countEl = document.getElementById("referralCount");
+
+  try{
+
+    const response = await fetch("/api/referral", {
+      credentials:"same-origin",
+      cache:"no-store"
+    });
+
+    if(!response.ok) return;
+
+    const data = await response.json();
+
+    if(linkEl) linkEl.value = data.referralLink || "";
+    if(countEl) countEl.textContent = data.totalReferred ?? 0;
+
+  }catch(error){
+
+    console.error("Referral load error:", error);
+    if(linkEl) linkEl.value = "Failed to load referral link.";
+
+  }
+
+}
+
+function copyReferralLink(){
+
+  const linkEl = document.getElementById("referralLink");
+  const btn = document.getElementById("copyReferralBtn");
+
+  if(!linkEl || !linkEl.value) return;
+
+  const restoreLabel = () => { if(btn) btn.textContent = "Copy"; };
+
+  const markCopied = () => {
+    if(btn){
+      btn.textContent = "Copied!";
+      setTimeout(restoreLabel, 1800);
+    }
+  };
+
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(linkEl.value).then(markCopied).catch(function(){
+      linkEl.select();
+      document.execCommand("copy");
+      markCopied();
+    });
+  }else{
+    linkEl.select();
+    document.execCommand("copy");
+    markCopied();
   }
 
 }
@@ -914,6 +997,7 @@ function escapeHtml(value){
 loadUser();
 loadDevices();
 loadAccess();
+loadReferral();
 
 </script>
 

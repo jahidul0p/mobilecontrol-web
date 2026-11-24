@@ -93,6 +93,47 @@ await pool.query(`
 
 console.log("VIP Access System database ready.");
 
+
+// ========== REFERRAL SYSTEM ==========
+
+await pool.query(`
+  ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS referral_code VARCHAR(20) UNIQUE,
+  ADD COLUMN IF NOT EXISTS referred_by INTEGER REFERENCES users(id)
+`);
+
+await pool.query(`
+  CREATE TABLE IF NOT EXISTS referrals (
+    id SERIAL PRIMARY KEY,
+    referrer_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    referred_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE UNIQUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )
+`);
+
+console.log("Referral system database ready.");
+
+
+// ========== LOCATION HISTORY ==========
+
+await pool.query(`
+  CREATE TABLE IF NOT EXISTS location_history (
+    id SERIAL PRIMARY KEY,
+    device_id VARCHAR(255) NOT NULL REFERENCES devices(device_id) ON DELETE CASCADE,
+    latitude DOUBLE PRECISION NOT NULL,
+    longitude DOUBLE PRECISION NOT NULL,
+    accuracy DOUBLE PRECISION,
+    recorded_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )
+`);
+
+await pool.query(`
+  CREATE INDEX IF NOT EXISTS idx_location_history_device_time
+  ON location_history(device_id, recorded_at DESC)
+`);
+
+console.log("Location history database ready.");
+
    
     await pool.query(`
       CREATE TABLE IF NOT EXISTS devices (
@@ -186,6 +227,50 @@ async function promoteAdmin() {
   } catch (e) { console.error("Admin promotion failed:", e); }
 }
 promoteAdmin();
+
+// ========== REFERRAL HELPERS ==========
+
+function generateReferralCode() {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no 0/O/1/I to avoid confusion
+  let code = "";
+  for (let i = 0; i < 7; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+
+async function ensureUniqueReferralCode() {
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const code = generateReferralCode();
+    const existing = await pool.query("SELECT id FROM users WHERE referral_code=$1", [code]);
+    if (existing.rows.length === 0) return code;
+  }
+  throw new Error("Could not generate a unique referral code.");
+}
+
+async function backfillReferralCodes() {
+  try {
+    const result = await pool.query("SELECT id FROM users WHERE referral_code IS NULL");
+    for (const row of result.rows) {
+      const code = await ensureUniqueReferralCode();
+      await pool.query("UPDATE users SET referral_code=$1 WHERE id=$2", [code, row.id]);
+    }
+    if (result.rows.length > 0) console.log(`Backfilled referral codes for ${result.rows.length} user(s).`);
+  } catch (e) {
+    console.error("Referral code backfill failed:", e);
+  }
+}
+backfillReferralCodes();
+
+// Grants `days` of VIP, extending from the later of "now" or the user's
+// current vip_expires_at so stacking referral rewards never shortens VIP.
+async function grantVipDays(userId, days) {
+  await pool.query(
+    `UPDATE users
+     SET plan = 'vip',
+         vip_expires_at = GREATEST(COALESCE(vip_expires_at, NOW()), NOW()) + ($1 * INTERVAL '1 day')
+     WHERE id = $2`,
+    [days, userId]
+  );
+}
 
 function requireLogin(req, res, next) {
   if (!req.session.userId) return res.status(401).json({ authenticated: false, error: "Login required." });
@@ -301,18 +386,46 @@ const userFeaturesData = new Map();
 // ========== AUTH ==========
 app.post("/api/signup", async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, referralCode } = req.body;
     if (!email || !password) return res.status(400).json({ error: "Email and password required." });
     if (password.length < 8) return res.status(400).json({ error: "Password must be at least 8 characters." });
     const normalizedEmail = email.trim().toLowerCase();
     const existing = await pool.query("SELECT id FROM users WHERE email=$1", [normalizedEmail]);
     if (existing.rows.length > 0) return res.status(409).json({ error: "Account already exists." });
+
+    // Resolve referral code (if any) to a referrer BEFORE creating the user,
+    // so we never reward a referral against a non-existent referrer.
+    let referrerId = null;
+    if (referralCode && typeof referralCode === "string" && referralCode.trim()) {
+      const refRes = await pool.query(
+        "SELECT id FROM users WHERE referral_code=$1",
+        [referralCode.trim().toUpperCase()]
+      );
+      if (refRes.rows.length > 0) referrerId = refRes.rows[0].id;
+    }
+
     const passwordHash = await bcrypt.hash(password, 12);
+    const newCode = await ensureUniqueReferralCode();
     const result = await pool.query(
-      "INSERT INTO users (email, password_hash, role) VALUES ($1,$2,'parent') RETURNING id, email, role, created_at",
-      [normalizedEmail, passwordHash]
+      "INSERT INTO users (email, password_hash, role, referral_code, referred_by) VALUES ($1,$2,'parent',$3,$4) RETURNING id, email, role, created_at, referral_code",
+      [normalizedEmail, passwordHash, newCode, referrerId]
     );
-    req.session.userId = result.rows[0].id;
+    const newUser = result.rows[0];
+
+    if (referrerId) {
+      try {
+        await pool.query(
+          "INSERT INTO referrals (referrer_id, referred_id) VALUES ($1,$2) ON CONFLICT DO NOTHING",
+          [referrerId, newUser.id]
+        );
+        await grantVipDays(referrerId, 2); // referrer gets 2 free VIP days
+        await grantVipDays(newUser.id, 1); // new user gets 1 free VIP day
+      } catch (refErr) {
+        console.error("Referral reward failed:", refErr);
+      }
+    }
+
+    req.session.userId = newUser.id;
     req.session.role = result.rows[0].role;
     req.session.save((err) => {
       if (err) return res.status(500).json({ error: "Session save failed." });
@@ -389,6 +502,41 @@ app.get("/api/access", requireLogin, async (req, res) => {
 });
 
 
+// ========== REFERRALS ==========
+
+app.get("/api/referral", requireLogin, async (req, res) => {
+  try {
+    const userRes = await pool.query(
+      "SELECT referral_code FROM users WHERE id=$1",
+      [req.session.userId]
+    );
+    if (!userRes.rows.length) return res.status(404).json({ error: "User not found." });
+
+    let code = userRes.rows[0].referral_code;
+    if (!code) { // safety net for any account somehow missing one
+      code = await ensureUniqueReferralCode();
+      await pool.query("UPDATE users SET referral_code=$1 WHERE id=$2", [code, req.session.userId]);
+    }
+
+    const countRes = await pool.query(
+      "SELECT COUNT(*)::int AS count FROM referrals WHERE referrer_id=$1",
+      [req.session.userId]
+    );
+
+    res.json({
+      success: true,
+      referralCode: code,
+      referralLink: `${req.protocol}://${req.get("host")}/?ref=${code}`,
+      totalReferred: countRes.rows[0].count,
+      reward: { referrerDays: 2, referredDays: 1 }
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to fetch referral info." });
+  }
+});
+
+
 // ========== DEVICE STATE ==========
 app.post("/api/device-state", async (req, res) => {
   try {
@@ -419,6 +567,14 @@ app.post("/api/device-state", async (req, res) => {
       accuracy: accuracy ?? null,
       last_seen: Date.now()
     });
+
+    if (latitude != null && longitude != null && Number.isFinite(Number(latitude)) && Number.isFinite(Number(longitude))) {
+      pool.query(
+        "INSERT INTO location_history (device_id, latitude, longitude, accuracy) VALUES ($1,$2,$3,$4)",
+        [deviceId, Number(latitude), Number(longitude), accuracy != null ? Number(accuracy) : null]
+      ).catch(e => console.error("Location history insert failed:", e));
+    }
+
     res.json({ success: true });
   } catch (e) { console.error(e); res.status(500).json({ error: "State update failed" }); }
 });
@@ -609,6 +765,59 @@ app.get("/api/gps/request", async (req, res) => {
   const requested = gpsRequestFlags.get(deviceId) || false;
   if (requested) gpsRequestFlags.delete(deviceId);
   res.json({ requested });
+});
+
+// ========== LOCATION HISTORY ==========
+
+async function assertOwnsDevice(req, res, deviceId) {
+  const deviceRes = await pool.query("SELECT owner_user_id FROM devices WHERE device_id=$1", [deviceId]);
+  if (deviceRes.rows.length === 0 || (req.session.role !== 'admin' && deviceRes.rows[0].owner_user_id !== req.session.userId)) {
+    res.status(403).json({ error: "Not your device." });
+    return false;
+  }
+  return true;
+}
+
+// List the dates (most recent first) that have at least one stored point.
+app.get("/api/location-history/dates", requireLogin, async (req, res) => {
+  try {
+    const { deviceId } = req.query;
+    if (!deviceId) return res.status(400).json({ error: "deviceId required" });
+    if (!(await assertOwnsDevice(req, res, deviceId))) return;
+
+    const result = await pool.query(
+      `SELECT to_char(recorded_at AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS date, COUNT(*)::int AS points
+       FROM location_history
+       WHERE device_id=$1
+       GROUP BY date
+       ORDER BY date DESC
+       LIMIT 30`,
+      [deviceId]
+    );
+    res.json({ dates: result.rows });
+  } catch (e) { console.error(e); res.status(500).json({ error: "Failed to fetch history dates." }); }
+});
+
+// Return the recorded points for one device on one UTC day, oldest first.
+app.get("/api/location-history", requireLogin, async (req, res) => {
+  try {
+    const { deviceId, date } = req.query;
+    if (!deviceId) return res.status(400).json({ error: "deviceId required" });
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date || "")) return res.status(400).json({ error: "date (YYYY-MM-DD) required" });
+    if (!(await assertOwnsDevice(req, res, deviceId))) return;
+
+    const result = await pool.query(
+      `SELECT latitude, longitude, accuracy, recorded_at
+       FROM location_history
+       WHERE device_id=$1
+         AND recorded_at >= ($2::date) AT TIME ZONE 'UTC'
+         AND recorded_at < ($2::date + INTERVAL '1 day') AT TIME ZONE 'UTC'
+       ORDER BY recorded_at ASC
+       LIMIT 3000`,
+      [deviceId, date]
+    );
+    res.json({ points: result.rows });
+  } catch (e) { console.error(e); res.status(500).json({ error: "Failed to fetch location history." }); }
 });
 
 // ========== AUDIO ==========
@@ -1121,6 +1330,12 @@ async function cleanupOfflineDevices() {
     const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const result = await pool.query("DELETE FROM devices WHERE last_seen < $1 AND online = FALSE", [cutoff]);
     if (result.rowCount > 0) console.log(`Removed ${result.rowCount} stale offline devices.`);
+
+    // Keep location history to the last 30 days so the table doesn't grow forever.
+    const historyResult = await pool.query(
+      "DELETE FROM location_history WHERE recorded_at < NOW() - INTERVAL '30 days'"
+    );
+    if (historyResult.rowCount > 0) console.log(`Removed ${historyResult.rowCount} old location history point(s).`);
     const devices = await pool.query("SELECT device_id FROM devices");
     const validIds = new Set(devices.rows.map(d => d.device_id));
     for (const key of [...deviceStates.keys()]) if (!validIds.has(key)) deviceStates.delete(key);
