@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MobileControl Pro — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0E1714;
+    --glass:rgba(21,37,33,.72);
+    --glass-strong:#1B2D28;
+    --line:rgba(255,255,255,.09);
+    --ink:#EAF3EF;
+    --ink-soft:#9BB0A8;
+    --violet:#3FE0B0;
+    --violet-2:#5CF0C6;
+    --teal:#3FE0B0;
+    --teal-2:#5CF0C6;
+    --teal-deep:#123330;
+    --grad:linear-gradient(135deg,var(--teal),var(--teal-deep));
+    --glow-v:rgba(63,224,176,.35);
+    --glow-t:rgba(63,224,176,.35);
+    --danger:#FF6B78;
+    --danger-wash:rgba(255,107,120,.1);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    font-family:'Inter',Arial,sans-serif;
+    color:var(--ink);
+    min-height:100vh;
+    background:var(--bg);
+    position:relative;
+    overflow-x:hidden;
+  }
+  ::selection{background:var(--teal);color:#fff;}
+  ::-webkit-scrollbar{width:10px;height:10px;}
+  ::-webkit-scrollbar-track{background:var(--bg);}
+  ::-webkit-scrollbar-thumb{background:linear-gradient(var(--teal),var(--teal));border-radius:10px;}
+
+  /* AURORA BACKDROP */
+  .aurora{position:fixed;inset:0;z-index:-2;overflow:hidden;}
+  .aurora span{
+    position:absolute;border-radius:50%;filter:blur(70px);opacity:.55;
+    animation:drift 16s ease-in-out infinite;
+  }
+  .aurora .a1{width:46vw;height:46vw;background:var(--teal);top:-14%;left:-10%;animation-duration:19s;}
+  .aurora .a2{width:38vw;height:38vw;background:var(--teal);top:10%;right:-12%;animation-duration:22s;animation-delay:-4s;}
+  .aurora .a3{width:34vw;height:34vw;background:#1B6A53;bottom:-16%;left:18%;animation-duration:25s;animation-delay:-9s;}
+  @keyframes drift{
+    0%,100%{transform:translate(0,0) scale(1);}
+    50%{transform:translate(4%,6%) scale(1.12);}
+  }
+  .grain{position:fixed;inset:0;z-index:-1;opacity:.035;pointer-events:none;
+    background-image:radial-gradient(circle,#fff 1px,transparent 1px);background-size:3px 3px;}
+
+  h1,h2,h3{font-family:'Sora',Arial,sans-serif;font-weight:700;color:var(--ink);}
+  button{font-family:inherit;cursor:pointer;}
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important;}
+    .reveal{opacity:1 !important;transform:none !important;filter:none !important;}
+  }
+
+  .reveal{opacity:0;transform:translateY(26px);filter:blur(6px);
+    transition:opacity .7s cubic-bezier(.2,.7,.2,1),transform .7s cubic-bezier(.2,.7,.2,1),filter .7s ease;
+    transition-delay:var(--d,0ms);}
+  .reveal.in{opacity:1;transform:none;filter:blur(0);}
+
+  /* TOPBAR */
+  .topbar{
+    height:72px;border-bottom:1px solid var(--line);
+    background:rgba(14,23,20,.78);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+    display:flex;align-items:center;justify-content:space-between;
+    padding:0 30px;position:sticky;top:0;z-index:50;
+  }
+  .brand{display:flex;align-items:center;gap:11px;font-weight:700;font-size:16px;font-family:'Sora',sans-serif;letter-spacing:.2px;}
+  .brand-icon{
+    width:36px;height:36px;border-radius:11px;position:relative;display:grid;place-items:center;
+    background:var(--grad);box-shadow:0 0 22px var(--glow-v);
+  }
+  .brand-icon::before{
+    content:"";position:absolute;inset:-3px;border-radius:14px;z-index:-1;
+    background:conic-gradient(from var(--ang,0deg),var(--teal),var(--teal),var(--teal));
+    animation:spinRing 4s linear infinite;
+  }
+  @property --ang{syntax:'<angle>';inherits:false;initial-value:0deg;}
+  @keyframes spinRing{to{--ang:360deg;}}
+  .brand-icon span{width:16px;height:16px;border-radius:5px;background:var(--bg);}
+  .brand .pro{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:700;}
+
+  .user-area{display:flex;align-items:center;gap:16px;}
+  .avatar{
+    width:38px;height:38px;border-radius:50%;display:grid;place-items:center;position:relative;
+    background:#152521;color:var(--teal-2);font-weight:700;font-size:13px;font-family:'Sora',sans-serif;
+  }
+  .avatar::before{
+    content:"";position:absolute;inset:-3px;border-radius:50%;z-index:-1;
+    background:var(--grad);animation:avatarPulse 3s ease-in-out infinite;
+  }
+  @keyframes avatarPulse{0%,100%{opacity:.7;transform:scale(1);}50%{opacity:1;transform:scale(1.07);}}
+  .user-name{font-size:12px;color:var(--ink-soft);}
+  .user-name small{display:block;color:var(--ink);margin-top:3px;font-weight:600;}
+  .logout{
+    position:relative;overflow:hidden;
+    border:1px solid rgba(255,107,120,.4);background:var(--danger-wash);color:var(--danger);
+    padding:10px 17px;border-radius:999px;font-size:12.5px;font-weight:600;
+    transition:background .2s ease,transform .2s ease,box-shadow .2s ease,color .2s ease;
+  }
+  .logout:hover{background:var(--danger);color:#14060a;transform:translateY(-2px);box-shadow:0 12px 28px rgba(255,107,120,.3);}
+
+  .container{max-width:1200px;margin:auto;padding:46px 26px 100px;}
+
+  .heading{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;margin-bottom:34px;}
+  .heading h1{
+    font-size:clamp(26px,3.4vw,36px);margin-bottom:9px;letter-spacing:-.4px;
+    background:linear-gradient(100deg,#fff 10%,var(--teal-2) 40%,var(--teal-2) 65%,#fff 95%);
+    background-size:260% auto;background-clip:text;-webkit-background-clip:text;color:transparent;
+    animation:shine 8s linear 1s infinite;
+  }
+  @keyframes shine{to{background-position:-260% center;}}
+  .heading p{color:var(--ink-soft);font-size:13.5px;}
+  .uid{
+    border:1px solid var(--line);background:var(--glass);backdrop-filter:blur(10px);
+    padding:12px 17px;border-radius:12px;color:var(--ink-soft);font-size:11px;
+  }
+  .uid span{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:700;}
+
+  /* QUICK STATS */
+  .stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:26px;}
+  .stat-card{
+    position:relative;overflow:hidden;padding:20px 22px;border-radius:16px;
+    background:var(--glass);border:1px solid var(--line);backdrop-filter:blur(14px);
+    transition:transform .25s ease,border-color .25s ease;
+  }
+  .stat-card:hover{transform:translateY(-4px);border-color:rgba(63,224,176,.35);}
+  .stat-card::before{
+    content:"";position:absolute;top:-40%;right:-30%;width:70%;height:140%;
+    background:radial-gradient(circle,var(--glow-v),transparent 65%);opacity:.5;pointer-events:none;
+  }
+  .stat-label{font-size:10.5px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;}
+  .stat-value{font-family:'Sora',sans-serif;font-size:26px;font-weight:700;}
+  .stat-value.teal{color:var(--teal-2);}
+  .stat-value.violet{color:var(--teal-2);}
+  .stat-value.vip{
+    background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;
+    animation:vipGlow 2.4s ease-in-out infinite;
+  }
+  @keyframes vipGlow{0%,100%{filter:drop-shadow(0 0 0 transparent);}50%{filter:drop-shadow(0 0 6px var(--glow-v));}}
+  .stat-value.free{color:var(--ink-soft);}
+  .stat-sub{font-size:10.5px;color:var(--ink-soft);margin-top:7px;}
+  .stat-sub.upgrade{color:var(--teal-2);cursor:default;}
+
+  /* PANEL BASE — glass */
+  .panel{
+    position:relative;background:var(--glass);border:1px solid var(--line);border-radius:20px;overflow:hidden;
+    margin-bottom:24px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+    box-shadow:0 30px 60px rgba(0,0,0,.35);transition:border-color .3s ease;
+  }
+  .panel:hover{border-color:rgba(63,224,176,.3);}
+  .panel-title{
+    padding:18px 22px;border-bottom:1px solid var(--line);font-size:13.5px;font-weight:700;font-family:'Sora',sans-serif;
+    display:flex;align-items:center;gap:10px;
+  }
+  .panel-title .mark{
+    width:30px;height:30px;border-radius:9px;display:grid;place-items:center;
+    background:rgba(63,224,176,.14);color:var(--teal-2);font-size:15px;
+  }
+
+  /* BUILDER */
+  .builder{padding:24px;}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  .field{display:flex;flex-direction:column;gap:8px;}
+  .field.full{grid-column:1/-1;}
+  label{color:var(--ink-soft);font-size:10px;letter-spacing:.06em;text-transform:uppercase;font-weight:600;}
+  input,select{
+    width:100%;padding:13px 14px;border:1px solid var(--line);border-radius:11px;
+    background:rgba(255,255,255,.02);color:var(--ink);outline:none;font-size:13.5px;
+    transition:border-color .2s ease,box-shadow .2s ease,background .2s ease;
+  }
+  input:focus,select:focus{border-color:var(--teal);box-shadow:0 0 0 4px rgba(63,224,176,.14);background:rgba(255,255,255,.04);}
+
+  /* build pipeline visual */
+  .pipeline{display:flex;align-items:center;gap:0;margin-top:22px;}
+  .pipe-step{flex:1;text-align:center;position:relative;}
+  .pipe-dot{width:11px;height:11px;border-radius:50%;background:#29443C;margin:0 auto 8px;position:relative;z-index:1;transition:background .3s ease,box-shadow .3s ease;}
+  .pipe-step span{font-size:9.5px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em;}
+  .pipe-line{position:absolute;top:5px;left:-50%;width:100%;height:2px;background:#29443C;z-index:0;}
+  .pipe-step:first-child .pipe-line{display:none;}
+  .pipeline.stage-1 .pipe-step:nth-child(1) .pipe-dot{background:var(--grad);box-shadow:0 0 12px var(--glow-v);}
+  .pipeline.stage-2 .pipe-step:nth-child(-n+2) .pipe-dot,
+  .pipeline.stage-2 .pipe-step:nth-child(2) .pipe-line{background:var(--grad);box-shadow:0 0 12px var(--glow-v);}
+  .pipeline.stage-3 .pipe-step .pipe-dot,
+  .pipeline.stage-3 .pipe-line{background:var(--grad);box-shadow:0 0 12px var(--glow-t);}
+  .pipeline.stage-err .pipe-step .pipe-dot{background:var(--danger);box-shadow:0 0 12px rgba(255,107,120,.4);}
+
+  .build-btn{
+    position:relative;overflow:hidden;width:100%;margin-top:20px;padding:16px;border:0;border-radius:12px;
+    background:var(--grad);color:#06140F;font-weight:700;font-size:14.5px;font-family:'Sora',sans-serif;
+    box-shadow:0 14px 34px var(--glow-v);transition:transform .2s ease,box-shadow .2s ease;
+  }
+  .build-btn::after{
+    content:"";position:absolute;top:0;left:-70%;width:45%;height:100%;
+    background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);
+    transform:skewX(-20deg);transition:left .6s ease;
+  }
+  .build-btn:hover::after{left:130%;}
+  .build-btn:hover{transform:translateY(-3px);box-shadow:0 18px 44px var(--glow-v);}
+  .build-btn:active{transform:translateY(0) scale(.99);}
+  .build-btn:disabled{opacity:.6;cursor:not-allowed;transform:none;box-shadow:none;}
+  .field input:disabled,.field select:disabled{opacity:.6;cursor:not-allowed;}
+  .ripple{position:absolute;border-radius:50%;background:rgba(255,255,255,.5);transform:scale(0);animation:rippleAnim .6s ease-out forwards;pointer-events:none;}
+  @keyframes rippleAnim{to{transform:scale(2.6);opacity:0;}}
+
+  .download-btn{
+    width:100%;margin-top:11px;padding:15px;border:0;border-radius:12px;
+    background:rgba(63,224,176,.1);border:1px solid var(--teal);color:var(--teal-2);font-weight:700;font-family:'Sora',sans-serif;
+    display:none;opacity:0;transform:translateY(10px);transition:opacity .4s ease,transform .4s ease,background .2s ease;
+  }
+  .download-btn.show{display:block;opacity:1;transform:translateY(0);}
+  .download-btn:hover{background:rgba(63,224,176,.16);}
+
+  .status{
+    margin-top:16px;padding:13px 15px;border-radius:11px;background:rgba(255,255,255,.02);
+    border:1px solid var(--line);color:var(--ink-soft);font-size:12.5px;display:none;
+    opacity:0;transform:translateY(8px);transition:opacity .35s ease,transform .35s ease;
+  }
+  .status.show{display:block;opacity:1;transform:translateY(0);}
+  .status.busy{position:relative;overflow:hidden;color:#C8DED5;}
+  .status.busy::after{
+    content:"";position:absolute;inset:0;
+    background:linear-gradient(100deg,transparent,rgba(63,224,176,.16),transparent);
+    transform:translateX(-100%);animation:statusSweep 1.3s linear infinite;
+  }
+  .status.ok{border-color:rgba(63,224,176,.3);color:var(--teal-2);}
+  .status.err{border-color:rgba(255,107,120,.35);color:var(--danger);}
+  @keyframes statusSweep{to{transform:translateX(100%);}}
+
+  /* DEVICES */
+  .device-header{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
+  .devices-title-left{display:flex;align-items:center;gap:10px;}
+  .device-count-badge{
+    min-width:22px;height:22px;padding:0 7px;display:inline-flex;align-items:center;justify-content:center;
+    border-radius:999px;background:var(--grad);color:#06140F;font-size:10.5px;font-weight:800;
+    transition:transform .2s ease;
+  }
+  .header-online-pill{
+    display:inline-flex;align-items:center;gap:7px;padding:5px 11px;border-radius:999px;
+    border:1px solid rgba(63,224,176,.3);background:rgba(63,224,176,.08);color:var(--teal-2);font-size:10px;font-weight:700;
+  }
+  .header-online-dot{width:6px;height:6px;border-radius:50%;background:var(--teal);box-shadow:0 0 9px var(--glow-t);animation:dotBeat 1.6s ease-in-out infinite;}
+  @keyframes dotBeat{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(.7);}}
+
+  .refresh{
+    width:40px;height:36px;display:grid;place-items:center;border:1px solid var(--line);
+    background:rgba(255,255,255,.02);color:var(--ink-soft);border-radius:999px;font-size:16px;
+    transition:color .2s ease,border-color .2s ease,transform .5s ease;
+  }
+  .refresh:hover{color:var(--teal-2);border-color:var(--teal);}
+  .refresh.spin{transform:rotate(360deg);}
+
+  .table{overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;min-width:620px;}
+  th,td{padding:16px 22px;border-top:1px solid var(--line);text-align:left;font-size:12.5px;}
+  th{color:var(--ink-soft);font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;font-weight:600;}
+  td{color:#DCEBE4;}
+  td small{display:block;color:var(--ink-soft);margin-top:4px;font-size:10px;}
+  tbody tr{transition:background .2s ease;}
+  tbody tr:hover{background:rgba(63,224,176,.04);}
+
+  .online,.offline{
+    display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:999px;font-size:9.5px;font-weight:700;
+  }
+  .online{background:rgba(63,224,176,.1);border:1px solid rgba(63,224,176,.3);color:var(--teal-2);}
+  .online::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--teal);box-shadow:0 0 8px var(--glow-t);animation:dotBeat 1.6s ease-in-out infinite;}
+  .offline{background:var(--danger-wash);border:1px solid rgba(255,107,120,.3);color:var(--danger);}
+  .offline::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--danger);}
+
+  .control{
+    display:inline-flex;align-items:center;gap:7px;padding:9px 14px;border-radius:999px;
+    border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--ink-soft);font-weight:700;font-size:11px;
+    transition:color .2s ease,border-color .2s ease,background .2s ease,transform .2s ease;
+  }
+  .control::after{content:"›";font-size:15px;line-height:1;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .control:hover{color:var(--ink);border-color:var(--teal);background:rgba(63,224,176,.08);transform:translateX(2px);}
+
+  .battery-value{display:inline-flex;align-items:center;gap:7px;font-weight:700;}
+  .battery-icon{position:relative;width:14px;height:7px;border:2px solid currentColor;border-radius:2px;display:inline-block;}
+  .battery-icon::after{content:"";position:absolute;right:-4px;top:1px;width:2px;height:3px;border-radius:0 1px 1px 0;background:currentColor;}
+  .battery-good{color:var(--teal-2);}
+  .battery-low{color:var(--danger);}
+
+  .skeleton-row td{padding:20px 22px;}
+  .skeleton-bar{
+    height:12px;border-radius:7px;width:70%;
+    background:linear-gradient(90deg,rgba(255,255,255,.04),rgba(255,255,255,.12),rgba(255,255,255,.04));
+    background-size:200% 100%;animation:skeletonShine 1.4s ease-in-out infinite;
+  }
+  @keyframes skeletonShine{to{background-position:-200% 0;}}
+
+  @media(max-width:860px){ .stat-grid{grid-template-columns:1fr 1fr;} }
+  @media(max-width:700px){
+    .topbar{padding:0 16px;}
+    .user-name{display:none;}
+    .container{padding:32px 15px 80px;}
+    .heading{flex-direction:column;align-items:flex-start;gap:14px;}
+    .stat-grid{grid-template-columns:1fr;}
+    .form-grid{grid-template-columns:1fr;}
+    .field.full{grid-column:auto;}
+    .header-online-pill{display:none;}
+    th,td{padding:14px 15px;}
+    .pipe-step span{font-size:8px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="aurora"><span class="a1"></span><span class="a2"></span><span class="a3"></span></div>
+<div class="grain"></div>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-icon"><span></span></div>
+    MobileControl<span class="pro">PRO</span>
+  </div>
+
+  <div class="user-area">
+    <div class="avatar">M</div>
+    <div class="user-name">
+      Welcome back
+      <small id="userEmail">Loading...</small>
+    </div>
+    <button class="logout" onclick="logout()">Sign out</button>
+  </div>
+</header>
+
+<main class="container">
+
+  <div class="heading reveal">
+    <div>
+      <h1>Command center</h1>
+      <p>Build applications and manage your authorized devices.</p>
+    </div>
+    <div class="uid">YOUR UID: <span id="userId">loading...</span></div>
+  </div>
+
+  <div class="stat-grid reveal">
+    <div class="stat-card">
+      <div class="stat-label">Authorized devices</div>
+      <div class="stat-value violet" id="statDevices">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Online now</div>
+      <div class="stat-value teal" id="statOnline">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Account status</div>
+      <div class="stat-value" id="statPlan" style="font-size:18px;">—</div>
+      <div class="stat-sub" id="statPlanSub"></div>
+    </div>
+  </div>
+
+  <!-- APK BUILDER -->
+  <section class="panel reveal">
+    <div class="panel-title"><span class="mark">&#9875;</span> APK Builder</div>
+
+    <div class="builder">
+      <div class="form-grid">
+        <div class="field">
+          <label>App name</label>
+          <input id="appName" type="text" value="MobileControl Family">
+        </div>
+
+        <div class="field">
+          <label>Package name</label>
+          <input id="packageName" type="text" value="com.mobilecontrol.family">
+        </div>
+
+        <div class="field full">
+          <label>Build type</label>
+          <select id="buildType">
+            <option value="family">Family Management</option>
+            <option value="basic">Basic Device Management</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="pipeline" id="pipeline">
+        <div class="pipe-step"><div class="pipe-line"></div><div class="pipe-dot"></div><span>Prepare</span></div>
+        <div class="pipe-step"><div class="pipe-line"></div><div class="pipe-dot"></div><span>Build</span></div>
+        <div class="pipe-step"><div class="pipe-line"></div><div class="pipe-dot"></div><span>Ready</span></div>
+      </div>
+
+      <button class="build-btn" id="buildBtn" onclick="buildApk()">Build APK</button>
+      <button class="download-btn" id="downloadBtn" onclick="downloadApk()">Download APK</button>
+      <div class="status" id="buildStatus"></div>
+    </div>
+  </section>
+
+  <!-- DEVICES -->
+  <section class="panel reveal">
+    <div class="panel-title device-header">
+      <div class="devices-title-left">
+        <span class="mark">&#9633;</span>
+        <span>Connected Devices</span>
+        <span class="device-count-badge" id="deviceCount">0</span>
+        <span class="header-online-pill">
+          <span class="header-online-dot"></span>
+          <span id="onlineCount">0 Online</span>
+        </span>
+      </div>
+      <button class="refresh" onclick="loadDevices()" aria-label="Refresh devices" title="Refresh devices">&#8635;</button>
+    </div>
+
+    <div class="table">
+      <table>
+        <thead>
+          <tr><th>Device</th><th>Battery</th><th>Status</th><th>Action</th></tr>
+        </thead>
+        <tbody id="deviceList">
+          <tr class="skeleton-row"><td colspan="4"><div class="skeleton-bar"></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
+
+
+<script>
+
+/* =========================================
+   CHECK LOGIN SESSION
+========================================= */
+
+async function loadUser(){
+
+  try{
+
+    const response = await fetch(
+      "/api/me",
+      {
+        method:"GET",
+        credentials:"same-origin",
+        cache:"no-store"
+      }
+    );
+
+
+    if(!response.ok){
+
+      window.location.href="/";
+
+      return;
+    }
+
+
+    const data = await response.json();
+
+    const user =
+      data.user || data;
+
+    document.getElementById(
+      "userEmail"
+    ).textContent =
+      user.email || "User";
+
+    document.getElementById(
+      "userId"
+    ).textContent =
+      user.id || "—";
+
+
+  }catch(error){
+
+    console.error(
+      "Session check error:",
+      error
+    );
+
+    window.location.href="/";
+
+  }
+
+}
+
+
+/* =========================================
+   ACCOUNT / VIP STATUS
+========================================= */
+
+async function loadAccess(){
+
+  const planEl = document.getElementById("statPlan");
+  const subEl = document.getElementById("statPlanSub");
+
+  try{
+
+    const response = await fetch("/api/access", {
+      credentials:"same-origin",
+      cache:"no-store"
+    });
+
+    if(!response.ok) return;
+
+    const data = await response.json();
+
+    if(!planEl) return;
+
+    if(data.plan === "vip"){
+
+      planEl.textContent = "VIP";
+      planEl.classList.remove("free");
+      planEl.classList.add("vip");
+
+      if(subEl){
+        subEl.classList.remove("upgrade");
+        if(data.vipExpiresAt){
+          const msLeft = new Date(data.vipExpiresAt).getTime() - Date.now();
+          const daysLeft = Math.max(0, Math.ceil(msLeft / 86400000));
+          subEl.textContent = daysLeft === 1 ? "1 day left" : `${daysLeft} days left`;
+        }else{
+          subEl.textContent = "";
+        }
+      }
+
+    }else{
+
+      planEl.textContent = "Free";
+      planEl.classList.remove("vip");
+      planEl.classList.add("free");
+
+      if(subEl){
+        subEl.classList.add("upgrade");
+        subEl.textContent = data.instagram
+          ? `DM @${data.instagram} to go VIP`
+          : "Upgrade to VIP for full access";
+      }
+
+    }
+
+  }catch(error){
+
+    console.error("Access status error:", error);
+
+  }
+
+}
+
+
+/* =========================================
+   LOAD DEVICES
+========================================= */
+
+async function loadDevices(){
+
+  const list =
+    document.getElementById(
+      "deviceList"
+    );
+
+  list.innerHTML=`
+    <tr class="skeleton-row">
+      <td colspan="4"><div class="skeleton-bar"></div></td>
+    </tr>
+  `;
+
+  try{
+
+    const response =
+      await fetch(
+        "/api/devices",
+        {
+          credentials:"same-origin"
+        }
+      );
+
+    if(!response.ok){
+      throw new Error("Failed to load devices");
+    }
+
+    const devices =
+      await response.json();
+
+    if(!Array.isArray(devices) ||
+       devices.length===0){
+
+      showNoDevices();
+
+      return;
+    }
+
+    document.getElementById(
+      "deviceCount"
+    ).textContent =
+      devices.length;
+
+    const onlineDevices =
+      devices.filter(device => Boolean(device.online)).length;
+
+    const onlineCount =
+      document.getElementById("onlineCount");
+
+    if(onlineCount){
+      onlineCount.textContent = `${onlineDevices} Online`;
+    }
+
+    list.innerHTML =
+      devices.map(device => {
+
+        const battery = Number(device.battery);
+        const hasBattery =
+          device.battery !== null &&
+          device.battery !== undefined &&
+          device.battery !== "" &&
+          Number.isFinite(battery);
+
+        const batteryClass =
+          hasBattery && battery <= 15
+            ? "battery-low"
+            : "battery-good";
+
+        const batteryText =
+          hasBattery ? `${escapeHtml(device.battery)}%` : "—";
+
+        return `
+          <tr>
+            <td>
+              ${escapeHtml(device.name || "Unknown Device")}
+              <small>${escapeHtml(device.device_id || "")}</small>
+            </td>
+
+            <td>
+              <span class="battery-value ${batteryClass}">
+                ${hasBattery ? '<span class="battery-icon"></span>' : ""}
+                ${batteryText}
+              </span>
+            </td>
+
+            <td>
+              ${
+                device.online
+                  ? `<span class="online">Online</span>`
+                  : `<span class="offline">Offline</span>`
+              }
+            </td>
+
+            <td>
+              <button
+                class="control"
+                onclick="openControl('${encodeURIComponent(device.device_id || "")}')"
+              >
+                Control
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join("");
+
+
+  }catch(error){
+
+    console.error(error);
+
+    showNoDevices();
+
+  }
+
+}
+
+
+function showNoDevices(){
+
+  document.getElementById(
+    "deviceCount"
+  ).textContent="0";
+
+  const onlineCount =
+    document.getElementById("onlineCount");
+
+  if(onlineCount){
+    onlineCount.textContent="0 Online";
+  }
+
+  document.getElementById(
+    "deviceList"
+  ).innerHTML=`
+
+    <tr>
+
+      <td
+        colspan="4"
+        style="
+          text-align:center;
+          color:#716d80;
+          padding:30px;
+        "
+      >
+
+        No authorized devices connected.
+
+      </td>
+
+    </tr>
+
+  `;
+
+}
+
+
+/* =========================================
+   APK BUILDER  (per-request system)
+   states: none -> Build APK | pending -> Request Pending | completed -> Download APK
+========================================= */
+
+function showStatus(text){
+  const status = document.getElementById("buildStatus");
+  status.style.display = "block";
+  status.textContent = text;
+}
+
+function hideStatus(){
+  document.getElementById("buildStatus").style.display = "none";
+}
+
+function setFormDisabled(disabled){
+  ["appName","packageName","buildType"].forEach(function(id){
+    const el = document.getElementById(id);
+    if(el) el.disabled = disabled;
+  });
+}
+
+async function loadApkState(){
+
+  const buildBtn = document.getElementById("buildBtn");
+  const download = document.getElementById("downloadBtn");
+
+  try{
+
+    const response = await fetch("/api/build-apk/status", {
+      credentials:"same-origin",
+      cache:"no-store"
+    });
+
+    if(!response.ok) return;
+
+    const s = await response.json();
+
+    if(s.state === "pending"){
+
+      buildBtn.textContent = "Request Pending";
+      buildBtn.disabled = true;
+      setFormDisabled(true);
+      download.style.display = "none";
+      showStatus("Request pending. Your APK will appear here once it is ready.");
+
+    }else if(s.state === "completed"){
+
+      buildBtn.textContent = "Request New Build";
+      buildBtn.disabled = false;
+      setFormDisabled(false);
+      download.dataset.url = "/api/build-apk/" + s.requestId + "/download";
+      download.style.display = "block";
+      showStatus("Your APK is ready. Download it below.");
+
+    }else{
+
+      buildBtn.textContent = "Build APK";
+      buildBtn.disabled = false;
+      setFormDisabled(false);
+      download.style.display = "none";
+      delete download.dataset.url;
+      hideStatus();
+
+    }
+
+  }catch(error){
+    console.error("APK status error:", error);
+  }
+
+}
+
+async function buildApk(){
+
+  const buildBtn = document.getElementById("buildBtn");
+  const download = document.getElementById("downloadBtn");
+
+  const appName = document.getElementById("appName").value.trim();
+  const packageName = document.getElementById("packageName").value.trim();
+  const buildType = document.getElementById("buildType").value;
+
+  if(!appName || !packageName){
+    showStatus("Please fill in all required fields.");
+    return;
+  }
+
+  buildBtn.disabled = true;
+  download.style.display = "none";
+  showStatus("Build request is being prepared...");
+
+  try{
+
+    const response = await fetch("/api/build-apk", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      credentials:"same-origin",
+      body:JSON.stringify({ appName, packageName, buildType })
+    });
+
+    const data = await response.json().catch(function(){ return {}; });
+
+    if(!response.ok){
+      showStatus(data.error || "Build request failed.");
+      buildBtn.disabled = false;
+      setTimeout(loadApkState, 2500);
+      return;
+    }
+
+    await loadApkState();
+
+  }catch(error){
+
+    console.error(error);
+    showStatus("Build request failed. Please try again.");
+    buildBtn.disabled = false;
+
+  }
+
+}
+
+
+/* =========================================
+   DOWNLOAD APK
+========================================= */
+
+function downloadApk(){
+
+  const url = document.getElementById("downloadBtn").dataset.url;
+
+  if(url){
+    window.location.href = url;
+  }
+
+}
+
+loadApkState();
+setInterval(loadApkState, 15000);
+
+
+/* =========================================
+   DEVICE CONTROL (updated)
+========================================= */
+
+function openControl(deviceId){
+
+  if(deviceId && deviceId !== "undefined"){
+    window.location.href = `/control?deviceId=${encodeURIComponent(deviceId)}`;
+  } else {
+    alert("Device ID missing.");
+  }
+
+}
+
+
+/* =========================================
+   LOGOUT
+========================================= */
+
+async function logout(){
+
+  try{
+
+    await fetch(
+      "/api/logout",
+      {
+        method:"POST",
+        credentials:"same-origin"
+      }
+    );
+
+  }catch(error){
+
+    console.error(error);
+
+  }
+
+  window.location.href="/";
+
+}
+
+
+/* =========================================
+   SECURITY
+========================================= */
+
+function escapeHtml(value){
+
+  return String(value)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+
+}
+
+
+/* =========================================
+   START
+========================================= */
+
+loadUser();
+loadDevices();
+loadAccess();
+
+</script>
+
+<!-- VISUAL-ONLY ENHANCEMENTS (nothing above this line is touched) -->
+<script>
+(function(){
+  var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* reveal on load */
+  var items = document.querySelectorAll(".reveal");
+  items.forEach(function(el,i){ el.style.setProperty("--d", (i*90)+"ms"); });
+  if ("IntersectionObserver" in window && !reduceMotion){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){ e.target.classList.add("in"); io.unobserve(e.target); }
+      });
+    }, {threshold:.08});
+    items.forEach(function(el){ io.observe(el); });
+  } else {
+    items.forEach(function(el){ el.classList.add("in"); });
+  }
+
+  /* mirror deviceCount / onlineCount into the quick-stat cards (read-only, same data) */
+  function mirrorStats(){
+    var dc = document.getElementById("deviceCount");
+    var oc = document.getElementById("onlineCount");
+    var sd = document.getElementById("statDevices");
+    var so = document.getElementById("statOnline");
+    if (dc && sd) sd.textContent = dc.textContent;
+    if (oc && so) so.textContent = (oc.textContent || "0").split(" ")[0];
+  }
+  mirrorStats();
+  var dcEl = document.getElementById("deviceCount");
+  var ocEl = document.getElementById("onlineCount");
+  if (dcEl) new MutationObserver(mirrorStats).observe(dcEl, {childList:true, characterData:true, subtree:true});
+  if (ocEl) new MutationObserver(mirrorStats).observe(ocEl, {childList:true, characterData:true, subtree:true});
+
+  /* bounce the device count badge on change */
+  if (dcEl && !reduceMotion){
+    new MutationObserver(function(){
+      dcEl.style.transform = "scale(1.3)";
+      setTimeout(function(){ dcEl.style.transform = ""; }, 220);
+    }).observe(dcEl, {childList:true, characterData:true, subtree:true});
+  }
+
+  /* fade/slide the status + download button, animate the build pipeline, based on status text */
+  var status = document.getElementById("buildStatus");
+  var download = document.getElementById("downloadBtn");
+  var pipeline = document.getElementById("pipeline");
+
+  function refreshStatusVisual(){
+    if (!status) return;
+    var visible = status.style.display === "block";
+    status.classList.toggle("show", visible);
+    var text = (status.textContent || "").toLowerCase();
+
+    status.classList.remove("busy","ok","err");
+    if (pipeline) pipeline.className = "pipeline";
+
+    if (!visible) return;
+
+    if (text.indexOf("prepared") !== -1 || text.indexOf("preparing") !== -1){
+      status.classList.add("busy");
+      if (pipeline) pipeline.classList.add("stage-1");
+    } else if (text.indexOf("pending") !== -1){
+      status.classList.add("busy");
+      if (pipeline) pipeline.classList.add("stage-2");
+    } else if (text.indexOf("ready") !== -1 || text.indexOf("started successfully") !== -1){
+      status.classList.add("ok");
+      if (pipeline) pipeline.classList.add("stage-3");
+    } else if (text.indexOf("failed") !== -1 || text.indexOf("not connected") !== -1 || text.indexOf("required fields") !== -1){
+      status.classList.add("err");
+      if (pipeline) pipeline.classList.add("stage-err");
+    } else {
+      if (pipeline) pipeline.classList.add("stage-2");
+    }
+  }
+  function refreshDownloadVisual(){
+    if (!download) return;
+    download.classList.toggle("show", download.style.display === "block");
+  }
+
+  if (status){
+    new MutationObserver(refreshStatusVisual)
+      .observe(status, {attributes:true, attributeFilter:["style"], childList:true, characterData:true, subtree:true});
+  }
+  if (download){
+    new MutationObserver(refreshDownloadVisual).observe(download, {attributes:true, attributeFilter:["style"]});
+  }
+
+  /* button ripple (purely visual, original onclick still fires) */
+  document.querySelectorAll(".build-btn, .download-btn, .control, .logout").forEach(function(btn){
+    btn.style.position = btn.style.position || "relative";
+    btn.addEventListener("click", function(e){
+      if (reduceMotion) return;
+      var r = btn.getBoundingClientRect();
+      var ripple = document.createElement("span");
+      ripple.className = "ripple";
+      var size = Math.max(r.width, r.height);
+      ripple.style.width = ripple.style.height = size + "px";
+      ripple.style.left = (e.clientX - r.left - size/2) + "px";
+      ripple.style.top = (e.clientY - r.top - size/2) + "px";
+      btn.appendChild(ripple);
+      setTimeout(function(){ ripple.remove(); }, 620);
+    });
+  });
+
+  /* spin refresh icon on click */
+  var refreshBtn = document.querySelector(".refresh");
+  if (refreshBtn && !reduceMotion){
+    refreshBtn.addEventListener("click", function(){
+      refreshBtn.classList.remove("spin");
+      void refreshBtn.offsetWidth;
+      refreshBtn.classList.add("spin");
+    });
+  }
+
+  /* subtle tilt on stat cards and panels */
+  if (!reduceMotion && window.matchMedia("(hover: hover)").matches){
+    document.querySelectorAll(".stat-card").forEach(function(card){
+      card.addEventListener("mousemove", function(e){
+        var r = card.getBoundingClientRect();
+        var x = (e.clientX - r.left) / r.width - 0.5;
+        var y = (e.clientY - r.top) / r.height - 0.5;
+        card.style.transform = "translateY(-4px) rotateX(" + (-y*6) + "deg) rotateY(" + (x*6) + "deg)";
+      });
+      card.addEventListener("mouseleave", function(){ card.style.transform = ""; });
+    });
+  }
+})();
+</script>
+
+</body>
+</html>
