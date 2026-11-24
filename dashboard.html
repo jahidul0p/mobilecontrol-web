@@ -469,9 +469,18 @@ async function loadUser(){
     );
 
 
-    if(!response.ok){
+    /* FIX: only a real 401/403 means "not logged in".
+       Other errors (500, cold start, restart) must NOT log the user out. */
+    if(response.status === 401 || response.status === 403){
 
       window.location.href="/";
+
+      return;
+    }
+
+    if(!response.ok){
+
+      console.error("Session check failed:", response.status);
 
       return;
     }
@@ -500,7 +509,7 @@ async function loadUser(){
       error
     );
 
-    window.location.href="/";
+    /* FIX: network error / server waking up -> do not redirect to login */
 
   }
 

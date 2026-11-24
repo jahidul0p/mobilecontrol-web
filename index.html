@@ -655,6 +655,15 @@
     if (event.key === "Escape" && modal.classList.contains("active")) { closeAuth(); }
   });
 
+  /* FIX: if user already has a valid session, go straight to dashboard */
+  fetch("/api/me", { method: "GET", credentials: "same-origin", cache: "no-store" })
+    .then(function (r) {
+      if (r.ok) {
+        window.location.replace("/dashboard.html");
+      }
+    })
+    .catch(function () {});
+
   /* nav shadow on scroll */
   const navEl = document.querySelector("nav");
   window.addEventListener("scroll", function () {
